@@ -1,3 +1,5 @@
+import logging
+
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtQuick import QQuickItem
 
@@ -17,7 +19,6 @@ class FFDScene(QQuickItem):
         r = self.window().devicePixelRatio()
         p = self.parentItem()
         self.renderer.set_view_port(p.x() * r, p.y() * r, p.width() * r, p.height() * r)
-        pass
 
     @pyqtSlot(object)
     def handle_window_changed(self, window):

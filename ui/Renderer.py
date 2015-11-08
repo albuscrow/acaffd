@@ -20,6 +20,7 @@ class Renderer(QObject):
         self.y = 0
         self.w = 0
         self.h = 0
+        self.draw = None
         self.gl_task = Queue()
 
     def set_view_port(self, x, y, w, h):
@@ -35,51 +36,67 @@ class Renderer(QObject):
     def paint(self):
         if not self.gl_task.empty():
             task = self.gl_task.get()
-            task()
+            self.draw = task()
             self.gl_task.task_done()
+
+        if self.draw:
+            self.draw()
 
     @pyqtSlot(OBJ)
     def handle_new_obj(self, obj):
         def init_task():
             # init program
-            self.shader_program = get_shader_render_program_qobj('vertex.glsl', 'fragment.glsl')
-            self.shader_program.bind()
-            # self.shader_program.enableAttributeArray('vertice')
-            # self.shader_program.setAttributeArray('vertice', obj.vertices)
+            vao = glGenVertexArrays(1)
+            glBindVertexArray(vao)
 
-            vbo = glGenBuffers(1)
-            glBindBuffer(GL_ARRAY_BUFFER, vbo)
-            glBufferData(GL_ARRAY_BUFFER, len(obj.vertices) * 4, numpy.array(obj.vertices, dtype='float32'),
+            buffers = glGenBuffers(2)
+            vvbo = buffers[0]
+            ivbo = buffers[1]
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ivbo)
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, numpy.array(obj.indexes, dtype='int32'), GL_STATIC_DRAW)
+            # glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
+
+            glBindBuffer(GL_ARRAY_BUFFER, vvbo)
+            glBufferData(GL_ARRAY_BUFFER, len(obj.vertices) * 12,
+                         numpy.array([v for p in obj.vertices for v in p], dtype='float32'),
                          usage=GL_STATIC_DRAW)
-            program = self.shader_program.programId()
-            l = glGetAttribLocation(program, 'vertice')
-            glEnableVertexAttribArray(l)
-            glVertexAttribPointer(l, 3, GL_FLOAT, False, 0, 0)
-            print(gluErrorString(glGetError()))
+            self.shader_program = get_shader_render_program('vertex.glsl', 'fragment.glsl')
+            glUseProgram(self.shader_program)
+            vl = glGetAttribLocation(self.shader_program, 'vertice')
+            glEnableVertexAttribArray(vl)
+            glVertexAttribPointer(vl, 3, GL_FLOAT, False, 0, None)
+            # glDisableVertexAttribArray(vl)
+            glUseProgram(0)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+            glBindVertexArray(0)
+            glDeleteBuffers(2, buffers)
+
+            self.shader_program = get_shader_render_program('vertex.glsl', 'fragment.glsl')
 
             # set index
-            # index_vbo = glGenBuffers(1)
-            # glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_vbo)
-            # glBufferData(GL_ELEMENT_ARRAY_BUFFER, numpy.array(obj.indexes, dtype='int32'), GL_STATIC_DRAW)
+            def draw():
+                glBindVertexArray(vao)
+                glUseProgram(self.shader_program)
 
-            glViewport(self.x, self.y, self.w, self.h)
-            glEnable(GL_SCISSOR_TEST)
-            glScissor(self.x, self.y, self.w, self.h)
+                glViewport(self.x, self.y, self.w, self.h)
 
-            glDisable(GL_DEPTH_TEST)
+                glEnable(GL_SCISSOR_TEST)
+                glScissor(self.x, self.y, self.w, self.h)
 
-            glClearColor(0.5, 0.5, 0.5, 1)
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+                glDisable(GL_DEPTH_TEST)
 
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE)
+                glClearColor(0, 0, 0, 1)
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, len(obj.vertices))
-            # glDrawElements(GL_POINTS, len(obj.indexes), GL_UNSIGNED_INT, obj.indexes)
+                glDrawElements(GL_TRIANGLES, len(obj.indexes), GL_UNSIGNED_INT, None)
 
-            glDisable(GL_SCISSOR_TEST)
+                glDisable(GL_SCISSOR_TEST)
 
-            self.shader_program.disableAttributeArray('vertice')
-            self.shader_program.release()
+                glUseProgram(0)
+                glBindVertexArray(0)
+
+            return draw
 
         self.gl_task.put(init_task)

@@ -39,7 +39,7 @@ ApplicationWindow {
 
     Rectangle{
         id:control_panel
-        width:400
+        width:200
         anchors.right:parent.right
 
         Button {
