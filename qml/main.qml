@@ -1,8 +1,7 @@
 import QtQuick 2.5
-import FFD 1.0
-import QtQuick.Controls 1.2
-
+import QtQuick.Controls 1.4
 import QtQuick.Dialogs 1.2
+import FFD 1.0
 
 ApplicationWindow {
     visible: true
@@ -62,6 +61,18 @@ ApplicationWindow {
         FFDScene {
             objectName: "scene"
         }
+
+        MyMouseArea {
+            drag.axis: Drag.XAndYAxis
+            anchors.fill: parent
+            onMove: {
+                controller.move(x, y)
+            }
+            onSwipe: {
+                controller.release_mouse()
+            }
+        }
+
     }
 }
 
