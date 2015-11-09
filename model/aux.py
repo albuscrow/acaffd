@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class BSplineBody:
     def __init__(self, *argv):
         if len(argv) == 0:
@@ -20,7 +23,7 @@ class BSplineBody:
         else:
             raise Exception('input argv number error')
         self.point = []
-        for x in range(-1, 1.001, 2 / (self.ctrl_x - 1)):
-            for y in range(-1, 1.001, 2 / (self.ctrl_y - 1)):
-                for z in range(-1, 1.001, 2 / (self.ctrl_z - 1)):
+        for x in np.arange(-1, 1.001, 2 / (self.ctrl_x - 1)):
+            for y in np.arange(-1, 1.001, 2 / (self.ctrl_y - 1)):
+                for z in np.arange(-1, 1.001, 2 / (self.ctrl_z - 1)):
                     self.point.append([x, y, z])

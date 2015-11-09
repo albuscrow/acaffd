@@ -79,11 +79,14 @@ class OBJ:
         mid_z = (max_z + min_z) / 2
         d_z = (max_z - min_z) / 2
 
+        d = max(d_x, d_y, d_z)
+
         temp_vertices.pop(0)
         for v in temp_vertices:
-            v[0] = (v[0] - mid_x) / d_x
-            v[1] = (v[1] - mid_y) / d_y
-            v[2] = (v[2] - mid_z) / d_z
+            v[0] = (v[0] - mid_x) / d
+            v[1] = (v[1] - mid_y) / d
+            v[2] = (v[2] - mid_z) / d
+
         logging.info('load obj finish, has vertices:' + str(len(self.vertices)))
 
     def parse_face(self, aux_map, temp_normals, temp_tex_coords, temp_vertices, tokens):

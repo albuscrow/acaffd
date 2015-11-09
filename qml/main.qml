@@ -5,8 +5,8 @@ import FFD 1.0
 
 ApplicationWindow {
     visible: true
-    width: 960
-    height: 720
+    width: 800
+    height: 850
 
     FileDialog {
         id: fileDialog
@@ -18,7 +18,6 @@ ApplicationWindow {
             controller.load_file(fileDialog.fileUrls)
         }
     }
-
 
     menuBar: MenuBar {
         Menu {
@@ -59,6 +58,7 @@ ApplicationWindow {
         anchors.left: parent.left
         anchors.right: control_panel.left
         FFDScene {
+            anchors.fill: parent
             objectName: "scene"
         }
 
