@@ -65,11 +65,11 @@ ApplicationWindow {
         MyMouseArea {
             drag.axis: Drag.XAndYAxis
             anchors.fill: parent
-            onMove: {
+            onRightMoveDelta: {
                 controller.move(x, y)
             }
-            onSwipe: {
-                controller.release_mouse()
+            onLeftMoveInfo: {
+                controller.select(x, y, x2, y2)
             }
         }
 

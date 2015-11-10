@@ -9,6 +9,7 @@ class Controller(QObject):
     read_obj_success = pyqtSignal(OBJ)
     change_rotate = pyqtSignal(int, int)
     show_aux_signal = pyqtSignal(bool)
+    send_select = pyqtSignal(int, int, int, int)
 
     def __init__(self):
         super().__init__()
@@ -38,7 +39,25 @@ class Controller(QObject):
     def show_aux(self, is_show):
         self.show_aux_signal.emit(is_show)
 
+    @pyqtSlot(int, int, int, int)
+    def select(self, x, y, x2, y2):
+        if x > x2:
+            minx = x2
+            maxx = x
+        else:
+            minx = x
+            maxx = x2
+
+        if y > y2:
+            miny = y2
+            maxy = y
+        else:
+            miny = y
+            maxy = y2
+        self.send_select.emit(minx, miny, maxx, maxy)
+
     def connect_with_renderer(self, renderer):
         self.read_obj_success.connect(renderer.handle_new_obj)
         self.change_rotate.connect(renderer.change_rotate)
         self.show_aux_signal.connect(renderer.show_aux)
+        self.send_select.connect(renderer.select)

@@ -27,3 +27,9 @@ class BSplineBody:
             for y in np.arange(-1, 1.001, 2 / (self.ctrl_y - 1)):
                 for z in np.arange(-1, 1.001, 2 / (self.ctrl_z - 1)):
                     self.point.append([x, y, z])
+
+        self.is_hit = None
+        self.reset_is_hit()
+
+    def reset_is_hit(self):
+        self.is_hit = [0] * self.ctrl_x * self.ctrl_y * self.ctrl_z
