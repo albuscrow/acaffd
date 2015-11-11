@@ -4,7 +4,7 @@ from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from util.util import static_var
 from model.aux import BSplineBody
 from model.model import OBJ
-from shader.ShaderUtil import get_shader_render_program_qobj, get_shader_render_program
+from shader.ShaderUtil import get_compute_shader_program, get_renderer_shader_program
 from OpenGL.GL import *
 from pyrr.matrix44 import *
 from pyrr.euler import *
@@ -79,29 +79,53 @@ class Renderer(QObject):
 
                 buffers = glGenBuffers(3)
                 vvbo = buffers[0]
-                ivbo = buffers[1]
-                nvbo = buffers[2]
+                nvbo = buffers[1]
+                ivbo = buffers[2]
 
+                # copy vertices to gpu
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, vvbo)
+                glBufferData(GL_SHADER_STORAGE_BUFFER, len(obj.vertices) * 12,
+                             numpy.array(obj.vertices, dtype='float32'),
+                             usage=GL_DYNAMIC_DRAW)
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vvbo)
+
+                # # copy normal to gpu
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, nvbo)
+                glBufferData(GL_SHADER_STORAGE_BUFFER, len(obj.normals) * 12,
+                             numpy.array(obj.normals, dtype='float32'),
+                             usage=GL_STATIC_DRAW)
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
+
+                # # copy index to gpu
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ivbo)
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, numpy.array(obj.indexes, dtype='int32'), GL_STATIC_DRAW)
+                # glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
-                renderer_model_task.shader = get_shader_render_program('vertex.glsl', 'fragment.glsl')
+                # run computer shader
+                compute_shader = get_compute_shader_program('sample_bspline.glsl')
+                glUseProgram(compute_shader)
+                glDispatchCompute(int(len(obj.vertices) * 3 / 512 + 1), 1, 1)
+                glUseProgram(0)
+
+                # run renderer shader
+                # gen renderer program
+                renderer_model_task.shader = get_renderer_shader_program('vertex.glsl', 'fragment.glsl')
                 glUseProgram(renderer_model_task.shader)
 
-                # vertice attribute
+                # set vertice attribute
                 glBindBuffer(GL_ARRAY_BUFFER, vvbo)
-                glBufferData(GL_ARRAY_BUFFER, len(obj.vertices) * 12,
-                             numpy.array(obj.vertices, dtype='float32'),
-                             usage=GL_STATIC_DRAW)
+                # glBufferData(GL_ARRAY_BUFFER, len(obj.vertices) * 12,
+                #              numpy.array(obj.vertices, dtype='float32'),
+                #              usage=GL_DYNAMIC_DRAW)
                 vl = glGetAttribLocation(renderer_model_task.shader, 'vertice')
                 glEnableVertexAttribArray(vl)
                 glVertexAttribPointer(vl, 3, GL_FLOAT, False, 0, None)
 
-                # normal attribute
+                # set normal attribute
                 glBindBuffer(GL_ARRAY_BUFFER, nvbo)
-                glBufferData(GL_ARRAY_BUFFER, len(obj.normals) * 12,
-                             numpy.array(obj.normals, dtype='float32'),
-                             usage=GL_STATIC_DRAW)
+                # glBufferData(GL_ARRAY_BUFFER, len(obj.normals) * 12,
+                #              numpy.array(obj.normals, dtype='float32'),
+                #              usage=GL_STATIC_DRAW)
                 nl = glGetAttribLocation(renderer_model_task.shader, 'normal')
                 glEnableVertexAttribArray(nl)
                 glVertexAttribPointer(nl, 3, GL_FLOAT, False, 0, None)
@@ -153,7 +177,7 @@ class Renderer(QObject):
                     glBindVertexArray(draw_aux.vao)
                     vbos = glGenBuffers(2)
 
-                    draw_aux.shader = get_shader_render_program('aux.v.glsl', 'aux.f.glsl')
+                    draw_aux.shader = get_renderer_shader_program('aux.v.glsl', 'aux.f.glsl')
                     glUseProgram(draw_aux.shader)
                     vvbo = vbos[0]
                     glBindBuffer(GL_ARRAY_BUFFER, vvbo)

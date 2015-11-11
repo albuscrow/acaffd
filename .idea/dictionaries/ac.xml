@@ -1,7 +1,9 @@
 <component name="ProjectDictionaryState">
   <dictionary name="ac">
     <words>
+      <w>bspline</w>
       <w>coords</w>
+      <w>glsl</w>
       <w>ivbo</w>
       <w>texcoord</w>
       <w>vertice</w>
