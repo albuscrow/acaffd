@@ -61,3 +61,8 @@ class Controller(QObject):
         self.change_rotate.connect(renderer.change_rotate)
         self.show_aux_signal.connect(renderer.show_aux)
         self.send_select.connect(renderer.select)
+        # todo test code
+
+        raw_obj = OBJ("/home/ac/code/c++/dashi/OBJ/767.obj", ModelFileFormatType.obj)
+        self.read_obj_success.emit(raw_obj)
+        self.show_aux_signal.emit(True)

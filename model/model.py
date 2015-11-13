@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from copy import deepcopy
 
 
 class ModelFileFormatType(Enum):
@@ -36,12 +37,14 @@ class OBJ:
                     first_token = tokens.pop(0)
                     if first_token == 'v':
                         temp_vertices.append(list(map(float, tokens)))
-                        max_x, min_x = self.findMaxMin(max_x, min_x, temp_vertices[-1][0])
-                        max_y, min_y = self.findMaxMin(max_y, min_y, temp_vertices[-1][1])
-                        max_z, min_z = self.findMaxMin(max_z, min_z, temp_vertices[-1][2])
+                        temp_vertices[-1].append(1.0)
+                        max_x, min_x = self.find_max_min(max_x, min_x, temp_vertices[-1][0])
+                        max_y, min_y = self.find_max_min(max_y, min_y, temp_vertices[-1][1])
+                        max_z, min_z = self.find_max_min(max_z, min_z, temp_vertices[-1][2])
 
                     elif first_token == 'vn':
                         temp_normals.append(list(map(float, tokens)))
+                        temp_normals[-1].append(1.0)
                     elif first_token == 'vt':
                         temp_tex_coords.append(list(map(float, tokens)))
                     elif first_token == 'f':
@@ -69,23 +72,39 @@ class OBJ:
             logging.error('only support obj file')
             raise Exception()
 
-        # 归一化，事模型坐标从-1,1
+        # 归一化，使模型坐标从-1,1
         mid_x = (max_x + min_x) / 2
-        d_x = (max_x - min_x) / 2
+        self.d_x = (max_x - min_x)
 
         mid_y = (max_y + min_y) / 2
-        d_y = (max_y - min_y) / 2
+        self.d_y = (max_y - min_y)
 
         mid_z = (max_z + min_z) / 2
-        d_z = (max_z - min_z) / 2
+        self.d_z = (max_z - min_z)
 
-        d = max(d_x, d_y, d_z)
+        # xyz三个维度中，模型跨度最大值
+        d = max(self.d_x, self.d_y, self.d_z)
+
+        # 首先深拷贝各个顶点的坐标, 用于计算各个顶点在b样条体中的参数
+        self.parameters = deepcopy(self.vertices)
 
         temp_vertices.pop(0)
         for v in temp_vertices:
             v[0] = (v[0] - mid_x) / d
             v[1] = (v[1] - mid_y) / d
             v[2] = (v[2] - mid_z) / d
+
+
+        # 计算模型在b样条体中的参数
+        # 将parameters归一化到0～1
+        for v in self.parameters:
+            v[0] = (v[0] - mid_x) / self.d_x
+            v[1] = (v[1] - mid_y) / self.d_y
+            v[2] = (v[2] - mid_z) / self.d_z
+
+        self.d_x /= d
+        self.d_y /= d
+        self.d_z /= d
 
         logging.info('load obj finish, has vertices:' + str(len(self.vertices)))
 
@@ -105,5 +124,9 @@ class OBJ:
                 aux_map[v] = len(aux_map)
             self.indexes.append(aux_map[v])
 
-    def findMaxMin(self, max_x, min_x, new_x):
+    @staticmethod
+    def find_max_min(max_x, min_x, new_x):
         return max(max_x, new_x), min(min_x, new_x)
+
+    def get_length_xyz(self):
+        return self.d_x, self.d_y, self.d_z
