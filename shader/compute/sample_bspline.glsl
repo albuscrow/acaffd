@@ -4,6 +4,11 @@ layout(std430, binding=0) buffer ParametersSSBO{
     vec4 parameters[];
 };
 
+
+layout(std430, binding=1) buffer VerticesSSBO{
+    vec4 vertices[];
+};
+
 uniform vec3[125] controlPoints;
 
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
@@ -160,15 +165,18 @@ int matrixCase(in int order,in int ctrlPointNum,in int leftIdx) {
 }
 
 float getTempParameter(float t, out int leftIndex){
+    t += 0.5;
     float step = 1.0 / 3;
     if (t < step) {
         leftIndex = 2;
+        return t / step;
     } else if (t < 2 * step) {
         leftIndex = 3;
+        return t / step - 1;
     }else{
         leftIndex = 4;
+        return t / step - 2;
     }
-    return mod(t / step, 1);
 }
 
 void main() {
@@ -186,13 +194,14 @@ void main() {
     float v = getTempParameter(p.y, vli);
     int wli = 0;
     float w = getTempParameter(p.z, wli);
+    vertices[gl_GlobalInvocationID.x] = vec4(u, v, w, 677);
 
     float temp[4];
     float muli[4];
     temp[0] = 1.0f;
     temp[1] = w;
     temp[2] = w * w;
-    temp[3] = temp[2] * 2;
+    temp[3] = temp[2] * w;
 
     int matrix_offset = matrixCase(3, 5, wli);
 
@@ -218,7 +227,7 @@ void main() {
 //    temp[0] = 1.0f;
     temp[1] = v;
     temp[2] = v * v;
-    temp[3] = temp[2] * 2;
+    temp[3] = temp[2] * v;
 
     matrix_offset = matrixCase(3, 5, vli);
     for (int i = 0; i < 3; ++i) {
@@ -239,7 +248,7 @@ void main() {
 
     temp[1] = u;
     temp[2] = u * u;
-    temp[3] = temp[2] * 2;
+    temp[3] = temp[2] * u;
 
     matrix_offset = matrixCase(3, 5, uli);
 
@@ -255,12 +264,12 @@ void main() {
         result.x += tempcp1[i].x * muli[2 - i];
         result.y += tempcp1[i].y * muli[2 - i];
         result.z += tempcp1[i].z * muli[2 - i];
-        result.w = 1;
     }
+    result.w = 1;
 //    if (result.x == 0 && result.y == 0 && result.z ==0) {
 //        parameters[gl_GlobalInvocationID.x].x = 1;
 //    }
-    parameters[gl_GlobalInvocationID.x] = result;
+    vertices[gl_GlobalInvocationID.x] = result;
 
 //    if (gl_GlobalInvocationID.x >= parameters.length()) {
 //        return;

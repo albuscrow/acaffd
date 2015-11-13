@@ -24,9 +24,12 @@ class BSplineBody:
             raise Exception('input argv number error')
         self.ctrlPoints = []
 
-        for x in self.get_knot_list(lx):
-            for y in self.get_knot_list(ly):
-                for z in self.get_knot_list(lz):
+        knot_list = self.get_knot_list(lx)
+        get_knot_list = self.get_knot_list(ly)
+        self_get_knot_list = self.get_knot_list(lz)
+        for x in knot_list:
+            for y in get_knot_list:
+                for z in self_get_knot_list:
                     self.ctrlPoints.append([x, y, z])
 
         self.is_hit = None

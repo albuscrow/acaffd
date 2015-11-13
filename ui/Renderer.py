@@ -78,23 +78,37 @@ class Renderer(QObject):
         @static_var(shader=None, vao=None, index=None, rotate_x=0, rotate_y=0)
         def renderer_model_task():
             # init program
+            global pvbo, vvbo, rvvbo
             if not renderer_model_task.shader:
                 renderer_model_task.vao = glGenVertexArrays(1)
                 glBindVertexArray(renderer_model_task.vao)
 
-                buffers = glGenBuffers(3)
-                vvbo = buffers[0]
+                buffers = glGenBuffers(5)
+                pvbo = buffers[0]
                 nvbo = buffers[1]
                 ivbo = buffers[2]
+                vvbo = buffers[3]
+                rvvbo = buffers[4]
 
-                # copy vertices to gpu
+                # copy parameters to gpu
                 # obj.vertices = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
                 # obj.indexes = [0, 1, 2]
-                glBindBuffer(GL_SHADER_STORAGE_BUFFER, vvbo)
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, pvbo)
                 glBufferData(GL_SHADER_STORAGE_BUFFER, len(obj.parameters) * 16,
                              numpy.array(obj.parameters, dtype='float32'),
+                             usage=GL_STATIC_DRAW)
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, pvbo)
+
+                # copy vertices to gpu
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, vvbo)
+                glBufferData(GL_SHADER_STORAGE_BUFFER, len(obj.vertices) * 16,
+                             None,
                              usage=GL_DYNAMIC_DRAW)
-                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vvbo)
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vvbo)
+
+                glBindBuffer(GL_ARRAY_BUFFER, rvvbo)
+                glBufferData(GL_ARRAY_BUFFER, len(obj.vertices) * 16,
+                             numpy.array(obj.vertices, dtype='float32'), usage=GL_STATIC_DRAW)
 
                 # # copy normal to gpu
                 glBindBuffer(GL_SHADER_STORAGE_BUFFER, nvbo)
@@ -127,7 +141,8 @@ class Renderer(QObject):
                 # array = numpy.frombuffer(ctypes.c_void_p(buffer_range), dtype='float32')
                 # print(len(vbo_array) / 4)
                 for i in range(int(len(vbo_array) / 4)):
-                    print("%f %f %f %f" % (vbo_array[i * 4], vbo_array[i * 4 + 1], vbo_array[i * 4 + 2], vbo_array[i * 4 + 3]))
+                    print("%f %f %f %f" % (
+                    vbo_array[i * 4], vbo_array[i * 4 + 1], vbo_array[i * 4 + 2], vbo_array[i * 4 + 3]))
 
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
                 glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
@@ -142,7 +157,7 @@ class Renderer(QObject):
                 glUseProgram(renderer_model_task.shader)
 
                 # set vertice attribute
-                glBindBuffer(GL_ARRAY_BUFFER, vvbo)
+                glBindBuffer(GL_ARRAY_BUFFER, pvbo)
                 # glBufferData(GL_ARRAY_BUFFER, len(obj.vertices) * 12,
                 #              numpy.array(obj.vertices, dtype='float32'),
                 #              usage=GL_DYNAMIC_DRAW)
@@ -159,11 +174,12 @@ class Renderer(QObject):
                 glEnableVertexAttribArray(nl)
                 glVertexAttribPointer(nl, 4, GL_FLOAT, False, 0, None)
 
+
                 glUseProgram(0)
                 glBindBuffer(GL_ARRAY_BUFFER, 0)
 
                 glBindVertexArray(0)
-                glDeleteBuffers(3, buffers)
+                # glDeleteBuffers(4, buffers)
 
             glBindVertexArray(renderer_model_task.vao)
             glUseProgram(renderer_model_task.shader)
@@ -176,7 +192,33 @@ class Renderer(QObject):
 
             glEnable(GL_DEPTH_TEST)
 
+            glBindBuffer(GL_ARRAY_BUFFER, pvbo)
+            # glBufferData(GL_ARRAY_BUFFER, len(obj.vertices) * 12,
+            #              numpy.array(obj.vertices, dtype='float32'),
+            #              usage=GL_DYNAMIC_DRAW)
+            vl = glGetAttribLocation(renderer_model_task.shader, 'vertice')
+            glEnableVertexAttribArray(vl)
+            glVertexAttribPointer(vl, 4, GL_FLOAT, False, 0, None)
+
             glDrawElements(GL_TRIANGLES, len(obj.indexes), GL_UNSIGNED_INT, None)
+
+            glBindBuffer(GL_ARRAY_BUFFER, vvbo)
+            # glBufferData(GL_ARRAY_BUFFER, len(obj.vertices) * 12,
+            #              numpy.array(obj.vertices, dtype='float32'),
+            #              usage=GL_DYNAMIC_DRAW)
+            # vl = glGetAttribLocation(renderer_model_task.shader, 'vertice')
+            # glEnableVertexAttribArray(vl)
+            glVertexAttribPointer(vl, 4, GL_FLOAT, False, 0, None)
+            # glDrawElements(GL_TRIANGLES, len(obj.indexes), GL_UNSIGNED_INT, None)
+
+            glBindBuffer(GL_ARRAY_BUFFER, rvvbo)
+            # glBufferData(GL_ARRAY_BUFFER, len(obj.vertices) * 12,
+            #              numpy.array(obj.vertices, dtype='float32'),
+            #              usage=GL_DYNAMIC_DRAW)
+            # vl = glGetAttribLocation(renderer_model_task.shader, 'vertice')
+            # glEnableVertexAttribArray(vl)
+            glVertexAttribPointer(vl, 4, GL_FLOAT, False, 0, None)
+            # glDrawElements(GL_TRIANGLES, len(obj.indexes), GL_UNSIGNED_INT, None)
 
             glUseProgram(0)
             glBindVertexArray(0)
