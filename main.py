@@ -10,7 +10,7 @@ from ui.FFDScene import FFDScene
 from control.controller import Controller
 
 __author__ = 'ac'
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 app = QGuiApplication(sys.argv)
 

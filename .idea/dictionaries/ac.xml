@@ -3,8 +3,11 @@
     <words>
       <w>bspline</w>
       <w>coords</w>
+      <w>dtype</w>
       <w>glsl</w>
       <w>ivbo</w>
+      <w>splited</w>
+      <w>tessllation</w>
       <w>texcoord</w>
       <w>vertice</w>
       <w>vvbo</w>

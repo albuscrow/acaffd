@@ -63,7 +63,7 @@ class Controller(QObject):
         self.send_select.connect(renderer.select)
         # todo test code
 
-        raw_obj = OBJ("data/767.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/ttest.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("data/767.obj", ModelFileFormatType.obj)
+        raw_obj = OBJ("data/ttest.obj", ModelFileFormatType.obj)
         self.read_obj_success.emit(raw_obj)
         self.show_aux_signal.emit(True)

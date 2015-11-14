@@ -12,10 +12,10 @@ class OBJ:
     #         self.name = filename
 
     def __init__(self, file_path, format_type):
-        self.vertices = []
-        self.normals = []
-        self.tex_coords = []
-        self.indexes = []
+        self.vertex = []
+        self.normal = []
+        self.tex_coord = []
+        self.index = []
 
         if format_type == ModelFileFormatType.obj:
             temp_vertices = [[]]
@@ -86,7 +86,7 @@ class OBJ:
         d = max(self.d_x, self.d_y, self.d_z)
 
         # 首先深拷贝各个顶点的坐标, 用于计算各个顶点在b样条体中的参数
-        self.parameters = deepcopy(self.vertices)
+        # self.parameters = deepcopy(self.vertices)
 
         temp_vertices.pop(0)
         for v in temp_vertices:
@@ -97,32 +97,33 @@ class OBJ:
 
         # 计算模型在b样条体中的参数
         # 将parameters归一化到0～1
-        for v in self.parameters:
-            v[0] = (v[0] - mid_x) / self.d_x
-            v[1] = (v[1] - mid_y) / self.d_y
-            v[2] = (v[2] - mid_z) / self.d_z
+        # for v in self.parameters:
+        #     v[0] = (v[0] - mid_x) / self.d_x
+        #     v[1] = (v[1] - mid_y) / self.d_y
+        #     v[2] = (v[2] - mid_z) / self.d_z
 
         self.d_x /= d
         self.d_y /= d
         self.d_z /= d
 
-        logging.info('load obj finish, has vertices:' + str(len(self.vertices)))
+        logging.info('load obj finish, has vertices:' + str(len(self.vertex)))
 
     def parse_face(self, aux_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
         for v in tokens[:3]:
             if v not in aux_map:
                 index = v.split('/')
 
-                self.vertices.append(temp_vertices[int(index[0])])
+                self.vertex.append(temp_vertices[int(index[0])])
                 if len(index) == 2:
-                    self.tex_coords.append(temp_tex_coords[int(index[1])])
+                    self.tex_coord.append(temp_tex_coords[int(index[1])])
                 else:
                     if index[1]:
-                        self.tex_coords.append(temp_tex_coords[int(index[1])])
-                    self.normals.append(temp_normals[int(index[2])])
+                        self.tex_coord.append(temp_tex_coords[int(index[1])])
+                    self.normal.append(temp_normals[int(index[2])])
 
                 aux_map[v] = len(aux_map)
-            self.indexes.append(aux_map[v])
+            self.index.append(aux_map[v])
+        self.index.append(0)
 
     @staticmethod
     def find_max_min(max_x, min_x, new_x):
