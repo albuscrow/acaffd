@@ -39,6 +39,7 @@ class Renderer(QObject):
                                           self.translation_matrix)
         self.model = None
         self.b_spline_body = None
+        self.need_deform = False
 
     def set_view_port(self, x, y, w, h):
         self.x = int(x)
@@ -47,7 +48,8 @@ class Renderer(QObject):
         self.h = int(h)
 
         aspect = self.w / self.h
-        self.perspective_matrix = create_perspective_projection_matrix_from_bounds(-aspect / 2, aspect / 2, -1 / 2, 1 / 2, 3, 100,
+        self.perspective_matrix = create_perspective_projection_matrix_from_bounds(-aspect / 2, aspect / 2, -1 / 2,
+                                                                                   1 / 2, 3, 100,
                                                                                    dtype='float32')
 
     @pyqtSlot()
@@ -75,11 +77,10 @@ class Renderer(QObject):
     def handle_new_obj(self, obj):
         self.model = obj
 
-        @static_var(shader=None, vao=None, index=None, rotate_x=0, rotate_y=0)
+        @static_var(shader=None, vao=None, deform_compute_shader=None, triangle_number=None)
         def renderer_model_task():
-            # init program
-
             if not renderer_model_task.shader:
+                # init program
                 renderer_model_task.vao = glGenVertexArrays(1)
                 glBindVertexArray(renderer_model_task.vao)
 
@@ -99,9 +100,10 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
+                buffers = glGenBuffers(9)
                 original_vertex_vbo, original_normal_vbo, original_index_vbo, \
                 splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, \
-                vertex_vbo, normal_vbo, index_vbo = glGenBuffers(9)
+                vertex_vbo, normal_vbo, index_vbo = buffers
 
                 # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
                 bindSSBO(original_vertex_vbo, 0, obj.vertex, len(obj.vertex) * 16, 'float32', GL_STATIC_DRAW)
@@ -121,35 +123,31 @@ class Renderer(QObject):
                 # alloc memory in gpu for splited index
                 bindSSBO(splited_index_vbo, 5, None, len(obj.index) * 4 * 10, 'uint32', GL_DYNAMIC_DRAW)
 
-                print('load original and alloc memory ok')
+                # alloc memory in gpu for tessellated vertex
+                bindSSBO(vertex_vbo, 6, None, len(obj.vertex) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
 
-                # run computer shader
-                compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
-                glUseProgram(compute_shader)
+                # alloc memory in gpu for tessellated normal
+                bindSSBO(normal_vbo, 7, None, len(obj.normal) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
+
+                # alloc memory in gpu for tessellated index
+                bindSSBO(index_vbo, 8, None, len(obj.index) * 4 * 10, 'uint32', GL_DYNAMIC_DRAW)
+
+                # run previous compute shader
+                previous_compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
+                glUseProgram(previous_compute_shader)
                 glDispatchCompute(int(len(obj.index) / 4 / 512 + 1), 1, 1)
-                glUseProgram(0)
+
+                # get number of splited triangle
+                renderer_model_task.triangle_number = len(obj.index) / 4
+
+                # init compute shader before every frame
+                renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader.glsl')
+                glProgramUniform1f(renderer_model_task.deform_compute_shader, 0, renderer_model_task.triangle_number)
+                glUseProgram(renderer_model_task.deform_compute_shader)
+                glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
 
                 # check compute result
-                # glBindBuffer(GL_SHADER_STORAGE_BUFFER, splited_normal_vbo)
-                # pointer_to_buffer = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY)
-                # vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(ctypes.c_float))
-
-                # Turn that pointer into a numpy array that spans
-                # the whole block.(buffer size is the size of your buffer)
-                # vbo_array = numpy.ctypeslib.as_array(vbo_pointer, (len(obj.index) * 3,))
-
-                # array = numpy.frombuffer(ctypes.c_void_p(buffer_range), dtype='float32')
-                # print(len(vbo_array) / 4)
-                # for i in range(int(len(vbo_array) / 4)):
-                #     print("%f %f %f %f" % (
-                #         vbo_array[i * 4], vbo_array[i * 4 + 1], vbo_array[i * 4 + 2], vbo_array[i * 4 + 3]))
-
-                # glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
-                # glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
-                # print(string_at(buffer_range))
-                # point = numpy.fromiter(
-                #     buffer_range, dtype="float32")
-                # print(point)
+                # self.print_vbo(normal_vbo, len(obj.normal) / 4)
 
                 # run renderer shader
                 # gen renderer program
@@ -157,36 +155,46 @@ class Renderer(QObject):
                 glUseProgram(renderer_model_task.shader)
 
                 # set vertice attribute
-                glBindBuffer(GL_ARRAY_BUFFER, original_vertex_vbo)
-                vl = glGetAttribLocation(renderer_model_task.shader, 'vertice')
-                glEnableVertexAttribArray(vl)
-                glVertexAttribPointer(vl, 4, GL_FLOAT, False, 0, None)
+                glBindBuffer(GL_ARRAY_BUFFER, vertex_vbo)
+                vertex_location = 0
+                glEnableVertexAttribArray(vertex_location)
+                glVertexAttribPointer(vertex_location, 4, GL_FLOAT, False, 0, None)
 
                 # set normal attribute
-                glBindBuffer(GL_ARRAY_BUFFER, original_vertex_vbo)
-                nl = glGetAttribLocation(renderer_model_task.shader, 'normal')
-                glEnableVertexAttribArray(nl)
-                glVertexAttribPointer(nl, 4, GL_FLOAT, False, 0, None)
-
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, original_index_vbo)
-
-                glUseProgram(0)
+                glBindBuffer(GL_ARRAY_BUFFER, normal_vbo)
+                normal_location = 1
+                glEnableVertexAttribArray(normal_location)
+                glVertexAttribPointer(normal_location, 4, GL_FLOAT, False, 0, None)
                 glBindBuffer(GL_ARRAY_BUFFER, 0)
 
-                glBindVertexArray(0)
-                # glDeleteBuffers(4, buffers)
+                # specific index buffer
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_vbo)
 
-                # cl = glGetUniformLocation(compute_shader, 'controlPoints')
+                # unbind program
+                glUseProgram(0)
+
+                glBindVertexArray(0)
+                # glDeleteBuffers(9, buffers)
+
+                # cl = glGetUniformLocation(previous_compute_shader, 'controlPoints')
                 # glUniform3fv(cl, 125, numpy.array(self.b_spline_body.ctrlPoints, dtype='float32'))
 
+            # sample and tessellate
             glBindVertexArray(renderer_model_task.vao)
+
+            # if control points is change, run deform compute shader
+            if self.need_deform:
+                glUseProgram(renderer_model_task.deform_compute_shader)
+                glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
+                self.need_deform = False
+
             glUseProgram(renderer_model_task.shader)
 
             # common bind
-            mmatrix = multiply(self.model_view_matrix, self.perspective_matrix)
+            wvp_matrix = multiply(self.model_view_matrix, self.perspective_matrix)
 
-            ml = glGetUniformLocation(renderer_model_task.shader, 'mmatrix')
-            glUniformMatrix4fv(ml, 1, GL_FALSE, mmatrix)
+            ml = glGetUniformLocation(renderer_model_task.shader, 'wvp_matrix')
+            glUniformMatrix4fv(ml, 1, GL_FALSE, wvp_matrix)
 
             glEnable(GL_DEPTH_TEST)
 
@@ -207,6 +215,21 @@ class Renderer(QObject):
                                                                     -self.rotate_y / 180 * math.pi), dtype='float32'),
                                           self.translation_matrix)
         self.updateScene.emit()
+
+    @staticmethod
+    def print_vbo(vbo_name, length):
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, vbo_name)
+        pointer_to_buffer = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY)
+        vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(ctypes.c_float))
+        # Turn that pointer into a numpy array that spans
+        # the whole block.(buffer size is the size of your buffer)
+        vbo_array = numpy.ctypeslib.as_array(vbo_pointer, (length,))
+        #
+        print(len(vbo_array) / 4)
+        for i in range(int(len(vbo_array) / 4)):
+            print("%f %f %f %f" % (
+                vbo_array[i * 4], vbo_array[i * 4 + 1], vbo_array[i * 4 + 2], vbo_array[i * 4 + 3]))
+        glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
 
     @pyqtSlot(BSplineBody)
     def show_aux(self, is_show):

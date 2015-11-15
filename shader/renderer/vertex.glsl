@@ -1,8 +1,8 @@
 #version 450
 uniform mat4 mmatrix;
 
-in vec4 vertice;
-in vec4 normal;
+layout(location=0) in vec4 vertice;
+layout(location=1) in vec4 normal;
 
 out vec3 varying_normal;
 void main() {

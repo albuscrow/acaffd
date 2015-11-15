@@ -1,14 +1,4 @@
 #version 450
-layout(std140, binding=0) uniform BSplineBodyData{
-    uniform int orderU;
-    uniform int orderV;
-    uniform int orderW;
-
-    uniform int controlPointNumU;
-    uniform int controlPointNumV;
-    uniform int controlPointNumW;
-};
-
 layout(std430, binding=0) buffer OriginalVertexBuffer{
     vec4[] originalVertex;
 };
