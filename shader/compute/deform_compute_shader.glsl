@@ -34,6 +34,7 @@ void main() {
     }
 
     uvec4 index = splitedIndex[triangleIndex];
+    index.w = 0xffffffff;
     tessellatedIndex[triangleIndex] = index;
     tessellatedVertex[index.x] = splitedVertex[index.x];
     tessellatedVertex[index.y] = splitedVertex[index.y];

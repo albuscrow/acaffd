@@ -100,8 +100,8 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
-                buffers = glGenBuffers(9)
-                original_vertex_vbo, original_normal_vbo, original_index_vbo, \
+                buffers = glGenBuffers(10)
+                original_vertex_vbo, original_normal_vbo, original_index_vbo, atomic_buffer, \
                 splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, \
                 vertex_vbo, normal_vbo, index_vbo = buffers
 
@@ -114,23 +114,21 @@ class Renderer(QObject):
                 # copy original index to gpu, and bind original_index_vbo to bind point 2
                 bindSSBO(original_index_vbo, 2, obj.index, len(obj.index) * 4, 'uint32', GL_STATIC_DRAW)
 
-                # alloc memory in gpu for splited vertex
-                bindSSBO(splited_vertex_vbo, 3, None, len(obj.vertex) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
+                # init atom buffer for count splited triangle number
+                glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomic_buffer)
+                glBufferData(GL_ATOMIC_COUNTER_BUFFER, 8, numpy.array([0, len(obj.vertex)], dtype='uint32'),
+                             usage=GL_DYNAMIC_DRAW)
+                glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, atomic_buffer)
+                glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0)
+
+                # alloc memory in gpu for splited vertex, and
+                bindSSBO(splited_vertex_vbo, 3, obj.vertex, len(obj.vertex) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for splited normal
-                bindSSBO(splited_normal_vbo, 4, None, len(obj.normal) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(splited_normal_vbo, 4, obj.normal, len(obj.normal) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for splited index
                 bindSSBO(splited_index_vbo, 5, None, len(obj.index) * 4 * 10, 'uint32', GL_DYNAMIC_DRAW)
-
-                # alloc memory in gpu for tessellated vertex
-                bindSSBO(vertex_vbo, 6, None, len(obj.vertex) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
-
-                # alloc memory in gpu for tessellated normal
-                bindSSBO(normal_vbo, 7, None, len(obj.normal) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
-
-                # alloc memory in gpu for tessellated index
-                bindSSBO(index_vbo, 8, None, len(obj.index) * 4 * 10, 'uint32', GL_DYNAMIC_DRAW)
 
                 # run previous compute shader
                 previous_compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
@@ -138,13 +136,26 @@ class Renderer(QObject):
                 glDispatchCompute(int(len(obj.index) / 4 / 512 + 1), 1, 1)
 
                 # get number of splited triangle
-                renderer_model_task.triangle_number = len(obj.index) / 4
+                renderer_model_task.triangle_number, point_number = self.get_splited_triangle_number(atomic_buffer)
+
+                # alloc memory in gpu for tessellated vertex
+                bindSSBO(vertex_vbo, 6, None, point_number * 16, 'float32', GL_DYNAMIC_DRAW)
+
+                # alloc memory in gpu for tessellated normal
+                bindSSBO(normal_vbo, 7, None, point_number * 16, 'float32', GL_DYNAMIC_DRAW)
+
+                # alloc memory in gpu for tessellated index
+                bindSSBO(index_vbo, 8, None, renderer_model_task.triangle_number * 16, 'uint32', GL_DYNAMIC_DRAW)
 
                 # init compute shader before every frame
                 renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader.glsl')
                 glProgramUniform1f(renderer_model_task.deform_compute_shader, 0, renderer_model_task.triangle_number)
                 glUseProgram(renderer_model_task.deform_compute_shader)
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
+
+                # self.print_vbo(vertex_vbo, (4, 4))
+                # self.print_vbo(normal_vbo, (4, 4))
+                # self.print_vbo(index_vbo, (2, 4), data_type=ctypes.c_uint32)
 
                 # check compute result
                 # self.print_vbo(normal_vbo, len(obj.normal) / 4)
@@ -168,7 +179,7 @@ class Renderer(QObject):
                 glBindBuffer(GL_ARRAY_BUFFER, 0)
 
                 # specific index buffer
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_vbo)
+                # glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, original_index_vbo)
 
                 # unbind program
                 glUseProgram(0)
@@ -198,7 +209,11 @@ class Renderer(QObject):
 
             glEnable(GL_DEPTH_TEST)
 
-            glDrawElements(GL_TRIANGLES, len(obj.index), GL_UNSIGNED_INT, None)
+            # self.print_vbo(vertex_vbo, (4, 4))
+            # self.print_vbo(normal_vbo, (4, 4))
+            # self.print_vbo(index_vbo, (2, 4), data_type=ctypes.c_uint32)
+
+            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, numpy.array([0, 1, 3], dtype='uint32'))
 
             glUseProgram(0)
             glBindVertexArray(0)
@@ -217,18 +232,25 @@ class Renderer(QObject):
         self.updateScene.emit()
 
     @staticmethod
-    def print_vbo(vbo_name, length):
+    def get_splited_triangle_number(atomic_buffer):
+        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomic_buffer)
+        pointer_to_buffer = glMapBuffer(GL_ATOMIC_COUNTER_BUFFER, GL_READ_ONLY)
+        vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(ctypes.c_uint32))
+        vbo_array = numpy.ctypeslib.as_array(vbo_pointer, (2,))
+        glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER)
+        return vbo_array
+
+    @staticmethod
+    def print_vbo(vbo_name, shape, data_type=ctypes.c_float):
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, vbo_name)
         pointer_to_buffer = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY)
-        vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(ctypes.c_float))
+        vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(data_type))
         # Turn that pointer into a numpy array that spans
         # the whole block.(buffer size is the size of your buffer)
-        vbo_array = numpy.ctypeslib.as_array(vbo_pointer, (length,))
+        vbo_array = numpy.ctypeslib.as_array(vbo_pointer, shape)
         #
-        print(len(vbo_array) / 4)
-        for i in range(int(len(vbo_array) / 4)):
-            print("%f %f %f %f" % (
-                vbo_array[i * 4], vbo_array[i * 4 + 1], vbo_array[i * 4 + 2], vbo_array[i * 4 + 3]))
+        for data in vbo_array:
+            print(data)
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
 
     @pyqtSlot(BSplineBody)
