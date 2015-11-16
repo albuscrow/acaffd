@@ -48,8 +48,8 @@ class Renderer(QObject):
         self.h = int(h)
 
         aspect = self.w / self.h
-        self.perspective_matrix = create_perspective_projection_matrix_from_bounds(-aspect / 2, aspect / 2, -1 / 2,
-                                                                                   1 / 2, 3, 100,
+        self.perspective_matrix = create_perspective_projection_matrix_from_bounds(-aspect, aspect, -1,
+                                                                                   1, 4, 100,
                                                                                    dtype='float32')
 
     @pyqtSlot()
@@ -79,6 +79,7 @@ class Renderer(QObject):
 
         @static_var(shader=None, vao=None, deform_compute_shader=None, triangle_number=None)
         def renderer_model_task():
+            global vertex_vbo, normal_vbo, index_vbo
             if not renderer_model_task.shader:
                 # init program
                 renderer_model_task.vao = glGenVertexArrays(1)
@@ -114,6 +115,10 @@ class Renderer(QObject):
                 # copy original index to gpu, and bind original_index_vbo to bind point 2
                 bindSSBO(original_index_vbo, 2, obj.index, len(obj.index) * 4, 'uint32', GL_STATIC_DRAW)
 
+                # self.print_vbo(original_vertex_vbo, (3, 4))
+                # self.print_vbo(original_normal_vbo, (3, 4))
+                # self.print_vbo(original_index_vbo, (1, 3), data_type=ctypes.c_uint32)
+
                 # init atom buffer for count splited triangle number
                 glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomic_buffer)
                 glBufferData(GL_ATOMIC_COUNTER_BUFFER, 8, numpy.array([0, len(obj.vertex)], dtype='uint32'),
@@ -133,7 +138,12 @@ class Renderer(QObject):
                 # run previous compute shader
                 previous_compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
                 glUseProgram(previous_compute_shader)
-                glDispatchCompute(int(len(obj.index) / 4 / 512 + 1), 1, 1)
+
+                glDispatchCompute(int(len(obj.index) / 3 / 512 + 1), 1, 1)
+
+                # self.print_vbo(splited_vertex_vbo, (4, 4))
+                # self.print_vbo(splited_normal_vbo, (4, 4))
+                # self.print_vbo(splited_index_vbo, (2, 3), data_type=ctypes.c_uint32)
 
                 # get number of splited triangle
                 renderer_model_task.triangle_number, point_number = self.get_splited_triangle_number(atomic_buffer)
@@ -145,7 +155,7 @@ class Renderer(QObject):
                 bindSSBO(normal_vbo, 7, None, point_number * 16, 'float32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for tessellated index
-                bindSSBO(index_vbo, 8, None, renderer_model_task.triangle_number * 16, 'uint32', GL_DYNAMIC_DRAW)
+                bindSSBO(index_vbo, 8, None, renderer_model_task.triangle_number * 12, 'uint32', GL_DYNAMIC_DRAW)
 
                 # init compute shader before every frame
                 renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader.glsl')
@@ -155,7 +165,7 @@ class Renderer(QObject):
 
                 # self.print_vbo(vertex_vbo, (4, 4))
                 # self.print_vbo(normal_vbo, (4, 4))
-                # self.print_vbo(index_vbo, (2, 4), data_type=ctypes.c_uint32)
+                # self.print_vbo(index_vbo, (2, 3), data_type=ctypes.c_uint32)
 
                 # check compute result
                 # self.print_vbo(normal_vbo, len(obj.normal) / 4)
@@ -179,7 +189,7 @@ class Renderer(QObject):
                 glBindBuffer(GL_ARRAY_BUFFER, 0)
 
                 # specific index buffer
-                # glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, original_index_vbo)
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_vbo)
 
                 # unbind program
                 glUseProgram(0)
@@ -209,11 +219,7 @@ class Renderer(QObject):
 
             glEnable(GL_DEPTH_TEST)
 
-            # self.print_vbo(vertex_vbo, (4, 4))
-            # self.print_vbo(normal_vbo, (4, 4))
-            # self.print_vbo(index_vbo, (2, 4), data_type=ctypes.c_uint32)
-
-            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, numpy.array([0, 1, 3], dtype='uint32'))
+            glDrawElements(GL_TRIANGLES, renderer_model_task.triangle_number * 3, GL_UNSIGNED_INT, None)
 
             glUseProgram(0)
             glBindVertexArray(0)

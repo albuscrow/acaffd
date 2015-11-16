@@ -9,7 +9,7 @@ layout(std430, binding=4) buffer SplitedNormalBuffer{
 };
 
 layout(std430, binding=5) buffer SplitedIndexBuffer{
-    uvec4[] splitedIndex;
+    uint[] splitedIndex;
 };
 
 layout(std430, binding=6) buffer TesselatedVertexBuffer{
@@ -21,7 +21,7 @@ layout(std430, binding=7) buffer TesselatedNormalBuffer{
 };
 
 layout(std430, binding=8) buffer TesselatedIndexBuffer{
-    uvec4[] tessellatedIndex;
+    uint[] tessellatedIndex;
 };
 
 layout(location=0) uniform float triangleNumber;
@@ -33,16 +33,20 @@ void main() {
         return;
     }
 
-    uvec4 index = splitedIndex[triangleIndex];
-    index.w = 0xffffffff;
-    tessellatedIndex[triangleIndex] = index;
-    tessellatedVertex[index.x] = splitedVertex[index.x];
-    tessellatedVertex[index.y] = splitedVertex[index.y];
-    tessellatedVertex[index.z] = splitedVertex[index.z];
+    uint splited_index_1 = splitedIndex[triangleIndex * 3];
+    uint splited_index_2 = splitedIndex[triangleIndex * 3 + 1];
+    uint splited_index_3 = splitedIndex[triangleIndex * 3 + 2];
 
-    tessellatedNormal[index.x] = splitedNormal[index.x];
-    tessellatedNormal[index.y] = splitedNormal[index.y];
-    tessellatedNormal[index.z] = splitedNormal[index.z];
+    tessellatedIndex[triangleIndex * 3] = splited_index_1;
+    tessellatedIndex[triangleIndex * 3 + 1] = splited_index_2;
+    tessellatedIndex[triangleIndex * 3 + 2] = splited_index_3;
+    tessellatedVertex[splited_index_1] = splitedVertex[splited_index_1];
+    tessellatedVertex[splited_index_2] = splitedVertex[splited_index_2];
+    tessellatedVertex[splited_index_3] = splitedVertex[splited_index_3];
+
+    tessellatedNormal[splited_index_1] = splitedNormal[splited_index_1];
+    tessellatedNormal[splited_index_2] = splitedNormal[splited_index_2];
+    tessellatedNormal[splited_index_3] = splitedNormal[splited_index_3];
 }
 
 //控制顶点

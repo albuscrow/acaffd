@@ -37,14 +37,14 @@ class OBJ:
                     first_token = tokens.pop(0)
                     if first_token == 'v':
                         temp_vertices.append(list(map(float, tokens)))
-                        temp_vertices[-1].append(1.0)
+                        temp_vertices[-1].append(1)
                         max_x, min_x = self.find_max_min(max_x, min_x, temp_vertices[-1][0])
                         max_y, min_y = self.find_max_min(max_y, min_y, temp_vertices[-1][1])
                         max_z, min_z = self.find_max_min(max_z, min_z, temp_vertices[-1][2])
 
                     elif first_token == 'vn':
                         temp_normals.append(list(map(float, tokens)))
-                        temp_normals[-1].append(1.0)
+                        temp_normals[-1].append(1)
                     elif first_token == 'vt':
                         temp_tex_coords.append(list(map(float, tokens)))
                     elif first_token == 'f':
@@ -123,7 +123,7 @@ class OBJ:
 
                 aux_map[v] = len(aux_map)
             self.index.append(aux_map[v])
-        self.index.append(0)
+        # self.index.append(0)
 
     @staticmethod
     def find_max_min(max_x, min_x, new_x):
