@@ -155,7 +155,7 @@ class Renderer(QObject):
                 # self.print_vbo(splited_vertex_vbo, (4, 4))
                 # self.print_vbo(splited_normal_vbo, (4, 4))
                 # self.print_vbo(splited_index_vbo, (2, 3), data_type=ctypes.c_uint32)
-                self.print_vbo(splited_bspline_info_vbo, (4 * 3, 4))
+                # self.print_vbo(splited_bspline_info_vbo, (4 * 3, 4))
 
                 # get number of splited triangle
                 renderer_model_task.triangle_number, point_number = self.get_splited_triangle_number(atomic_buffer)
@@ -173,9 +173,10 @@ class Renderer(QObject):
                 renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader.glsl')
                 glProgramUniform1f(renderer_model_task.deform_compute_shader, 0, renderer_model_task.triangle_number)
                 glUseProgram(renderer_model_task.deform_compute_shader)
+                glUniform3fv(1, len(self.b_spline_body.ctrlPoints), numpy.array(self.b_spline_body.ctrlPoints, dtype='float32'))
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
 
-                # self.print_vbo(vertex_vbo, (4, 4))
+                self.print_vbo(vertex_vbo, (4, 4))
                 # self.print_vbo(normal_vbo, (4, 4))
                 # self.print_vbo(index_vbo, (2, 3), data_type=ctypes.c_uint32)
 
@@ -232,6 +233,7 @@ class Renderer(QObject):
             glEnable(GL_DEPTH_TEST)
 
             glDrawElements(GL_TRIANGLES, renderer_model_task.triangle_number * 3, GL_UNSIGNED_INT, None)
+            # glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, None)
 
             glUseProgram(0)
             glBindVertexArray(0)

@@ -40,30 +40,9 @@ layout(location=0) uniform float triangleNumber;
 
 
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
-void main() {
-    uint triangleIndex = gl_GlobalInvocationID.x;
-    if (triangleIndex >= uint(triangleNumber)) {
-        return;
-    }
-
-    uint splited_index_1 = splitedIndex[triangleIndex * 3];
-    uint splited_index_2 = splitedIndex[triangleIndex * 3 + 1];
-    uint splited_index_3 = splitedIndex[triangleIndex * 3 + 2];
-
-    tessellatedIndex[triangleIndex * 3] = splited_index_1;
-    tessellatedIndex[triangleIndex * 3 + 1] = splited_index_2;
-    tessellatedIndex[triangleIndex * 3 + 2] = splited_index_3;
-    tessellatedVertex[splited_index_1] = splitedVertex[splited_index_1];
-    tessellatedVertex[splited_index_2] = splitedVertex[splited_index_2];
-    tessellatedVertex[splited_index_3] = splitedVertex[splited_index_3];
-
-    tessellatedNormal[splited_index_1] = splitedNormal[splited_index_1];
-    tessellatedNormal[splited_index_2] = splitedNormal[splited_index_2];
-    tessellatedNormal[splited_index_3] = splitedNormal[splited_index_3];
-}
 
 //控制顶点
-uniform vec3[125] controlPoints;
+layout(location=1) uniform vec3[125] controlPoints;
 
 //Bspline body中采样时要用到的矩阵
 const float[185] sample_aux_matrix = {
@@ -98,114 +77,114 @@ const float[185] sample_aux_matrix = {
         /*------------------ MB48, 首地址169 -----------------*/
         0.16666666666666666666, 0.66666666666666666666, 0.16666666666666666666, 0.0, -0.5, 0.0, 0.5, 0.0, 0.5, -1.0, 0.5, 0.0, -0.16666666666666666666, 0.5, -0.5, 0.16666666666666666666};
 
+vec4 sample_bspline(BSplineInfo bsi) {
+    vec4 result;
+    vec3 tempcp1[4];
+    vec3 tempcp2[4][4];
 
+    int uli = int(bsi.knot_left_index.x);
+    float u = bsi.t.x;
+    int vli = int(bsi.knot_left_index.y);
+    float v = bsi.t.y;
+    int wli = int(bsi.knot_left_index.z);
+    float w = bsi.t.z;
+//    return vec4(bsi.aux_matrix_offset.z, bsi.aux_matrix_offset.y, bsi.aux_matrix_offset.z, 1);
 
+    float temp[4];
+    float muli[4];
+    temp[0] = 1.0f;
+    temp[1] = w;
+    temp[2] = w * w;
+    temp[3] = temp[2] * w;
 
-//void main() {
-//    if (gl_GlobalInvocationID.x >= parameters.length()) {
-//        return;
-//    }
-//    vec4 result;
-//    vec3 tempcp1[4];
-//    vec3 tempcp2[4][4];
-//
-//    vec4 p = parameters[gl_GlobalInvocationID.x];
-//    int uli = 0;
-//    float u = getTempParameter(p.x, uli);
-//    int vli = 0;
-//    float v = getTempParameter(p.y, vli);
-//    int wli = 0;
-//    float w = getTempParameter(p.z, wli);
-//    vertices[gl_GlobalInvocationID.x] = vec4(u, v, w, 677);
-//
-//    float temp[4];
-//    float muli[4];
-//    temp[0] = 1.0f;
-//    temp[1] = w;
-//    temp[2] = w * w;
-//    temp[3] = temp[2] * w;
-//
-//    int matrix_offset = matrixCase(3, 5, wli);
-//
-//    for (int i = 0; i < 3; ++i) {
-//        muli[i] = 0.0f;
-//        for (int j = 0; j < 3; ++j) {
-//            muli[i] += temp[j] * sample_aux_matrix[matrix_offset + j * 3 + i];
-//        }
-//    }
-//
-//    for (int i = 0; i < 3; ++i){
-//        for (int j = 0; j < 3; ++j){
-//            tempcp2[i][j] = vec3(0.0f);
-//            for (int k = 0; k < 3; ++k) {
-//                vec3 cp = controlPoints[int((uli - i) * 25 + (vli - j) * 5 + wli - k)];
-//                tempcp2[i][j].x += cp.x * muli[2 - k];
-//                tempcp2[i][j].y += cp.y * muli[2 - k];
-//                tempcp2[i][j].z += cp.z * muli[2 - k];
-//            }
-//        }
-//    }
-//
-////    temp[0] = 1.0f;
-//    temp[1] = v;
-//    temp[2] = v * v;
-//    temp[3] = temp[2] * v;
-//
-//    matrix_offset = matrixCase(3, 5, vli);
-//    for (int i = 0; i < 3; ++i) {
-//        muli[i] = 0.0;
-//        for (int j = 0; j < 3; ++j) {
-//            muli[i] += temp[j] * sample_aux_matrix[matrix_offset + j * 3 + i];
-//        }
-//    }
-//
-//    for (int i = 0; i < 3; ++i) {
-//        tempcp1[i] = vec3(0.0);
-//        for (int j = 0; j < 3; ++j) {
-//            tempcp1[i].x += tempcp2[i][j].x * muli[2 - j];
-//            tempcp1[i].y += tempcp2[i][j].y * muli[2 - j];
-//            tempcp1[i].z += tempcp2[i][j].z * muli[2 - j];
-//        }
-//    }
-//
-//    temp[1] = u;
-//    temp[2] = u * u;
-//    temp[3] = temp[2] * u;
-//
-//    matrix_offset = matrixCase(3, 5, uli);
-//
-//    for (int i = 0; i < 3; ++i) {
-//        muli[i] = 0.0;
-//        for (int j = 0; j < 3; ++j) {
-//            muli[i] += temp[j] * sample_aux_matrix[matrix_offset + j * 3 + i];
-//        }
-//    }
-//
-//    result = vec4(0);
-//    for (int i = 0; i < 3; ++i) {
-//        result.x += tempcp1[i].x * muli[2 - i];
-//        result.y += tempcp1[i].y * muli[2 - i];
-//        result.z += tempcp1[i].z * muli[2 - i];
-//    }
-//    result.w = 1;
-////    if (result.x == 0 && result.y == 0 && result.z ==0) {
-////        parameters[gl_GlobalInvocationID.x].x = 1;
-////    }
-//    vertices[gl_GlobalInvocationID.x] = result;
-//
-////    if (gl_GlobalInvocationID.x >= parameters.length()) {
-////        return;
-////    }
-//////    vec3 param = parameters[gl_GlobalInvocationID.x];
-////    int index = int(mod(gl_GlobalInvocationID.x, 125));
-////    vec3 ctrlPoint = controlPoints[index];
-////    if (ctrlPoint.x == 0f && ctrlPoint.y == 0f && ctrlPoint.z == 0f && index != 62) {
-////        parameters[gl_GlobalInvocationID.x].x = 1.5;
-////    }else{
-////        parameters[gl_GlobalInvocationID.x].x = -parameters[gl_GlobalInvocationID.x].x;
-////    }
-////    parameters[gl_GlobalInvocationID.x].y += 0.5;
-////    parameters[gl_GlobalInvocationID.x].z += 0.5;
-//
-//}
+    int matrix_offset = int(bsi.aux_matrix_offset.z);
+
+    for (int i = 0; i < 3; ++i) {
+        muli[i] = 0.0f;
+        for (int j = 0; j < 3; ++j) {
+            muli[i] += temp[j] * sample_aux_matrix[matrix_offset + j * 3 + i];
+        }
+    }
+
+    for (int i = 0; i < 3; ++i){
+        for (int j = 0; j < 3; ++j){
+            tempcp2[i][j] = vec3(0.0f);
+            for (int k = 0; k < 3; ++k) {
+                vec3 cp = controlPoints[int((uli - i) * 25 + (vli - j) * 5 + wli - k)];
+                tempcp2[i][j].x += cp.x * muli[2 - k];
+                tempcp2[i][j].y += cp.y * muli[2 - k];
+                tempcp2[i][j].z += cp.z * muli[2 - k];
+            }
+        }
+    }
+
+    temp[1] = v;
+    temp[2] = v * v;
+    temp[3] = temp[2] * v;
+
+    matrix_offset = int(bsi.aux_matrix_offset.y);
+    for (int i = 0; i < 3; ++i) {
+        muli[i] = 0.0;
+        for (int j = 0; j < 3; ++j) {
+            muli[i] += temp[j] * sample_aux_matrix[matrix_offset + j * 3 + i];
+        }
+    }
+
+    for (int i = 0; i < 3; ++i) {
+        tempcp1[i] = vec3(0.0);
+        for (int j = 0; j < 3; ++j) {
+            tempcp1[i].x += tempcp2[i][j].x * muli[2 - j];
+            tempcp1[i].y += tempcp2[i][j].y * muli[2 - j];
+            tempcp1[i].z += tempcp2[i][j].z * muli[2 - j];
+        }
+    }
+
+    temp[1] = u;
+    temp[2] = u * u;
+    temp[3] = temp[2] * u;
+
+    matrix_offset = int(bsi.aux_matrix_offset.x);
+
+    for (int i = 0; i < 3; ++i) {
+        muli[i] = 0.0;
+        for (int j = 0; j < 3; ++j) {
+            muli[i] += temp[j] * sample_aux_matrix[matrix_offset + j * 3 + i];
+        }
+    }
+
+    result = vec4(0);
+    for (int i = 0; i < 3; ++i) {
+        result.x += tempcp1[i].x * muli[2 - i];
+        result.y += tempcp1[i].y * muli[2 - i];
+        result.z += tempcp1[i].z * muli[2 - i];
+    }
+    result.w = 1;
+    return result;
+}
+
+void main() {
+    uint triangleIndex = gl_GlobalInvocationID.x;
+    if (triangleIndex >= uint(triangleNumber)) {
+        return;
+    }
+
+    uint splited_index_1 = splitedIndex[triangleIndex * 3];
+    uint splited_index_2 = splitedIndex[triangleIndex * 3 + 1];
+    uint splited_index_3 = splitedIndex[triangleIndex * 3 + 2];
+
+    tessellatedIndex[triangleIndex * 3] = splited_index_1;
+    tessellatedIndex[triangleIndex * 3 + 1] = splited_index_2;
+    tessellatedIndex[triangleIndex * 3 + 2] = splited_index_3;
+    tessellatedVertex[splited_index_1] = sample_bspline(bSplineInfo[splited_index_1]);
+    tessellatedVertex[splited_index_2] = sample_bspline(bSplineInfo[splited_index_2]);
+    tessellatedVertex[splited_index_3] = sample_bspline(bSplineInfo[splited_index_3]);
+
+//    tessellatedVertex[splited_index_1] = splitedVertex[splited_index_1];
+//    tessellatedVertex[splited_index_2] = splitedVertex[splited_index_2];
+//    tessellatedVertex[splited_index_3] = splitedVertex[splited_index_3];
+
+    tessellatedNormal[splited_index_1] = splitedNormal[splited_index_1];
+    tessellatedNormal[splited_index_2] = splitedNormal[splited_index_2];
+    tessellatedNormal[splited_index_3] = splitedNormal[splited_index_3];
+}
 

@@ -75,8 +75,9 @@ float getBSplineInfoU(float t, out uint leftIndex){
     if (leftIndex == interNumber) {
         leftIndex -= 1;
     }
+    t = newT / step - leftIndex;
     leftIndex += uint(orderU - 1);
-    return newT;
+    return t;
 }
 
 float getBSplineInfoV(float t, out uint leftIndex){
@@ -87,8 +88,9 @@ float getBSplineInfoV(float t, out uint leftIndex){
     if (leftIndex == interNumber) {
         leftIndex -= 1;
     }
+    t = newT / step - leftIndex;
     leftIndex += uint(orderV - 1);
-    return newT;
+    return t;
 }
 
 float getBSplineInfoW(float t, out uint leftIndex){
@@ -99,8 +101,9 @@ float getBSplineInfoW(float t, out uint leftIndex){
     if (leftIndex == interNumber) {
         leftIndex -= 1;
     }
+    t = newT / step - leftIndex;
     leftIndex += uint(orderW - 1);
-    return newT;
+    return t;
 }
 
 
@@ -188,40 +191,37 @@ void main() {
     vec4 new_point_vertex = (originalVertex[original_index_2] + originalVertex[original_index_3]) / 2;
     vec4 new_point_normal = (originalNormal[original_index_2] + originalNormal[original_index_3]) / 2;
 
-    uint point_offset = atomicCounterIncrement(point_counter);
-    splitedVertex[point_offset] = originalVertex[original_index_1];
-    splitedNormal[point_offset] = originalNormal[original_index_1];
-
-    vec4 temp2 = originalVertex[original_index_1];
-    BSplineInfo temp = getBSplineInfo(temp2);
-    bSplineInfo[point_offset] = temp;
+    uint point_offset1 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset1] = originalVertex[original_index_1];
+    splitedNormal[point_offset1] = originalNormal[original_index_1];
+    bSplineInfo[point_offset1] = getBSplineInfo(originalVertex[original_index_1]);
 
 
-    point_offset = atomicCounterIncrement(point_counter);
-    splitedVertex[point_offset] = originalVertex[original_index_2];
-    splitedNormal[point_offset] = originalNormal[original_index_2];
-    bSplineInfo[point_offset] = getBSplineInfo(originalVertex[original_index_2]);
+    uint point_offset2 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset2] = originalVertex[original_index_2];
+    splitedNormal[point_offset2] = originalNormal[original_index_2];
+    bSplineInfo[point_offset2] = getBSplineInfo(originalVertex[original_index_2]);
 
-    point_offset = atomicCounterIncrement(point_counter);
-    splitedVertex[point_offset] = originalVertex[original_index_3];
-    splitedNormal[point_offset] = originalNormal[original_index_3];
-    bSplineInfo[point_offset] = getBSplineInfo(originalVertex[original_index_3]);
+    uint point_offset3 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset3] = originalVertex[original_index_3];
+    splitedNormal[point_offset3] = originalNormal[original_index_3];
+    bSplineInfo[point_offset3] = getBSplineInfo(originalVertex[original_index_3]);
 
-    point_offset = atomicCounterIncrement(point_counter);
-    splitedVertex[point_offset] = new_point_vertex;
-    splitedNormal[point_offset] = new_point_normal;
-    bSplineInfo[point_offset] = getBSplineInfo(new_point_vertex);
+    uint point_offset4 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset4] = new_point_vertex;
+    splitedNormal[point_offset4] = new_point_normal;
+    bSplineInfo[point_offset4] = getBSplineInfo(new_point_vertex);
 
     // gen added triangle
     uint index_offset = atomicCounterIncrement(index_counter);
-    splitedIndex[index_offset * 3] = original_index_1;
-    splitedIndex[index_offset * 3 + 1] = original_index_2;
-    splitedIndex[index_offset * 3 + 2] = point_offset;
+    splitedIndex[index_offset * 3] = point_offset1;
+    splitedIndex[index_offset * 3 + 1] = point_offset2;
+    splitedIndex[index_offset * 3 + 2] = point_offset4;
 
     index_offset = atomicCounterIncrement(index_counter);
-    splitedIndex[index_offset * 3] = original_index_1;
-    splitedIndex[index_offset * 3 + 1] = point_offset;
-    splitedIndex[index_offset * 3 + 2] = original_index_3;;
+    splitedIndex[index_offset * 3] = point_offset1;
+    splitedIndex[index_offset * 3 + 1] = point_offset4;
+    splitedIndex[index_offset * 3 + 2] = point_offset3;;
 
 //    uvec4 new_triangle_index = uvec4(original_triangle_index.);
 //    for (uint i = 0; i < 3; ++i) {
