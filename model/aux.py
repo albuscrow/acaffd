@@ -28,9 +28,9 @@ class BSplineBody:
         self.lu = lx
         self.lv = ly
         self.lw = lz
-        aux_x = self.get_knot_list(lx)
-        aux_y = self.get_knot_list(ly)
-        aux_z = self.get_knot_list(lz)
+        aux_x = self.get_knot_list(self.lu)
+        aux_y = self.get_knot_list(self.lv)
+        aux_z = self.get_knot_list(self.lw)
         for x in aux_x:
             for y in aux_y:
                 for z in aux_z:
@@ -63,7 +63,7 @@ class BSplineBody:
         return np.array(
             [self.order_u, self.order_v, self.order_w,
              self.ctrl_u, self.ctrl_v, self.ctrl_w,
-             self.lu / 2, self.lv / 2, self.lw / 2,
+             self.lu, self.lv, self.lw,
              -self.lu / 2, -self.lv / 2, -self.lw / 2], dtype='float32')
 
 

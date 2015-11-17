@@ -30,7 +30,7 @@ struct BSplineInfo {
 };
 
 layout(std430, binding=10) buffer SplitedBSplineInfoBuffer{
-    BSplineInfo[] BSplineInfos;
+    BSplineInfo[] bSplineInfo;
 };
 
 layout(binding = 0) uniform atomic_uint index_counter;
@@ -45,9 +45,9 @@ layout(std140, binding=0) uniform BSplineBodyData{
     uniform float controlPointNumV;
     uniform float controlPointNumW;
 
-    uniform float maxU;
-    uniform float maxV;
-    uniform float maxW;
+    uniform float lengthU;
+    uniform float lengthV;
+    uniform float lengthW;
     uniform float minU;
     uniform float minV;
     uniform float minW;
@@ -55,23 +55,56 @@ layout(std140, binding=0) uniform BSplineBodyData{
 
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 
-float getTempParameter(float t, int order, int controlPointNum, out int leftIndex){
-    int interNumber = controlPointNum - order + 1;
-    float step = 1.0 / interNumber;
-    leftIndex = int(t / step);
-    if (t < step) {
-        leftIndex = 2;
-        return t / step;
-    } else if (t < 2 * step) {
-        leftIndex = 3;
-        return t / step - 1;
-    }else{
-        leftIndex = 4;
-        return t / step - 2;
+// uvw 为 1 2 3分别代表u v w
+float getNewT(uint uvw, float t) {
+    if (uvw == 1u) {
+        return (t - minU) / lengthU;
+    } else if (uvw == 2u) {
+        return (t - minV) / lengthV;
+    } else {
+        return (t - minW) / lengthW;
     }
 }
 
-int matrixCase(in int order,in int ctrlPointNum,in int leftIdx) {
+// uvw 为 1 2 3分别代表u v w
+float getBSplineInfoU(float t, out uint leftIndex){
+    float newT = getNewT(1u, t);
+    uint interNumber = uint(controlPointNumU - orderU + 1);
+    float step = 1.0 / float(interNumber);
+    leftIndex = uint(newT / step);
+    if (leftIndex == interNumber) {
+        leftIndex -= 1;
+    }
+    leftIndex += uint(orderU - 1);
+    return newT / step - leftIndex;
+}
+
+float getBSplineInfoV(float t, out uint leftIndex){
+    float newT = getNewT(2u, t);
+    uint interNumber = uint(controlPointNumV - orderV + 1);
+    float step = 1.0 / float(interNumber);
+    leftIndex = uint(newT  / step);
+    if (leftIndex == interNumber) {
+        leftIndex -= 1;
+    }
+    leftIndex += uint(orderV - 1);
+    return newT / step - leftIndex;
+}
+
+float getBSplineInfoW(float t, out uint leftIndex){
+    float newT = getNewT(3u, t);
+    uint interNumber = uint(controlPointNumW - orderW + 1);
+    float step = 1.0 / float(interNumber);
+    leftIndex = uint(newT / step);
+    if (leftIndex == interNumber) {
+        leftIndex -= 1;
+    }
+    leftIndex += uint(orderW - 1);
+    return newT / step - leftIndex;
+}
+
+
+int getAuxMatrixOffset(in int order,in int ctrlPointNum,in int leftIdx) {
     if (order == 1){
         return 0;                // MB1
     } else if (order == 2) {
@@ -122,6 +155,24 @@ int matrixCase(in int order,in int ctrlPointNum,in int leftIdx) {
     }
 }
 
+BSplineInfo getBSplineInfo(vec4 parameter) {
+    BSplineInfo result;
+    uint knot_left_index_u, knot_left_index_v, knot_left_index_w;
+    float u = getBSplineInfoU(parameter.x, knot_left_index_u);
+    float v = getBSplineInfoV(parameter.y, knot_left_index_v);
+    float w = getBSplineInfoW(parameter.z, knot_left_index_w);
+    uint aux_matrix_offset_u, aux_matrix_offset_v, aux_matrix_offset_w;
+    aux_matrix_offset_u = getAuxMatrixOffset(int(orderU), int(controlPointNumU), int(knot_left_index_u));
+    aux_matrix_offset_v = getAuxMatrixOffset(int(orderV), int(controlPointNumV), int(knot_left_index_v));
+    aux_matrix_offset_w = getAuxMatrixOffset(int(orderW), int(controlPointNumW), int(knot_left_index_w));
+
+    result.t = vec4(u, v, w, 0);
+    result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
+    result.aux_matrix_offset = uvec4(aux_matrix_offset_u, aux_matrix_offset_v, aux_matrix_offset_w, 0);
+
+    return result;
+}
+
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
     if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
@@ -141,17 +192,25 @@ void main() {
     splitedVertex[point_offset] = originalVertex[original_index_1];
     splitedNormal[point_offset] = originalNormal[original_index_1];
 
+    vec4 temp2 = originalVertex[original_index_1];
+    BSplineInfo temp = getBSplineInfo(temp2);
+    bSplineInfo[point_offset] = temp;
+
+
     point_offset = atomicCounterIncrement(point_counter);
     splitedVertex[point_offset] = originalVertex[original_index_2];
     splitedNormal[point_offset] = originalNormal[original_index_2];
+    bSplineInfo[point_offset] = getBSplineInfo(originalVertex[original_index_2]);
 
     point_offset = atomicCounterIncrement(point_counter);
     splitedVertex[point_offset] = originalVertex[original_index_3];
     splitedNormal[point_offset] = originalNormal[original_index_3];
+    bSplineInfo[point_offset] = getBSplineInfo(originalVertex[original_index_3]);
 
     point_offset = atomicCounterIncrement(point_counter);
     splitedVertex[point_offset] = new_point_vertex;
     splitedNormal[point_offset] = new_point_normal;
+    bSplineInfo[point_offset] = getBSplineInfo(new_point_vertex);
 
     // gen added triangle
     uint index_offset = atomicCounterIncrement(index_counter);
