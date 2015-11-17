@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 
 
 class BSplineBody:
@@ -31,6 +32,7 @@ class BSplineBody:
             for y in get_knot_list:
                 for z in self_get_knot_list:
                     self.ctrlPoints.append([x, y, z])
+        self.control_points_backup = deepcopy(self.ctrlPoints)
 
         self.is_hit = []
         self.reset_is_hit()
@@ -50,10 +52,9 @@ class BSplineBody:
     def move(self, x, y, z):
         for i in range(len(self.is_hit)):
             if self.is_hit[i]:
-                self.ctrlPoints[i][0] += x
-                self.ctrlPoints[i][1] += y
-                self.ctrlPoints[i][2] += z
-
+                self.ctrlPoints[i][0] = self.control_points_backup[i][0] + x
+                self.ctrlPoints[i][1] = self.control_points_backup[i][1] + y
+                self.ctrlPoints[i][2] = self.control_points_backup[i][2] + z
 
 if __name__ == '__main__':
     def foo(x, y, z, *all, **dict):
