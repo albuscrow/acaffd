@@ -39,20 +39,50 @@ ApplicationWindow {
         id:control_panel
         width:200
         anchors.right:parent.right
+        anchors.top:parent.top
+        anchors.bottom:parent.bottom
+        Slider {
+            id: slider_x
+            y: 512
+            anchors.right: parent.right
+            anchors.rightMargin: 0
+            anchors.left: parent.left
+            anchors.leftMargin: 0
+            minimumValue: -1
+            onValueChanged: {
+                controller.move_control_points(value, 0, 0);
+            }
+        }
 
-        Button {
-            id: button
-            x: 0
-            y: 0
-            text: qsTr("Button")
-            onClicked: {
-                controller.test_computer_in_ui_thread()
-                console.log("test button pressed")
+        Slider {
+            id: slider_y
+            y: 607
+            anchors.right: parent.right
+            anchors.rightMargin: 0
+            anchors.left: parent.left
+            anchors.leftMargin: 0
+            minimumValue: -1
+            onValueChanged: {
+                controller.move_control_points(0, value, 0);
+            }
+        }
+
+        Slider {
+            id: slider_z
+            y: 555
+            anchors.right: parent.right
+            anchors.rightMargin: 0
+            anchors.left: parent.left
+            anchors.leftMargin: 0
+            minimumValue: -1
+            onValueChanged: {
+                controller.move_control_points(0, 0, value);
             }
         }
     }
 
     Item {
+        anchors.rightMargin: 15
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.left: parent.left
@@ -63,6 +93,7 @@ ApplicationWindow {
         }
 
         MyMouseArea {
+            anchors.rightMargin: 0
             drag.axis: Drag.XAndYAxis
             anchors.fill: parent
             onRightMoveDelta: {

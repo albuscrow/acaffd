@@ -39,8 +39,8 @@ void main() {
     uint original_index_3 = originalIndex[triangleIndex * 3 + 2];
 
     // gen new point
-    vec4 new_point_vertex = (originalVertex[original_index_2] + originalVertex[original_index_3]) / 2 + 0.1;
-    vec4 new_point_normal = (originalNormal[original_index_2] + originalNormal[original_index_3]) / 2 + 0.1;
+    vec4 new_point_vertex = (originalVertex[original_index_2] + originalVertex[original_index_3]) / 2;
+    vec4 new_point_normal = (originalNormal[original_index_2] + originalNormal[original_index_3]) / 2;
     uint point_offset = atomicCounterIncrement(point_counter);
     splitedVertex[point_offset] = new_point_vertex;
     splitedNormal[point_offset] = new_point_normal;

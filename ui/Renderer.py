@@ -19,6 +19,7 @@ class Renderer(QObject):
 
     def __init__(self):
         super().__init__()
+        self.need_update_control_point = False
         self.x = 0
         self.y = 0
         self.w = 0
@@ -262,7 +263,7 @@ class Renderer(QObject):
     @pyqtSlot(BSplineBody)
     def show_aux(self, is_show):
         if not self.renderer_aux_task:
-            @static_var(is_show=is_show, shader=None, vao=None, is_select=False, hvbo=None,
+            @static_var(is_show=is_show, shader=None, vao=None, is_select=False, hvbo=None, vvbo=None,
                         x1=0, y1=0, x2=0, y2=0, need_select=False)
             def draw_aux():
                 if not self.b_spline_body:
@@ -273,8 +274,8 @@ class Renderer(QObject):
 
                     draw_aux.shader = get_renderer_shader_program('aux.v.glsl', 'aux.f.glsl')
                     glUseProgram(draw_aux.shader)
-                    vvbo = vbos[0]
-                    glBindBuffer(GL_ARRAY_BUFFER, vvbo)
+                    draw_aux.vvbo = vbos[0]
+                    glBindBuffer(GL_ARRAY_BUFFER, draw_aux.vvbo)
                     vertices = self.b_spline_body.ctrlPoints
                     glBufferData(GL_ARRAY_BUFFER, len(vertices) * 12, numpy.array(vertices, dtype='float32'),
                                  usage=GL_STATIC_DRAW)
@@ -294,7 +295,6 @@ class Renderer(QObject):
                     glUseProgram(0)
                     glBindBuffer(GL_ARRAY_BUFFER, 0)
                     glBindVertexArray(0)
-                    glDeleteBuffers(1, [vvbo])
 
                 if not draw_aux.is_show:
                     return
@@ -339,12 +339,20 @@ class Renderer(QObject):
 
                     for r in hit_info:
                         for select_name in r.names:
-                            self.b_spline_body.is_hit[select_name] = 1
+                            self.b_spline_body.is_hit[select_name] = True
 
                     glBindBuffer(GL_ARRAY_BUFFER, draw_aux.hvbo)
                     glBufferSubData(GL_ARRAY_BUFFER, 0, len(self.b_spline_body.is_hit) * 4,
                                     numpy.array(self.b_spline_body.is_hit, dtype='float32'))
                     draw_aux.need_select = False
+
+                if self.need_update_control_point:
+                    glBindBuffer(GL_ARRAY_BUFFER, draw_aux.vvbo)
+                    vertices = self.b_spline_body.ctrlPoints
+                    glBufferData(GL_ARRAY_BUFFER, len(vertices) * 12, numpy.array(vertices, dtype='float32'),
+                                 usage=GL_STATIC_DRAW)
+                    glBindBuffer(GL_ARRAY_BUFFER, 0)
+                    self.need_update_control_point = False;
 
                 # common bind
                 mmatrix = multiply(self.model_view_matrix, self.perspective_matrix)
@@ -373,3 +381,8 @@ class Renderer(QObject):
             self.renderer_aux_task.y2 = self.h - y
             self.renderer_aux_task.need_select = True
         self.updateScene.emit()
+
+    @pyqtSlot(float, float, float)
+    def move_control_points(self, x, y, z):
+        self.b_spline_body.move(x, y, z)
+        self.need_update_control_point = True

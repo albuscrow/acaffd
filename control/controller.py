@@ -10,6 +10,7 @@ class Controller(QObject):
     change_rotate = pyqtSignal(int, int)
     show_aux_signal = pyqtSignal(bool)
     send_select = pyqtSignal(int, int, int, int)
+    move_control_points = pyqtSignal(float, float, float)
 
     def __init__(self):
         super().__init__()
@@ -61,9 +62,9 @@ class Controller(QObject):
         self.change_rotate.connect(renderer.change_rotate)
         self.show_aux_signal.connect(renderer.show_aux)
         self.send_select.connect(renderer.select)
+        self.move_control_points.connect(renderer.move_control_points)
         # todo test code
-
-        # raw_obj = OBJ("data/767.obj", ModelFileFormatType.obj)
-        raw_obj = OBJ("data/ttest.obj", ModelFileFormatType.obj)
+        raw_obj = OBJ("data/767.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("data/ttest.obj", ModelFileFormatType.obj)
         self.read_obj_success.emit(raw_obj)
         self.show_aux_signal.emit(True)

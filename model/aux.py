@@ -32,11 +32,11 @@ class BSplineBody:
                 for z in self_get_knot_list:
                     self.ctrlPoints.append([x, y, z])
 
-        self.is_hit = None
+        self.is_hit = []
         self.reset_is_hit()
 
     def reset_is_hit(self):
-        self.is_hit = [0] * self.ctrl_x * self.ctrl_y * self.ctrl_z
+        self.is_hit = [False] * self.ctrl_x * self.ctrl_y * self.ctrl_z
 
     def get_knot_list(self, length):
         if self.ctrl_x == 5 and self.order_x == 3:
@@ -46,6 +46,14 @@ class BSplineBody:
             return [first, first + step, first + 3 * step, first + 5 * step, last]
         else:
             raise Exception('unImplement for other order and ctrl point')
+
+    def move(self, x, y, z):
+        for i in range(len(self.is_hit)):
+            if self.is_hit[i]:
+                self.ctrlPoints[i][0] += x
+                self.ctrlPoints[i][1] += y
+                self.ctrlPoints[i][2] += z
+
 
 if __name__ == '__main__':
     def foo(x, y, z, *all, **dict):
