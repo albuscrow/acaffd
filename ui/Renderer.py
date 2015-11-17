@@ -219,6 +219,7 @@ class Renderer(QObject):
             # if control points is change, run deform compute shader
             if self.need_deform:
                 glUseProgram(renderer_model_task.deform_compute_shader)
+                glUniform3fv(1, len(self.b_spline_body.ctrlPoints), numpy.array(self.b_spline_body.ctrlPoints, dtype='float32'))
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
                 self.need_deform = False
 
@@ -399,3 +400,4 @@ class Renderer(QObject):
     def move_control_points(self, x, y, z):
         self.b_spline_body.move(x, y, z)
         self.need_update_control_point = True
+        self.need_deform = True
