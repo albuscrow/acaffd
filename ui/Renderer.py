@@ -102,8 +102,9 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
-                buffers = glGenBuffers(10)
-                original_vertex_vbo, original_normal_vbo, original_index_vbo, atomic_buffer, \
+                buffers = glGenBuffers(11)
+                original_vertex_vbo, original_normal_vbo, original_index_vbo, \
+                atomic_buffer, bspline_body_buffer, \
                 splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, \
                 vertex_vbo, normal_vbo, index_vbo = buffers
 
@@ -119,6 +120,13 @@ class Renderer(QObject):
                 # self.print_vbo(original_vertex_vbo, (3, 4))
                 # self.print_vbo(original_normal_vbo, (3, 4))
                 # self.print_vbo(original_index_vbo, (1, 3), data_type=ctypes.c_uint32)
+
+                # copy BSpline body info to gpu
+                glBindBuffer(GL_UNIFORM_BUFFER, bspline_body_buffer)
+                data = self.b_spline_body.get_info()
+                print(len(data))
+                glBufferData(GL_UNIFORM_BUFFER, len(data) * 4, data, usage=GL_STATIC_DRAW)
+                glBindBufferBase(GL_UNIFORM_BUFFER, 0, bspline_body_buffer)
 
                 # init atom buffer for count splited triangle number
                 glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomic_buffer)
@@ -142,9 +150,9 @@ class Renderer(QObject):
 
                 glDispatchCompute(int(len(obj.index) / 3 / 512 + 1), 1, 1)
 
-                # self.print_vbo(splited_vertex_vbo, (4, 4))
-                # self.print_vbo(splited_normal_vbo, (4, 4))
-                # self.print_vbo(splited_index_vbo, (2, 3), data_type=ctypes.c_uint32)
+                self.print_vbo(splited_vertex_vbo, (4, 4))
+                self.print_vbo(splited_normal_vbo, (4, 4))
+                self.print_vbo(splited_index_vbo, (2, 3), data_type=ctypes.c_uint32)
 
                 # get number of splited triangle
                 renderer_model_task.triangle_number, point_number = self.get_splited_triangle_number(atomic_buffer)

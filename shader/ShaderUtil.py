@@ -7,6 +7,11 @@ __author__ = 'ac'
 
 def get_compute_shader_program(file_name):
     my_computer_shader = gen_shader(GL_COMPUTE_SHADER, get_compute_shader_file_path(file_name))
+    # program = glCreateProgram()
+    # glAttachShader(program, my_computer_shader)
+    # glLinkProgram(program)
+    # print(glGetProgramInfoLog(program))
+    # return program
     return compileProgram(my_computer_shader)
 
 

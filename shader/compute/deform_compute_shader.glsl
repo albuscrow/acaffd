@@ -26,6 +26,8 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
 
 layout(location=0) uniform float triangleNumber;
 
+
+
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
@@ -86,87 +88,7 @@ const float[185] sample_aux_matrix = {
         0.16666666666666666666, 0.66666666666666666666, 0.16666666666666666666, 0.0, -0.5, 0.0, 0.5, 0.0, 0.5, -1.0, 0.5, 0.0, -0.16666666666666666666, 0.5, -0.5, 0.16666666666666666666};
 
 
-layout(std140, binding=0) uniform BSplineBodyData{
-    uniform int orderU;
-    uniform int orderV;
-    uniform int orderW;
 
-    uniform int controlPointNumU;
-    uniform int controlPointNumV;
-    uniform int controlPointNumW;
-
-    uniform float[20] knotListU;
-    uniform float[20] knotListV;
-    uniform float[20] knotListW;
-};
-
-
-
-int matrixCase(in int order,in int ctrlPointNum,in int leftIdx) {
-    if (order == 1){
-        return 0;                // MB1
-    } else if (order == 2) {
-        return 1;                // MB2
-    } else if (order == 3) {
-        if (ctrlPointNum == 3){
-            return 5;            // MB30
-        } else {
-            if (leftIdx == 2){
-                return 14;    // MB31
-            } else if (leftIdx == ctrlPointNum - 1){
-                return 23;    // MB32
-            } else{
-                return 32;    // MB33
-            }
-        }
-    } else {
-        if (ctrlPointNum == 4){
-            return 41;        // MB40
-        } else if (ctrlPointNum == 5) {
-            if (leftIdx == 3){
-                return 57;    // MB41
-            } else {
-                return 73;    // MB42
-            }
-        } else if (ctrlPointNum == 6) {
-            if (leftIdx == 3){
-                return 89;    // MB43
-            } else if (leftIdx == 4) {
-
-                return 105;    // MB44
-            } else {
-                return 121;    // MB45
-            }
-        } else {
-            if (leftIdx == 3){
-                return 89;    // MB43
-            } else if (leftIdx == 4) {
-                return 137;    // MB46
-            } else if (leftIdx == ctrlPointNum - 2) {
-                return 153;    // MB47
-            } else if (leftIdx == ctrlPointNum - 1) {
-                return 121;    // MB45
-            }else {
-                return 169;    // MB48
-            }
-        }
-    }
-}
-
-float getTempParameter(float t, out int leftIndex){
-    t += 0.5;
-    float step = 1.0 / 3;
-    if (t < step) {
-        leftIndex = 2;
-        return t / step;
-    } else if (t < 2 * step) {
-        leftIndex = 3;
-        return t / step - 1;
-    }else{
-        leftIndex = 4;
-        return t / step - 2;
-    }
-}
 
 //void main() {
 //    if (gl_GlobalInvocationID.x >= parameters.length()) {
