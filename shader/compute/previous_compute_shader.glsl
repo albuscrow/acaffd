@@ -24,9 +24,9 @@ layout(std430, binding=5) buffer SplitedIndexBuffer{
 };
 
 struct BSplineInfo {
-    vec3 t;
-    uvec3 knot_left_index;
-    uvec3 aux_matrix_offset;
+    vec4 t;
+    uvec4 knot_left_index;
+    uvec4 aux_matrix_offset;
 };
 
 layout(std430, binding=10) buffer SplitedBSplineInfoBuffer{
@@ -134,12 +134,22 @@ void main() {
     uint original_index_3 = originalIndex[triangleIndex * 3 + 2];
 
     // gen new point
-//    vec4 new_point_vertex = (originalVertex[original_index_2] + originalVertex[original_index_3]) / 2;
-//    vec4 new_point_normal = (originalNormal[original_index_2] + originalNormal[original_index_3]) / 2;
+    vec4 new_point_vertex = (originalVertex[original_index_2] + originalVertex[original_index_3]) / 2;
+    vec4 new_point_normal = (originalNormal[original_index_2] + originalNormal[original_index_3]) / 2;
 
-    vec4 new_point_vertex = vec4(minU, minV, minW, 0.5);
-    vec4 new_point_normal = vec4(maxU, maxV, maxW, 0.6);
     uint point_offset = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset] = originalVertex[original_index_1];
+    splitedNormal[point_offset] = originalNormal[original_index_1];
+
+    point_offset = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset] = originalVertex[original_index_2];
+    splitedNormal[point_offset] = originalNormal[original_index_2];
+
+    point_offset = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset] = originalVertex[original_index_3];
+    splitedNormal[point_offset] = originalNormal[original_index_3];
+
+    point_offset = atomicCounterIncrement(point_counter);
     splitedVertex[point_offset] = new_point_vertex;
     splitedNormal[point_offset] = new_point_normal;
 

@@ -124,25 +124,27 @@ class Renderer(QObject):
                 # copy BSpline body info to gpu
                 glBindBuffer(GL_UNIFORM_BUFFER, bspline_body_buffer)
                 data = self.b_spline_body.get_info()
-                print(len(data))
                 glBufferData(GL_UNIFORM_BUFFER, len(data) * 4, data, usage=GL_STATIC_DRAW)
                 glBindBufferBase(GL_UNIFORM_BUFFER, 0, bspline_body_buffer)
 
                 # init atom buffer for count splited triangle number
                 glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomic_buffer)
-                glBufferData(GL_ATOMIC_COUNTER_BUFFER, 8, numpy.array([0, len(obj.vertex)], dtype='uint32'),
+                glBufferData(GL_ATOMIC_COUNTER_BUFFER, 8, numpy.array([0, 0], dtype='uint32'),
                              usage=GL_DYNAMIC_DRAW)
                 glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, atomic_buffer)
                 glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0)
 
                 # alloc memory in gpu for splited vertex, and
-                bindSSBO(splited_vertex_vbo, 3, obj.vertex, len(obj.vertex) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(splited_vertex_vbo, 3, None, len(obj.vertex) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for splited normal
-                bindSSBO(splited_normal_vbo, 4, obj.normal, len(obj.normal) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(splited_normal_vbo, 4, None, len(obj.normal) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for splited index
                 bindSSBO(splited_index_vbo, 5, None, len(obj.index) * 4 * 10, 'uint32', GL_DYNAMIC_DRAW)
+
+                # alloc memory in gpu for bspline info
+                bindSSBO(splited_index_vbo, 10, None, len(obj.vertex) * 48 * 10, 'uint32', GL_DYNAMIC_DRAW)
 
                 # run previous compute shader
                 previous_compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
