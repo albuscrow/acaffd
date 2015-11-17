@@ -76,7 +76,7 @@ float getBSplineInfoU(float t, out uint leftIndex){
         leftIndex -= 1;
     }
     leftIndex += uint(orderU - 1);
-    return newT / step - leftIndex;
+    return newT;
 }
 
 float getBSplineInfoV(float t, out uint leftIndex){
@@ -88,7 +88,7 @@ float getBSplineInfoV(float t, out uint leftIndex){
         leftIndex -= 1;
     }
     leftIndex += uint(orderV - 1);
-    return newT / step - leftIndex;
+    return newT;
 }
 
 float getBSplineInfoW(float t, out uint leftIndex){
@@ -100,7 +100,7 @@ float getBSplineInfoW(float t, out uint leftIndex){
         leftIndex -= 1;
     }
     leftIndex += uint(orderW - 1);
-    return newT / step - leftIndex;
+    return newT;
 }
 
 

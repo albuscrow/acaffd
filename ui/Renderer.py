@@ -102,10 +102,10 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
-                buffers = glGenBuffers(11)
+                buffers = glGenBuffers(12)
                 original_vertex_vbo, original_normal_vbo, original_index_vbo, \
                 atomic_buffer, bspline_body_buffer, \
-                splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, \
+                splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, splited_bspline_info_vbo, \
                 vertex_vbo, normal_vbo, index_vbo = buffers
 
                 # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
@@ -144,7 +144,7 @@ class Renderer(QObject):
                 bindSSBO(splited_index_vbo, 5, None, len(obj.index) * 4 * 10, 'uint32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for bspline info
-                bindSSBO(splited_index_vbo, 10, None, len(obj.vertex) * 48 * 10, 'uint32', GL_DYNAMIC_DRAW)
+                bindSSBO(splited_bspline_info_vbo, 10, None, len(obj.vertex) * 48 * 10, 'uint32', GL_DYNAMIC_DRAW)
 
                 # run previous compute shader
                 previous_compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
@@ -152,9 +152,10 @@ class Renderer(QObject):
 
                 glDispatchCompute(int(len(obj.index) / 3 / 512 + 1), 1, 1)
 
-                self.print_vbo(splited_vertex_vbo, (4, 4))
-                self.print_vbo(splited_normal_vbo, (4, 4))
-                self.print_vbo(splited_index_vbo, (2, 3), data_type=ctypes.c_uint32)
+                # self.print_vbo(splited_vertex_vbo, (4, 4))
+                # self.print_vbo(splited_normal_vbo, (4, 4))
+                # self.print_vbo(splited_index_vbo, (2, 3), data_type=ctypes.c_uint32)
+                self.print_vbo(splited_bspline_info_vbo, (4 * 3, 4))
 
                 # get number of splited triangle
                 renderer_model_task.triangle_number, point_number = self.get_splited_triangle_number(atomic_buffer)

@@ -12,6 +12,17 @@ layout(std430, binding=5) buffer SplitedIndexBuffer{
     uint[] splitedIndex;
 };
 
+struct BSplineInfo {
+    vec4 t;
+    uvec4 knot_left_index;
+    uvec4 aux_matrix_offset;
+};
+
+layout(std430, binding=10) buffer SplitedBSplineInfoBuffer{
+    BSplineInfo[] bSplineInfo;
+};
+
+
 layout(std430, binding=6) buffer TesselatedVertexBuffer{
     vec4[] tessellatedVertex;
 };
