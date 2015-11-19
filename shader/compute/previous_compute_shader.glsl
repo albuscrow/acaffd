@@ -23,6 +23,10 @@ layout(std430, binding=5) buffer SplitedIndexBuffer{
     uint[] splitedIndex;
 };
 
+layout(std430, binding=11) buffer AdjacencyBuffer{
+    uint[] adjacencyBuffer;
+};
+
 struct BSplineInfo {
     vec4 t;
     uvec4 knot_left_index;
@@ -175,6 +179,9 @@ BSplineInfo getBSplineInfo(vec4 parameter) {
 
     return result;
 }
+
+vec3 positionBezierTriangle[10];
+vec3 normalBezierTriangle[6];
 
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;

@@ -210,9 +210,6 @@ class Renderer(QObject):
                 glBindVertexArray(0)
                 # glDeleteBuffers(9, buffers)
 
-                # cl = glGetUniformLocation(previous_compute_shader, 'controlPoints')
-                # glUniform3fv(cl, 125, numpy.array(self.b_spline_body.ctrlPoints, dtype='float32'))
-
             # sample and tessellate
             glBindVertexArray(renderer_model_task.vao)
 

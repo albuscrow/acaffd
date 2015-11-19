@@ -16,6 +16,7 @@ class OBJ:
         self.normal = []
         self.tex_coord = []
         self.index = []
+        self.adjacency = []
 
         if format_type == ModelFileFormatType.obj:
             temp_vertices = [[]]
@@ -27,7 +28,10 @@ class OBJ:
             min_z = 999999
             temp_normals = [[]]
             temp_tex_coords = [[]]
-            aux_map = {}
+            # vertex 到 vertex_index map
+            aux_vertex_map = {}
+            # point 到 由该point构成的三角形index map, 这里的三角形index由该三角形的第一个顶点的self.index中的位置决定。
+            aux_point_map = {}
             with open(file_path, 'r') as file:
                 for l in file:
                     if l is None or len(l) == 0 or l.startswith('#'):
@@ -49,9 +53,11 @@ class OBJ:
                         temp_tex_coords.append(list(map(float, tokens)))
                     elif first_token == 'f':
                         if len(tokens) in (3, 4):
-                            self.parse_face(aux_map, temp_normals, temp_tex_coords, temp_vertices, tokens[:3])
+                            self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
+                                            tokens[:3])
                             if len(tokens) == 4:
-                                self.parse_face(aux_map, temp_normals, temp_tex_coords, temp_vertices,
+                                self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords,
+                                                temp_vertices,
                                                 [tokens[0], tokens[2], tokens[3]])
                         else:
                             logging.error("this feature(face vertices = " + str(
@@ -71,6 +77,13 @@ class OBJ:
         else:
             logging.error('only support obj file')
             raise Exception()
+
+        # check adjacency
+        # for i in range(len(self.adjacency)):
+        #     for ti in self.adjacency[i]:
+        #         if i * 3 not in self.adjacency[int(ti / 3)]:
+        #             print('error')
+        #             print(self.adjacency[i])
 
         # 归一化，使模型坐标从-1,1
         mid_x = (max_x + min_x) / 2
@@ -94,7 +107,6 @@ class OBJ:
             v[1] = (v[1] - mid_y) / d
             v[2] = (v[2] - mid_z) / d
 
-
         # 计算模型在b样条体中的参数
         # 将parameters归一化到0～1
         # for v in self.parameters:
@@ -108,12 +120,18 @@ class OBJ:
 
         logging.info('load obj finish, has vertices:' + str(len(self.vertex)))
 
-    def parse_face(self, aux_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
+    def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
+        # 纪录该三角形的三个顶点
+        point_indexes = []
         for v in tokens[:3]:
-            if v not in aux_map:
-                index = v.split('/')
+            index = v.split('/')
+            vertex_index = int(index[0])
+            point_indexes.append(vertex_index)
 
-                self.vertex.append(temp_vertices[int(index[0])])
+            if v not in aux_vertex_map:
+                # 当前点还没有纪录的话先纪录当前点
+                self.vertex.append(temp_vertices[vertex_index])
+
                 if len(index) == 2:
                     self.tex_coord.append(temp_tex_coords[int(index[1])])
                 else:
@@ -121,9 +139,40 @@ class OBJ:
                         self.tex_coord.append(temp_tex_coords[int(index[1])])
                     self.normal.append(temp_normals[int(index[2])])
 
-                aux_map[v] = len(aux_map)
-            self.index.append(aux_map[v])
-        # self.index.append(0)
+                aux_vertex_map[v] = len(aux_vertex_map)
+
+            self.index.append(aux_vertex_map[v])
+        self.adjacency.append([-1, -1, -1])
+
+        current_triangle_index = len(self.index) - 3
+        # 建立邻接关系
+        for i in range(len(point_indexes)):
+            current_vertex_index = point_indexes[i]
+            prev_vertex_index = point_indexes[i - 1]
+            if current_vertex_index not in aux_point_map or prev_vertex_index not in aux_point_map:
+                continue
+            triangle_index_set = aux_point_map[current_vertex_index] & aux_point_map[prev_vertex_index]
+            common_triangle_number = len(triangle_index_set)
+            if common_triangle_number == 1:
+                triangle_index = triangle_index_set.pop()
+                self.adjacency[-1][i] = triangle_index
+                print(temp_vertices[prev_vertex_index])
+                for j in range(3):
+                    j_ = self.vertex[self.index[triangle_index + j]]
+                    if j_ == temp_vertices[prev_vertex_index]:
+                        self.adjacency[int(triangle_index / 3)][j] = current_triangle_index
+            elif common_triangle_number >= 2:
+                raise Exception('3 or more triangle adjacency with the same edge')
+
+        # 将当前三角形加入到aux_point_map中
+        for vertex_index in point_indexes:
+            # 判断当前位置（position）为顶点的三角形有没有纪录
+            if vertex_index not in aux_point_map:
+                aux_point_map[vertex_index] = set()
+            aux_point_map[vertex_index].add(current_triangle_index)
+            if vertex_index == 601 or vertex_index == 602:
+                print(current_triangle_index)
+                print(point_indexes)
 
     @staticmethod
     def find_max_min(max_x, min_x, new_x):
