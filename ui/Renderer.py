@@ -120,7 +120,7 @@ class Renderer(QObject):
                 # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
                 bindSSBO(adjacency_vbo, 11, obj.adjacency, len(obj.adjacency) * 12, 'uint32', GL_STATIC_DRAW)
 
-                # self.print_vbo(original_vertex_vbo, (3, 4))
+                # self.print_vbo(original_vertex_vbo, (6, 4))
                 # self.print_vbo(original_normal_vbo, (3, 4))
                 # self.print_vbo(original_index_vbo, (1, 3), data_type=ctypes.c_uint32)
 
@@ -155,9 +155,9 @@ class Renderer(QObject):
 
                 glDispatchCompute(int(len(obj.index) / 3 / 512 + 1), 1, 1)
 
-                # self.print_vbo(splited_vertex_vbo, (4, 4))
+                # self.print_vbo(splited_vertex_vbo, (8, 4))
                 # self.print_vbo(splited_normal_vbo, (4, 4))
-                # self.print_vbo(splited_index_vbo, (2, 3), data_type=ctypes.c_uint32)
+                # self.print_vbo(splited_index_vbo, (10, 3), data_type=ctypes.c_uint32)
                 # self.print_vbo(splited_bspline_info_vbo, (4 * 3, 4))
 
                 # get number of splited triangle
@@ -179,7 +179,7 @@ class Renderer(QObject):
                 glUniform3fv(1, len(self.b_spline_body.ctrlPoints), numpy.array(self.b_spline_body.ctrlPoints, dtype='float32'))
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
 
-                self.print_vbo(vertex_vbo, (4, 4))
+                # self.print_vbo(vertex_vbo, (4, 4))
                 # self.print_vbo(normal_vbo, (4, 4))
                 # self.print_vbo(index_vbo, (2, 3), data_type=ctypes.c_uint32)
 

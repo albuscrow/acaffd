@@ -156,10 +156,9 @@ class OBJ:
             if common_triangle_number == 1:
                 triangle_index = triangle_index_set.pop()
                 self.adjacency[-1][i] = triangle_index
-                print(temp_vertices[prev_vertex_index])
+                temp = temp_vertices[prev_vertex_index]
                 for j in range(3):
-                    j_ = self.vertex[self.index[triangle_index + j]]
-                    if j_ == temp_vertices[prev_vertex_index]:
+                    if self.vertex[self.index[triangle_index + j]] == temp:
                         self.adjacency[int(triangle_index / 3)][j] = current_triangle_index
             elif common_triangle_number >= 2:
                 raise Exception('3 or more triangle adjacency with the same edge')
@@ -170,9 +169,6 @@ class OBJ:
             if vertex_index not in aux_point_map:
                 aux_point_map[vertex_index] = set()
             aux_point_map[vertex_index].add(current_triangle_index)
-            if vertex_index == 601 or vertex_index == 602:
-                print(current_triangle_index)
-                print(point_indexes)
 
     @staticmethod
     def find_max_min(max_x, min_x, new_x):

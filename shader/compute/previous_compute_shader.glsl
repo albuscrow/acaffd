@@ -194,6 +194,11 @@ void main() {
     uint original_index_2 = originalIndex[triangleIndex * 3 + 1];
     uint original_index_3 = originalIndex[triangleIndex * 3 + 2];
 
+
+    uint adjacency_triangle_1 = adjacencyBuffer[triangleIndex * 3];
+    uint adjacency_triangle_2 = adjacencyBuffer[triangleIndex * 3 + 1];
+    uint adjacency_triangle_3 = adjacencyBuffer[triangleIndex * 3 + 2];
+
     // gen new point
     vec4 new_point_vertex = (originalVertex[original_index_2] + originalVertex[original_index_3]) / 2;
     vec4 new_point_normal = (originalNormal[original_index_2] + originalNormal[original_index_3]) / 2;
