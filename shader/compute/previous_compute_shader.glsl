@@ -180,8 +180,85 @@ BSplineInfo getBSplineInfo(vec4 parameter) {
     return result;
 }
 
-vec3 positionBezierTriangle[10];
-vec3 normalBezierTriangle[6];
+
+vec3 PNTriangleP[10];
+vec3 PNTriangleN[6];
+
+// 这些变量在求PNtriangle中也会用到，所以写成全区的
+// 三角形三个顶点的index
+uint original_index_0;
+uint original_index_1;
+uint original_index_2;
+
+// 30,01,12这三条边对应的邻接三角形
+uint adjacency_triangle_index_0;
+uint adjacency_triangle_index_1;
+uint adjacency_triangle_index_2;
+
+// 三个顶点位置
+vec3 point0;
+vec3 point1;
+vec3 point2;
+
+// 三个顶点法向
+vec3 normal0;
+vec3 normal1;
+vec3 normal2;
+
+const vec3 ZERO3 = vec3(0.000001);
+const vec4 ZERO4 = vec4(0.000001);
+
+vec4 getAdjacencyNormal(uint triangleIndex, vec3 point) {
+    if (all(lessThan(abs(vec3(originalVertex[triangleIndex * 3]) - point), ZERO3))) {
+        return originalNormal[triangleIndex * 3];
+    } else if (all(lessThan(abs(vec3(originalVertex[triangleIndex * 3 + 1]) - point), ZERO3))) {
+        return originalNormal[triangleIndex * 3 + 1];
+    } else {
+        return originalNormal[triangleIndex * 3 + 2];
+    }
+}
+vec3 genPNControlPoint(vec3 p_s, vec3 p_e, vec3 n, vec3 n_adj) {
+    if (all(lessThan(abs(n - n_adj), ZERO3))) {
+        return (2 * p_s + p_e - dot((p_e - p_s), n) * n) / 3;
+    } else {
+        vec3 T = cross(n, n_adj);
+        return p_s + dot((p_e - p_s), T) / 3 * T;
+    }
+}
+
+void genPNTriangleP(){
+    // 三个顶点对应的控制顶点
+    PNTriangleP[0] = point0;
+    PNTriangleP[6] = point1;
+    PNTriangleP[9] = point2;
+
+    //另接三角形的六个法向nij,i表示顶点编号,j表示邻接三角形编号
+    vec3 n00, n01, n11, n12, n22, n20;
+    n00 = vec3(getAdjacencyNormal(adjacency_triangle_index_0, point0));
+    n01 = vec3(getAdjacencyNormal(adjacency_triangle_index_1, point0));
+    n11 = vec3(getAdjacencyNormal(adjacency_triangle_index_1, point1));
+    n12 = vec3(getAdjacencyNormal(adjacency_triangle_index_2, point1));
+    n22 = vec3(getAdjacencyNormal(adjacency_triangle_index_2, point2));
+    n20 = vec3(getAdjacencyNormal(adjacency_triangle_index_0, point2));
+
+    //two control point near p0
+    PNTriangleP[2] = genPNControlPoint(point0, point2, normal0, n00);
+    PNTriangleP[1] = genPNControlPoint(point0, point1, normal0, n01);
+    //two control point near p1
+    PNTriangleP[3] = genPNControlPoint(point1, point1, normal1, n11);
+    PNTriangleP[7] = genPNControlPoint(point1, point2, normal1, n12);
+    //two control point near p2
+    PNTriangleP[8] = genPNControlPoint(point2, point1, normal2, n22);
+    PNTriangleP[5] = genPNControlPoint(point2, point0, normal2, n20);
+
+}
+
+void genPNTriangleN(uint index1, uint index2, uint index3) {
+    for (uint i = 0; i < 6; ++i) {
+        PNTriangleN[0] = vec3(1.0);
+    }
+}
+
 
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
@@ -189,35 +266,46 @@ void main() {
         return;
     }
 
+    // 初始化全局变量
     // get current original tirangle index
-    uint original_index_1 = originalIndex[triangleIndex * 3];
-    uint original_index_2 = originalIndex[triangleIndex * 3 + 1];
-    uint original_index_3 = originalIndex[triangleIndex * 3 + 2];
+    original_index_0 = originalIndex[triangleIndex * 3];
+    original_index_1 = originalIndex[triangleIndex * 3 + 1];
+    original_index_2 = originalIndex[triangleIndex * 3 + 2];
 
+    adjacency_triangle_index_0 = adjacencyBuffer[triangleIndex * 3];
+    adjacency_triangle_index_1 = adjacencyBuffer[triangleIndex * 3 + 1];
+    adjacency_triangle_index_2 = adjacencyBuffer[triangleIndex * 3 + 2];
 
-    uint adjacency_triangle_1 = adjacencyBuffer[triangleIndex * 3];
-    uint adjacency_triangle_2 = adjacencyBuffer[triangleIndex * 3 + 1];
-    uint adjacency_triangle_3 = adjacencyBuffer[triangleIndex * 3 + 2];
+    point0 = vec3(originalVertex[original_index_0]);
+    point1 = vec3(originalVertex[original_index_1]);
+    point2 = vec3(originalVertex[original_index_2]);
+
+    normal0 = vec3(originalNormal[original_index_0]);
+    normal1 = vec3(originalNormal[original_index_1]);
+    normal2 = vec3(originalNormal[original_index_2]);
+
+//    genPNTriangleN();
+    genPNTriangleP();
 
     // gen new point
-    vec4 new_point_vertex = (originalVertex[original_index_2] + originalVertex[original_index_3]) / 2;
-    vec4 new_point_normal = (originalNormal[original_index_2] + originalNormal[original_index_3]) / 2;
+    vec4 new_point_vertex = (originalVertex[original_index_1] + originalVertex[original_index_2]) / 2;
+    vec4 new_point_normal = (originalNormal[original_index_1] + originalNormal[original_index_2]) / 2;
 
     uint point_offset1 = atomicCounterIncrement(point_counter);
-    splitedVertex[point_offset1] = originalVertex[original_index_1];
-    splitedNormal[point_offset1] = originalNormal[original_index_1];
-    bSplineInfo[point_offset1] = getBSplineInfo(originalVertex[original_index_1]);
+    splitedVertex[point_offset1] = originalVertex[original_index_0];
+    splitedNormal[point_offset1] = originalNormal[original_index_0];
+    bSplineInfo[point_offset1] = getBSplineInfo(originalVertex[original_index_0]);
 
 
     uint point_offset2 = atomicCounterIncrement(point_counter);
-    splitedVertex[point_offset2] = originalVertex[original_index_2];
-    splitedNormal[point_offset2] = originalNormal[original_index_2];
-    bSplineInfo[point_offset2] = getBSplineInfo(originalVertex[original_index_2]);
+    splitedVertex[point_offset2] = originalVertex[original_index_1];
+    splitedNormal[point_offset2] = originalNormal[original_index_1];
+    bSplineInfo[point_offset2] = getBSplineInfo(originalVertex[original_index_1]);
 
     uint point_offset3 = atomicCounterIncrement(point_counter);
-    splitedVertex[point_offset3] = originalVertex[original_index_3];
-    splitedNormal[point_offset3] = originalNormal[original_index_3];
-    bSplineInfo[point_offset3] = getBSplineInfo(originalVertex[original_index_3]);
+    splitedVertex[point_offset3] = originalVertex[original_index_2];
+    splitedNormal[point_offset3] = originalNormal[original_index_2];
+    bSplineInfo[point_offset3] = getBSplineInfo(originalVertex[original_index_2]);
 
     uint point_offset4 = atomicCounterIncrement(point_counter);
     splitedVertex[point_offset4] = new_point_vertex;
