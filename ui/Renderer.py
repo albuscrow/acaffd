@@ -102,11 +102,11 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
-                buffers = glGenBuffers(13)
+                buffers = glGenBuffers(14)
                 original_vertex_vbo, original_normal_vbo, original_index_vbo, adjacency_vbo, \
                 atomic_buffer, bspline_body_buffer, \
                 splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, splited_bspline_info_vbo, \
-                vertex_vbo, normal_vbo, index_vbo = buffers
+                vertex_vbo, normal_vbo, index_vbo, debug_vbo = buffers
 
                 # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
                 bindSSBO(original_vertex_vbo, 0, obj.vertex, len(obj.vertex) * 16, 'float32', GL_STATIC_DRAW)
@@ -120,7 +120,9 @@ class Renderer(QObject):
                 # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
                 bindSSBO(adjacency_vbo, 11, obj.adjacency, len(obj.adjacency) * 12, 'uint32', GL_STATIC_DRAW)
 
-                # self.print_vbo(original_vertex_vbo, (6, 4))
+                bindSSBO(debug_vbo, 12, None, 16 * 10, 'float32', GL_DYNAMIC_DRAW)
+
+                # self.print_vbo(original_vertex_vbo, (3, 4))
                 # self.print_vbo(original_normal_vbo, (3, 4))
                 # self.print_vbo(original_index_vbo, (1, 3), data_type=ctypes.c_uint32)
 
@@ -153,12 +155,14 @@ class Renderer(QObject):
                 previous_compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
                 glUseProgram(previous_compute_shader)
 
+                self.print_vbo(debug_vbo, (10, 4))
                 glDispatchCompute(int(len(obj.index) / 3 / 512 + 1), 1, 1)
 
                 # self.print_vbo(splited_vertex_vbo, (8, 4))
                 # self.print_vbo(splited_normal_vbo, (4, 4))
                 # self.print_vbo(splited_index_vbo, (10, 3), data_type=ctypes.c_uint32)
                 # self.print_vbo(splited_bspline_info_vbo, (4 * 3, 4))
+                self.print_vbo(debug_vbo, (10, 4))
 
                 # get number of splited triangle
                 renderer_model_task.triangle_number, point_number = self.get_splited_triangle_number(atomic_buffer)
@@ -273,6 +277,7 @@ class Renderer(QObject):
         for data in vbo_array:
             print(data)
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
 
     @pyqtSlot(BSplineBody)
     def show_aux(self, is_show):
