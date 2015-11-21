@@ -24,7 +24,7 @@ layout(std430, binding=5) buffer SplitedIndexBuffer{
 };
 
 layout(std430, binding=11) buffer AdjacencyBuffer{
-    uint[] adjacencyBuffer;
+    int[] adjacencyBuffer;
 };
 
 struct BSplineInfo {
@@ -191,9 +191,9 @@ uint original_index_1;
 uint original_index_2;
 
 // 30,01,12这三条边对应的邻接三角形
-uint adjacency_triangle_index_0;
-uint adjacency_triangle_index_1;
-uint adjacency_triangle_index_2;
+int adjacency_triangle_index_0;
+int adjacency_triangle_index_1;
+int adjacency_triangle_index_2;
 
 // 三个顶点位置
 vec3 point0;
@@ -208,7 +208,10 @@ vec3 normal2;
 const vec3 ZERO3 = vec3(0.000001);
 const vec4 ZERO4 = vec4(0.000001);
 
-vec4 getAdjacencyNormal(uint triangleIndex, vec3 point) {
+vec4 getAdjacencyNormal(int triangleIndex, vec3 point, vec3 normal) {
+    if (triangleIndex == -1) {
+        return vec4(normal, 1);
+    }
     if (all(lessThan(abs(vec3(originalVertex[triangleIndex * 3]) - point), ZERO3))) {
         return originalNormal[triangleIndex * 3];
     } else if (all(lessThan(abs(vec3(originalVertex[triangleIndex * 3 + 1]) - point), ZERO3))) {
@@ -234,12 +237,12 @@ void genPNTriangleP(){
 
     //另接三角形的六个法向nij,i表示顶点编号,j表示邻接三角形编号
     vec3 n00, n01, n11, n12, n22, n20;
-    n00 = vec3(getAdjacencyNormal(adjacency_triangle_index_0, point0));
-    n01 = vec3(getAdjacencyNormal(adjacency_triangle_index_1, point0));
-    n11 = vec3(getAdjacencyNormal(adjacency_triangle_index_1, point1));
-    n12 = vec3(getAdjacencyNormal(adjacency_triangle_index_2, point1));
-    n22 = vec3(getAdjacencyNormal(adjacency_triangle_index_2, point2));
-    n20 = vec3(getAdjacencyNormal(adjacency_triangle_index_0, point2));
+    n00 = vec3(getAdjacencyNormal(adjacency_triangle_index_0, point0, normal0));
+    n01 = vec3(getAdjacencyNormal(adjacency_triangle_index_1, point0, normal0));
+    n11 = vec3(getAdjacencyNormal(adjacency_triangle_index_1, point1, normal1));
+    n12 = vec3(getAdjacencyNormal(adjacency_triangle_index_2, point1, normal1));
+    n22 = vec3(getAdjacencyNormal(adjacency_triangle_index_2, point2, normal2));
+    n20 = vec3(getAdjacencyNormal(adjacency_triangle_index_0, point2, normal2));
 
     //two control point near p0
     PNTriangleP[2] = genPNControlPoint(point0, point2, normal0, n00);
