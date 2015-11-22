@@ -118,6 +118,37 @@ class OBJ:
         self.d_y /= d
         self.d_z /= d
 
+        # for i in range(len(self.adjacency)):
+        #     indexes = self.index[i * 3:i * 3 + 3]
+        #     current_triangle = [self.vertex[x] for x in indexes]
+        #     current_triangleN = [self.normal[x] for x in indexes]
+        #     for temp in current_triangle:
+        #         print(temp)
+        #     print()
+        #     current_n = self.normal[indexes[0]]
+        #     current_p = self.vertex[indexes[0]]
+        #     for j in range(3):
+        #         adj_begin_index = self.adjacency[i][j]
+        #         adj_index = self.index[adj_begin_index:adj_begin_index + 3]
+        #         another_triangle_vertex = [self.vertex[x] for x in adj_index]
+        #         for t in another_triangle_vertex:
+        #             print(t)
+        #
+        #         index1 = another_triangle_vertex.index(current_triangle[j])
+        #         normal1 = self.normal[adj_index[index1]]
+        #         r = [x - y for x, y in zip(current_triangleN[j], normal1)]
+        #         if r != [0, 0, 0, 0]:
+        #             print(r)
+        #
+        #         index2 = another_triangle_vertex.index(current_triangle[j - 1])
+        #         normal2 = self.normal[adj_index[index2]]
+        #         r = [x - y for x, y in zip(current_triangleN[j - 1], normal2)]
+        #         if r != [0, 0, 0, 0]:
+        #             print(r)
+        #
+        #
+        #     print()
+        #     print()
         logging.info('load obj finish, has vertices:' + str(len(self.vertex)))
 
     def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):

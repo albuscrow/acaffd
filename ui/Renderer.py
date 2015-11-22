@@ -116,9 +116,11 @@ class Renderer(QObject):
 
                 # copy original index to gpu, and bind original_index_vbo to bind point 2
                 bindSSBO(original_index_vbo, 2, obj.index, len(obj.index) * 4, 'uint32', GL_STATIC_DRAW)
+                print(len(obj.index) * 4)
 
                 # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
-                bindSSBO(adjacency_vbo, 11, obj.adjacency, len(obj.adjacency) * 12, 'uint32', GL_STATIC_DRAW)
+                bindSSBO(adjacency_vbo, 11, obj.adjacency, len(obj.adjacency) * 12, 'int32', GL_STATIC_DRAW)
+                print(len(obj.adjacency) * 12)
 
                 bindSSBO(debug_vbo, 12, None, 16 * 10, 'float32', GL_DYNAMIC_DRAW)
 
@@ -140,22 +142,22 @@ class Renderer(QObject):
                 glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0)
 
                 # alloc memory in gpu for splited vertex, and
-                bindSSBO(splited_vertex_vbo, 3, None, len(obj.vertex) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(splited_vertex_vbo, 3, None, len(obj.vertex) * 16 * 50, 'float32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for splited normal
-                bindSSBO(splited_normal_vbo, 4, None, len(obj.normal) * 16 * 10, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(splited_normal_vbo, 4, None, len(obj.normal) * 16 * 50, 'float32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for splited index
-                bindSSBO(splited_index_vbo, 5, None, len(obj.index) * 4 * 10, 'uint32', GL_DYNAMIC_DRAW)
+                bindSSBO(splited_index_vbo, 5, None, len(obj.index) * 4 * 50, 'uint32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for bspline info
-                bindSSBO(splited_bspline_info_vbo, 10, None, len(obj.vertex) * 48 * 10, 'uint32', GL_DYNAMIC_DRAW)
+                bindSSBO(splited_bspline_info_vbo, 10, None, len(obj.vertex) * 48 * 50, 'uint32', GL_DYNAMIC_DRAW)
 
                 # run previous compute shader
                 previous_compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
                 glUseProgram(previous_compute_shader)
 
-                self.print_vbo(debug_vbo, (10, 4))
+                # self.print_vbo(debug_vbo, (10, 4))
                 glDispatchCompute(int(len(obj.index) / 3 / 512 + 1), 1, 1)
 
                 # self.print_vbo(splited_vertex_vbo, (8, 4))

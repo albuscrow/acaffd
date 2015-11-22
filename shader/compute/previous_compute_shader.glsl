@@ -212,16 +212,19 @@ vec3 normal2;
 const vec3 ZERO3 = vec3(0.000001);
 const vec4 ZERO4 = vec4(0.000001);
 
-vec4 getAdjacencyNormal(int triangleIndex, vec3 point, vec3 normal) {
+vec3 getAdjacencyNormal(int triangleIndex, vec3 point, vec3 normal) {
     if (triangleIndex == -1) {
-        return vec4(normal, 1);
+        return normal;
     }
-    if (all(lessThan(abs(vec3(originalVertex[triangleIndex * 3]) - point), ZERO3))) {
-        return originalNormal[triangleIndex * 3];
-    } else if (all(lessThan(abs(vec3(originalVertex[triangleIndex * 3 + 1]) - point), ZERO3))) {
-        return originalNormal[triangleIndex * 3 + 1];
+    uint index0 = originalIndex[triangleIndex];
+    uint index1 = originalIndex[triangleIndex + 1];
+    uint index2 = originalIndex[triangleIndex + 2];
+    if (all(lessThan(abs(vec3(originalVertex[index0]) - point), ZERO3))) {
+        return vec3(originalNormal[index0]);
+    } else if (all(lessThan(abs(vec3(originalVertex[index1]) - point), ZERO3))) {
+        return vec3(originalNormal[index1]);
     } else {
-        return originalNormal[triangleIndex * 3 + 2];
+        return vec3(originalNormal[index2]);
     }
 }
 vec3 genPNControlPoint(vec3 p_s, vec3 p_e, vec3 n, vec3 n_adj) {
@@ -239,35 +242,41 @@ void genPNTriangleP(){
     PNTriangleP[6] = point1;
     PNTriangleP[9] = point2;
 
-    //另接三角形的六个法向nij,i表示顶点编号,j表示邻接三角形编号
-    vec3 n00, n01, n11, n12, n22, n20;
-    n00 = vec3(getAdjacencyNormal(adjacency_triangle_index_0, point0, normal0));
-    n01 = vec3(getAdjacencyNormal(adjacency_triangle_index_1, point0, normal0));
-    n11 = vec3(getAdjacencyNormal(adjacency_triangle_index_1, point1, normal1));
-    n12 = vec3(getAdjacencyNormal(adjacency_triangle_index_2, point1, normal1));
-    n22 = vec3(getAdjacencyNormal(adjacency_triangle_index_2, point2, normal2));
-    n20 = vec3(getAdjacencyNormal(adjacency_triangle_index_0, point2, normal2));
+    //另接三角形的六个法向nij,i表示近顶点编号,j远顶点编号
+    vec3 n02, n01, n10, n12, n21, n20;
+    n02 = getAdjacencyNormal(adjacency_triangle_index_0, point0, normal0);
+    n01 = getAdjacencyNormal(adjacency_triangle_index_1, point0, normal0);
+
+    n10 = getAdjacencyNormal(adjacency_triangle_index_1, point1, normal1);
+    n12 = getAdjacencyNormal(adjacency_triangle_index_2, point1, normal1);
+
+    n21 = getAdjacencyNormal(adjacency_triangle_index_2, point2, normal2);
+    n20 = getAdjacencyNormal(adjacency_triangle_index_0, point2, normal2);
 
     //two control point near p0
-    PNTriangleP[2] = genPNControlPoint(point0, point2, normal0, n00);
+    PNTriangleP[2] = genPNControlPoint(point0, point2, normal0, n02);
     PNTriangleP[1] = genPNControlPoint(point0, point1, normal0, n01);
     //two control point near p1
-    PNTriangleP[3] = genPNControlPoint(point1, point0, normal1, n11);
+    PNTriangleP[3] = genPNControlPoint(point1, point0, normal1, n10);
     PNTriangleP[7] = genPNControlPoint(point1, point2, normal1, n12);
     //two control point near p2
-    PNTriangleP[8] = genPNControlPoint(point2, point1, normal2, n22);
+    PNTriangleP[8] = genPNControlPoint(point2, point1, normal2, n21);
     PNTriangleP[5] = genPNControlPoint(point2, point0, normal2, n20);
+
+//    PNTriangleP[2] = genPNControlPoint(point0, point2, normal0, normal0);
+//    PNTriangleP[1] = genPNControlPoint(point0, point1, normal0, normal0);
+//    //two control point near p1
+//    PNTriangleP[3] = genPNControlPoint(point1, point0, normal1, normal1);
+//    PNTriangleP[7] = genPNControlPoint(point1, point2, normal1, normal1);
+//    //two control point near p2
+//    PNTriangleP[8] = genPNControlPoint(point2, point1, normal2, normal2);
+//    PNTriangleP[5] = genPNControlPoint(point2, point0, normal2, normal2);
 
     vec3 E = (PNTriangleP[1] + PNTriangleP[2] + PNTriangleP[3]
     + PNTriangleP[5] + PNTriangleP[7] + PNTriangleP[8]) / 6;
     vec3 V = (point0 + point1 + point2) / 3;
 
     PNTriangleP[4] = E + (E - V) / 2;
-
-//    for (uint i = 0; i < 2; ++i) {
-//        debugVBO[i] = PNTriangleP[i];
-//        myOutputBuffer[i].xyz = PNTriangleP[i];
-//    }
 
     myOutputBuffer[0] = vec4(PNTriangleP[0], 1.0);
     myOutputBuffer[1] = vec4(PNTriangleP[1], 1.0);
@@ -308,9 +317,9 @@ void main() {
     point1 = vec3(originalVertex[original_index_1]);
     point2 = vec3(originalVertex[original_index_2]);
 
-    normal0 = normalize(vec3(originalNormal[original_index_0]));
-    normal1 = normalize(vec3(originalNormal[original_index_1]));
-    normal2 = normalize(vec3(originalNormal[original_index_2]));
+    normal0 = vec3(originalNormal[original_index_0]);
+    normal1 = vec3(originalNormal[original_index_1]);
+    normal2 = vec3(originalNormal[original_index_2]);
 
 //    genPNTriangleN();
     genPNTriangleP();
@@ -330,43 +339,58 @@ void main() {
     splitedVertex[point_offset2].xyz = PNTriangleP[2];
     splitedNormal[point_offset2] = originalNormal[original_index_0];
     bSplineInfo[point_offset2] = getBSplineInfo(vec4(PNTriangleP[2], 1));
-//
-//    uint point_offset3 = atomicCounterIncrement(point_counter);
-//    splitedVertex[point_offset3].xyz = PNTriangleP[3];
-//    splitedNormal[point_offset3] = originalNormal[original_index_1];
-//    bSplineInfo[point_offset3] = getBSplineInfo(vec4(PNTriangleP[3], 1));
-//
-//    uint point_offset4 = atomicCounterIncrement(point_counter);
-//    splitedVertex[point_offset4].xyz = PNTriangleP[4];
-//    splitedNormal[point_offset4] = originalNormal[original_index_1];
-//    bSplineInfo[point_offset4] = getBSplineInfo(vec4(PNTriangleP[4], 1));
-//
-//    uint point_offset5 = atomicCounterIncrement(point_counter);
-//    splitedVertex[point_offset5].xyz = PNTriangleP[5];
-//    splitedNormal[point_offset5] = originalNormal[original_index_2];
-//    bSplineInfo[point_offset5] = getBSplineInfo(vec4(PNTriangleP[5], 1));
 
-//    uint point_offset6 = atomicCounterIncrement(point_counter);
-//    splitedVertex[point_offset6].xyz = PNTriangleP[6];
-////    splitedVertex[point_offset6] = originalVertex[original_index_1];
-//    splitedNormal[point_offset6] = originalNormal[original_index_1];
-//    bSplineInfo[point_offset6] = getBSplineInfo(vec4(PNTriangleP[6], 1));
+    uint point_offset3 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset3].xyz = PNTriangleP[3];
+    splitedNormal[point_offset3] = originalNormal[original_index_1];
+    bSplineInfo[point_offset3] = getBSplineInfo(vec4(PNTriangleP[3], 1));
 
-//    uint point_offset7 = atomicCounterIncrement(point_counter);
-//    splitedVertex[point_offset7].xyz = PNTriangleP[7];
-//    splitedNormal[point_offset7] = originalNormal[original_index_1];
-//    bSplineInfo[point_offset7] = getBSplineInfo(vec4(PNTriangleP[7], 1));
-//
-//    uint point_offset8 = atomicCounterIncrement(point_counter);
-//    splitedVertex[point_offset8].xyz = PNTriangleP[8];
-//    splitedNormal[point_offset8] = originalNormal[original_index_2];
-//    bSplineInfo[point_offset8] = getBSplineInfo(vec4(PNTriangleP[8], 1));
+    uint point_offset4 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset4].xyz = PNTriangleP[4];
+    splitedNormal[point_offset4] = originalNormal[original_index_1];
+    bSplineInfo[point_offset4] = getBSplineInfo(vec4(PNTriangleP[4], 1));
 
-//    uint point_offset9 = atomicCounterIncrement(point_counter);
-//    splitedVertex[point_offset9].xyz = PNTriangleP[9];
-////    splitedVertex[point_offset9] = originalVertex[original_index_2];
-//    splitedNormal[point_offset9] = originalNormal[original_index_2];
-//    bSplineInfo[point_offset9] = getBSplineInfo(vec4(PNTriangleP[9], 1));
+    uint point_offset5 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset5].xyz = PNTriangleP[5];
+    splitedNormal[point_offset5] = originalNormal[original_index_2];
+    bSplineInfo[point_offset5] = getBSplineInfo(vec4(PNTriangleP[5], 1));
+
+    uint point_offset6 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset6].xyz = PNTriangleP[6];
+//    splitedVertex[point_offset6] = originalVertex[original_index_1];
+    splitedNormal[point_offset6] = originalNormal[original_index_1];
+    bSplineInfo[point_offset6] = getBSplineInfo(vec4(PNTriangleP[6], 1));
+
+    uint point_offset7 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset7].xyz = PNTriangleP[7];
+    splitedNormal[point_offset7] = originalNormal[original_index_1];
+    bSplineInfo[point_offset7] = getBSplineInfo(vec4(PNTriangleP[7], 1));
+
+    uint point_offset8 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset8].xyz = PNTriangleP[8];
+    splitedNormal[point_offset8] = originalNormal[original_index_2];
+    bSplineInfo[point_offset8] = getBSplineInfo(vec4(PNTriangleP[8], 1));
+
+    uint point_offset9 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset9].xyz = PNTriangleP[9];
+//    splitedVertex[point_offset9] = originalVertex[original_index_2];
+    splitedNormal[point_offset9] = originalNormal[original_index_2];
+    bSplineInfo[point_offset9] = getBSplineInfo(vec4(PNTriangleP[9], 1));
+
+    uint point_offset10 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset10] = originalVertex[original_index_0];
+    splitedNormal[point_offset10] = originalNormal[original_index_0];
+    bSplineInfo[point_offset10] = getBSplineInfo(originalVertex[original_index_0]);
+
+    uint point_offset11 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset11] = originalVertex[original_index_1];
+    splitedNormal[point_offset11] = originalNormal[original_index_1];
+    bSplineInfo[point_offset11] = getBSplineInfo(originalVertex[original_index_1]);
+
+    uint point_offset12 = atomicCounterIncrement(point_counter);
+    splitedVertex[point_offset12] = originalVertex[original_index_2];
+    splitedNormal[point_offset12] = originalNormal[original_index_2];
+    bSplineInfo[point_offset12] = getBSplineInfo(originalVertex[original_index_2]);
 
     uint index_offset = atomicCounterIncrement(index_counter);
 //    splitedIndex[index_offset * 3] = point_offset0;
@@ -376,45 +400,45 @@ void main() {
     splitedIndex[index_offset * 3 + 1] = point_offset1;
     splitedIndex[index_offset * 3 + 2] = point_offset2;
 
-//    index_offset = atomicCounterIncrement(index_counter);
-//    splitedIndex[index_offset * 3] = point_offset1;
-//    splitedIndex[index_offset * 3 + 1] = point_offset3;
-//    splitedIndex[index_offset * 3 + 2] = point_offset4;
-//
-//    index_offset = atomicCounterIncrement(index_counter);
-//    splitedIndex[index_offset * 3] = point_offset1;
-//    splitedIndex[index_offset * 3 + 1] = point_offset4;
-//    splitedIndex[index_offset * 3 + 2] = point_offset2;
+    index_offset = atomicCounterIncrement(index_counter);
+    splitedIndex[index_offset * 3] = point_offset1;
+    splitedIndex[index_offset * 3 + 1] = point_offset3;
+    splitedIndex[index_offset * 3 + 2] = point_offset4;
 
-//    index_offset = atomicCounterIncrement(index_counter);
-//    splitedIndex[index_offset * 3] = point_offset2;
-//    splitedIndex[index_offset * 3 + 1] = point_offset4;
-//    splitedIndex[index_offset * 3 + 2] = point_offset5;
-//
-//    index_offset = atomicCounterIncrement(index_counter);
-//    splitedIndex[index_offset * 3] = point_offset3;
-//    splitedIndex[index_offset * 3 + 1] = point_offset6;
-//    splitedIndex[index_offset * 3 + 2] = point_offset7;
-//
-//    index_offset = atomicCounterIncrement(index_counter);
-//    splitedIndex[index_offset * 3] = point_offset3;
-//    splitedIndex[index_offset * 3 + 1] = point_offset7;
-//    splitedIndex[index_offset * 3 + 2] = point_offset4;
-//
-//    index_offset = atomicCounterIncrement(index_counter);
-//    splitedIndex[index_offset * 3] = point_offset4;
-//    splitedIndex[index_offset * 3 + 1] = point_offset7;
-//    splitedIndex[index_offset * 3 + 2] = point_offset8;
-//
-//    index_offset = atomicCounterIncrement(index_counter);
-//    splitedIndex[index_offset * 3] = point_offset4;
-//    splitedIndex[index_offset * 3 + 1] = point_offset8;
-//    splitedIndex[index_offset * 3 + 2] = point_offset5;
-//
-//    index_offset = atomicCounterIncrement(index_counter);
-//    splitedIndex[index_offset * 3] = point_offset5;
-//    splitedIndex[index_offset * 3 + 1] = point_offset8;
-//    splitedIndex[index_offset * 3 + 2] = point_offset9;
+    index_offset = atomicCounterIncrement(index_counter);
+    splitedIndex[index_offset * 3] = point_offset1;
+    splitedIndex[index_offset * 3 + 1] = point_offset4;
+    splitedIndex[index_offset * 3 + 2] = point_offset2;
+
+    index_offset = atomicCounterIncrement(index_counter);
+    splitedIndex[index_offset * 3] = point_offset2;
+    splitedIndex[index_offset * 3 + 1] = point_offset4;
+    splitedIndex[index_offset * 3 + 2] = point_offset5;
+
+    index_offset = atomicCounterIncrement(index_counter);
+    splitedIndex[index_offset * 3] = point_offset3;
+    splitedIndex[index_offset * 3 + 1] = point_offset6;
+    splitedIndex[index_offset * 3 + 2] = point_offset7;
+
+    index_offset = atomicCounterIncrement(index_counter);
+    splitedIndex[index_offset * 3] = point_offset3;
+    splitedIndex[index_offset * 3 + 1] = point_offset7;
+    splitedIndex[index_offset * 3 + 2] = point_offset4;
+
+    index_offset = atomicCounterIncrement(index_counter);
+    splitedIndex[index_offset * 3] = point_offset4;
+    splitedIndex[index_offset * 3 + 1] = point_offset7;
+    splitedIndex[index_offset * 3 + 2] = point_offset8;
+
+    index_offset = atomicCounterIncrement(index_counter);
+    splitedIndex[index_offset * 3] = point_offset4;
+    splitedIndex[index_offset * 3 + 1] = point_offset8;
+    splitedIndex[index_offset * 3 + 2] = point_offset5;
+
+    index_offset = atomicCounterIncrement(index_counter);
+    splitedIndex[index_offset * 3] = point_offset5;
+    splitedIndex[index_offset * 3 + 1] = point_offset8;
+    splitedIndex[index_offset * 3 + 2] = point_offset9;
 
 
     // gen new point
