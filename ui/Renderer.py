@@ -116,11 +116,9 @@ class Renderer(QObject):
 
                 # copy original index to gpu, and bind original_index_vbo to bind point 2
                 bindSSBO(original_index_vbo, 2, obj.index, len(obj.index) * 4, 'uint32', GL_STATIC_DRAW)
-                print(len(obj.index) * 4)
 
                 # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
                 bindSSBO(adjacency_vbo, 11, obj.adjacency, len(obj.adjacency) * 12, 'int32', GL_STATIC_DRAW)
-                print(len(obj.adjacency) * 12)
 
                 bindSSBO(debug_vbo, 12, None, 16 * 10, 'float32', GL_DYNAMIC_DRAW)
 
@@ -160,11 +158,11 @@ class Renderer(QObject):
                 # self.print_vbo(debug_vbo, (10, 4))
                 glDispatchCompute(int(len(obj.index) / 3 / 512 + 1), 1, 1)
 
-                # self.print_vbo(splited_vertex_vbo, (8, 4))
+                self.print_vbo(splited_vertex_vbo, (10, 4))
                 # self.print_vbo(splited_normal_vbo, (4, 4))
                 # self.print_vbo(splited_index_vbo, (10, 3), data_type=ctypes.c_uint32)
                 # self.print_vbo(splited_bspline_info_vbo, (4 * 3, 4))
-                self.print_vbo(debug_vbo, (10, 4))
+                # self.print_vbo(debug_vbo, (10, 4))
 
                 # get number of splited triangle
                 renderer_model_task.triangle_number, point_number = self.get_splited_triangle_number(atomic_buffer)
