@@ -235,6 +235,12 @@ vec3 genPNControlPoint(vec3 p_s, vec3 p_e, vec3 n, vec3 n_adj) {
         return p_s + dot((p_e - p_s), T) / 3 * T;
     }
 }
+vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
+    vec3 n = normalize(n_s + n_e);
+    vec3 v = normalize(p_e - p_s);
+    return normalize(n - 2 * v * dot(n * v));
+
+}
 
 void genPNTriangleP(){
     // 三个顶点对应的控制顶点
@@ -263,31 +269,21 @@ void genPNTriangleP(){
     PNTriangleP[8] = genPNControlPoint(point2, point1, normal2, n21);
     PNTriangleP[5] = genPNControlPoint(point2, point0, normal2, n20);
 
-//    PNTriangleP[2] = genPNControlPoint(point0, point2, normal0, normal0);
-//    PNTriangleP[1] = genPNControlPoint(point0, point1, normal0, normal0);
-//    //two control point near p1
-//    PNTriangleP[3] = genPNControlPoint(point1, point0, normal1, normal1);
-//    PNTriangleP[7] = genPNControlPoint(point1, point2, normal1, normal1);
-//    //two control point near p2
-//    PNTriangleP[8] = genPNControlPoint(point2, point1, normal2, normal2);
-//    PNTriangleP[5] = genPNControlPoint(point2, point0, normal2, normal2);
-
     vec3 E = (PNTriangleP[1] + PNTriangleP[2] + PNTriangleP[3]
     + PNTriangleP[5] + PNTriangleP[7] + PNTriangleP[8]) / 6;
     vec3 V = (point0 + point1 + point2) / 3;
 
     PNTriangleP[4] = E + (E - V) / 2;
 
-    myOutputBuffer[0] = vec4(PNTriangleP[0], 1.0);
-    myOutputBuffer[1] = vec4(PNTriangleP[1], 1.0);
-    myOutputBuffer[2] = vec4(PNTriangleP[2], 1.0);
-    myOutputBuffer[3] = vec4(PNTriangleP[3], 1.0);
-    myOutputBuffer[4] = vec4(PNTriangleP[4], 1.0);
-    myOutputBuffer[5] = vec4(PNTriangleP[5], 1.0);
-    myOutputBuffer[6] = vec4(PNTriangleP[6], 1.0);
-    myOutputBuffer[7] = vec4(PNTriangleP[7], 1.0);
-    myOutputBuffer[8] = vec4(PNTriangleP[8], 1.0);
-    myOutputBuffer[9] = vec4(PNTriangleP[9], 1.0);
+    // 生成法向PN-triangle
+    PNTriangleN[0] = normal0;
+    PNTriangleN[3] = normal1;
+    PNTriangleN[5] = normal2;
+
+    PNTriangleN[1] = genPNControlNormal(point0, point1, normal0, normal1);
+    PNTriangleN[4] = genPNControlNormal(point1, point2, normal1, normal2);
+    PNTriangleN[2] = genPNControlNormal(point2, point0, normal2, normal0);
+
 }
 
 void genPNTriangleN(uint index1, uint index2, uint index3) {
