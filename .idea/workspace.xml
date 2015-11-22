@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="76e13a63-b527-40bc-8bab-c177130a27e6" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/shader/ShaderUtil.py" afterPath="$PROJECT_DIR$/shader/ShaderUtil.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/shader/compute/previous_compute_shader.glsl" afterPath="$PROJECT_DIR$/shader/compute/previous_compute_shader.glsl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/shader/renderer/fragment.glsl" afterPath="$PROJECT_DIR$/shader/renderer/fragment.glsl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ui/Renderer.py" afterPath="$PROJECT_DIR$/ui/Renderer.py" />
     </list>
     <ignored path="affd.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -68,8 +64,8 @@
       <file leaf-file-name="previous_compute_shader.glsl" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/shader/compute/previous_compute_shader.glsl">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.76256984">
-              <caret line="354" column="37" selection-start-line="354" selection-start-column="37" selection-end-line="354" selection-end-column="37" />
+            <state vertical-scroll-proportion="0.108938545">
+              <caret line="367" column="12" selection-start-line="367" selection-start-column="12" selection-end-line="367" selection-end-column="12" />
               <folding />
             </state>
           </provider>
@@ -1052,8 +1048,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/shader/compute/previous_compute_shader.glsl">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.76256984">
-          <caret line="354" column="37" selection-start-line="354" selection-start-column="37" selection-end-line="354" selection-end-column="37" />
+        <state vertical-scroll-proportion="0.108938545">
+          <caret line="367" column="12" selection-start-line="367" selection-start-column="12" selection-end-line="367" selection-end-column="12" />
           <folding />
         </state>
       </provider>
