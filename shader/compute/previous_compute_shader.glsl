@@ -37,6 +37,10 @@ layout(std430, binding=10) buffer SplitedBSplineInfoBuffer{
     BSplineInfo[] bSplineInfo;
 };
 
+layout(std430, binding=13) buffer SamplePointBSplineInfoBuffer{
+    BSplineInfo[] samplePointBSplineInfo;
+};
+
 layout(std430, binding=12) buffer OutputDebugBuffer{
     vec4[] myOutputBuffer;
 };
@@ -63,55 +67,170 @@ layout(std140, binding=0) uniform BSplineBodyData{
 
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 
-// uvw 为 1 2 3分别代表u v w
-float getNewT(uint uvw, float t) {
-    if (uvw == 1u) {
-        return (t - minU) / lengthU;
-    } else if (uvw == 2u) {
-        return (t - minV) / lengthV;
-    } else {
-        return (t - minW) / lengthW;
+BSplineInfo getBSplineInfo(vec4 parameter);
+
+
+vec3 PNTriangleP[10];
+vec3 PNTriangleN[6];
+
+// 这些变量在求PNtriangle中也会用到，所以写成全区的
+// 三角形三个顶点的index
+uint original_index_0;
+uint original_index_1;
+uint original_index_2;
+
+// 30,01,12这三条边对应的邻接三角形
+int adjacency_triangle_index_0;
+int adjacency_triangle_index_1;
+int adjacency_triangle_index_2;
+
+// 三个顶点位置
+vec3 point0;
+vec3 point1;
+vec3 point2;
+
+// 三个顶点法向
+vec3 normal0;
+vec3 normal1;
+vec3 normal2;
+
+const vec3 ZERO3 = vec3(0.000001);
+const vec4 ZERO4 = vec4(0.000001);
+
+// 生成PN-Triangle
+void genPNTriangleP();
+
+const vec3 splitParameter[10] = {
+    {1,0,0},
+    {0.6667, 0.3333, 0}, {0.6667, 0, 0.3333},
+    {0.3333, 0.6667, 0}, {0.3333, 0.3333, 0.3333}, {0.3333, 0, 0.6667},
+    {0, 1, 0}, {0, 0.6667, 0.3333}, {0, 0.3333, 0.6667}, {0, 0, 1}
+};
+
+const uvec3 splitIndex[9] = {
+    {0, 1, 2},
+    {1, 3 ,4}, {1, 4, 2}, {2, 4, 5},
+    {3, 6, 7}, {3, 7, 4}, {4, 7, 8}, {4, 8, 5}, {5, 8, 9}
+};
+
+// 根据三角形形状，取得splite pattern
+void getSplitePattern(vec3 p1, vec3 p2, vec3 p3, out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber);
+
+// 根据 parameter 获得PNTriangle中的位置
+vec4 getPosition(vec3 parameter);
+
+// 根据 parameter 获得PNTriangle中的法向
+vec4 getNormal(vec3 parameter);
+
+// 计算采样点的BSpline body 信息
+void genSamplePointBsplineInfo(uint index_offset);
+
+void main() {
+    uint triangleIndex = gl_GlobalInvocationID.x;
+    if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
+        return;
+    }
+
+    // 初始化全局变量
+    // get current original tirangle index
+    original_index_0 = originalIndex[triangleIndex * 3];
+    original_index_1 = originalIndex[triangleIndex * 3 + 1];
+    original_index_2 = originalIndex[triangleIndex * 3 + 2];
+
+    adjacency_triangle_index_0 = adjacencyBuffer[triangleIndex * 3];
+    adjacency_triangle_index_1 = adjacencyBuffer[triangleIndex * 3 + 1];
+    adjacency_triangle_index_2 = adjacencyBuffer[triangleIndex * 3 + 2];
+
+    point0 = vec3(originalVertex[original_index_0]);
+    point1 = vec3(originalVertex[original_index_1]);
+    point2 = vec3(originalVertex[original_index_2]);
+
+    normal0 = vec3(originalNormal[original_index_0]);
+    normal1 = vec3(originalNormal[original_index_1]);
+    normal2 = vec3(originalNormal[original_index_2]);
+
+    // 生成pn-triangle
+    genPNTriangleP();
+
+    // 获取pattern
+    uint splitParameterOffset;
+    uint splitIndexOffset;
+    uint subTriangleNumber;
+    uint pointNumber;
+    getSplitePattern(point0, point1, point2, splitParameterOffset, splitIndexOffset, subTriangleNumber, pointNumber);
+    uint point_index[100];
+    // 生成顶点数据
+    for (int i = 0; i < pointNumber; ++i) {
+        vec3 pointParameter = splitParameter[splitParameterOffset + i];
+        uint point_offset = atomicCounterIncrement(point_counter);
+        splitedVertex[point_offset] = getPosition(pointParameter);
+        splitedNormal[point_offset] = getNormal(pointParameter);
+        bSplineInfo[point_offset] = getBSplineInfo(splitedVertex[point_offset]);
+        point_index[i] = point_offset;
+
+    }
+    // 生成index数据
+    for (int i = 0; i < 9; ++i) {
+        uvec3 index = splitIndex[splitIndexOffset + i];
+        uint index_offset = atomicCounterIncrement(index_counter);
+        splitedIndex[index_offset * 3] = point_index[index.x];
+        splitedIndex[index_offset * 3 + 1] = point_index[index.y];
+        splitedIndex[index_offset * 3 + 2] = point_index[index.z];
+        genSamplePointBsplineInfo(index_offset);
     }
 }
 
-// uvw 为 1 2 3分别代表u v w
-float getBSplineInfoU(float t, out uint leftIndex){
-    float newT = getNewT(1u, t);
-    uint interNumber = uint(controlPointNumU - orderU + 1);
-    float step = 1.0 / float(interNumber);
-    leftIndex = uint(newT / step);
-    if (leftIndex == interNumber) {
-        leftIndex -= 1;
-    }
-    t = newT / step - leftIndex;
-    leftIndex += uint(orderU - 1);
-    return t;
-}
+const vec3 sampleParameter[37] = {
+    {1,0,0},
+    {0.6667, 0.3333, 0}, {0.6667, 0, 0.3333},
+    {0.3333, 0.6667, 0}, /*{0.3333, 0.3333, 0.3333},*/ {0.3333, 0, 0.6667},
+    {0, 1, 0}, {0, 0.6667, 0.3333}, {0, 0.3333, 0.6667}, {0, 0, 1},
 
-float getBSplineInfoV(float t, out uint leftIndex){
-    float newT = getNewT(2u, t);
-    uint interNumber = uint(controlPointNumV - orderV + 1);
-    float step = 1.0 / float(interNumber);
-    leftIndex = uint(newT  / step);
-    if (leftIndex == interNumber) {
-        leftIndex -= 1;
-    }
-    t = newT / step - leftIndex;
-    leftIndex += uint(orderV - 1);
-    return t;
-}
+    {1.000000, 0.000000, 0.000000},
+    {0.833333, 0.166667, 0.000000},
+    {0.833333, 0.000000, 0.166667},
 
-float getBSplineInfoW(float t, out uint leftIndex){
-    float newT = getNewT(3u, t);
-    uint interNumber = uint(controlPointNumW - orderW + 1);
-    float step = 1.0 / float(interNumber);
-    leftIndex = uint(newT / step);
-    if (leftIndex == interNumber) {
-        leftIndex -= 1;
+    {0.666667, 0.333333, 0.000000},
+    {0.666667, 0.166667, 0.166667},
+    {0.666667, 0.000000, 0.333333},
+
+    {0.500000, 0.500000, 0.000000},
+    {0.500000, 0.333333, 0.166667},
+    {0.500000, 0.166667, 0.333333},
+    {0.500000, 0.000000, 0.500000},
+
+    {0.333333, 0.666667, 0.000000},
+    {0.333333, 0.500000, 0.166667},
+    {0.333333, 0.333333, 0.333333},
+    {0.333333, 0.166667, 0.500000},
+    {0.333333, 0.000000, 0.666667},
+
+    {0.166667, 0.833333, 0.000000},
+    {0.166667, 0.666667, 0.166667},
+    {0.166667, 0.500000, 0.333333},
+    {0.166667, 0.333333, 0.500000},
+    {0.166667, 0.166667, 0.666667},
+    {0.166667, 0.000000, 0.833333},
+
+    {0.000000, 1.000000, 0.000000},
+    {0.000000, 0.833333, 0.166667},
+    {0.000000, 0.666667, 0.333333},
+    {0.000000, 0.500000, 0.500000},
+    {0.000000, 0.333333, 0.666667},
+    {0.000000, 0.166667, 0.833333},
+    {0.000000, 0.000000, 1.000000}
+};
+
+
+void genSamplePointBsplineInfo(uint index_offset) {
+    vec4 p0 = splitedVertex[splitedIndex[index_offset * 3]];
+    vec4 p1 = splitedVertex[splitedIndex[index_offset * 3 + 1]];
+    vec4 p2 = splitedVertex[splitedIndex[index_offset * 3 + 2]];
+    for (int i = 0; i < 37; ++i) {
+        vec3 uvw = sampleParameter[i];
+        vec4 position = p0 * uvw.x + p1 * uvw.y + p2 * uvw.z;
+        samplePointBSplineInfo[index_offset * 37 + i] = getBSplineInfo(position);
     }
-    t = newT / step - leftIndex;
-    leftIndex += uint(orderW - 1);
-    return t;
 }
 
 
@@ -166,51 +285,58 @@ int getAuxMatrixOffset(in int order,in int ctrlPointNum,in int leftIdx) {
     }
 }
 
-BSplineInfo getBSplineInfo(vec4 parameter) {
-    BSplineInfo result;
-    uint knot_left_index_u, knot_left_index_v, knot_left_index_w;
-    float u = getBSplineInfoU(parameter.x, knot_left_index_u);
-    float v = getBSplineInfoV(parameter.y, knot_left_index_v);
-    float w = getBSplineInfoW(parameter.z, knot_left_index_w);
-    uint aux_matrix_offset_u, aux_matrix_offset_v, aux_matrix_offset_w;
-    aux_matrix_offset_u = getAuxMatrixOffset(int(orderU), int(controlPointNumU), int(knot_left_index_u));
-    aux_matrix_offset_v = getAuxMatrixOffset(int(orderV), int(controlPointNumV), int(knot_left_index_v));
-    aux_matrix_offset_w = getAuxMatrixOffset(int(orderW), int(controlPointNumW), int(knot_left_index_w));
+float factorial(int n) {
+    int result = 1;
+    for (int i = 2; i <= n; ++i) {
+        result *= i;
+    }
+    return float(result);
+}
 
-    result.t = vec4(u, v, w, 0);
-    result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
-    result.aux_matrix_offset = uvec4(aux_matrix_offset_u, aux_matrix_offset_v, aux_matrix_offset_w, 0);
-
-    return result;
+float power(float b, int n) {
+    if (b == 0 && n == 0) {
+        return 1;
+    } else {
+        return pow(b, n);
+    }
 }
 
 
-vec3 PNTriangleP[10];
-vec3 PNTriangleN[6];
+vec4 getNormal(vec3 parameter) {
+    vec3 result = vec3(0);
+    int ctrlPointIndex = 0;
+    for (int i = 2; i >=0; --i) {
+        for (int j = 2 - i; j >= 0; --j) {
+            int k = 2 - i - j;
+            float n = 2f / factorial(i) / factorial(j) / factorial(k)
+                * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
+            result += PNTriangleN[ctrlPointIndex ++] * n;
+        }
+    }
+    return vec4(result, 1);
+}
 
-// 这些变量在求PNtriangle中也会用到，所以写成全区的
-// 三角形三个顶点的index
-uint original_index_0;
-uint original_index_1;
-uint original_index_2;
+vec4 getPosition(vec3 parameter) {
+    vec3 result = vec3(0);
+    int ctrlPointIndex = 0;
+    for (int i = 3; i >=0; --i) {
+        for (int j = 3 - i; j >= 0; --j) {
+            int k = 3 - i - j;
 
-// 30,01,12这三条边对应的邻接三角形
-int adjacency_triangle_index_0;
-int adjacency_triangle_index_1;
-int adjacency_triangle_index_2;
+            float n = 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
+                    / factorial(i) / factorial(j) / factorial(k);
+            result += PNTriangleP[ctrlPointIndex ++] * n;
+        }
+    }
+    return vec4(result, 1);
+}
 
-// 三个顶点位置
-vec3 point0;
-vec3 point1;
-vec3 point2;
-
-// 三个顶点法向
-vec3 normal0;
-vec3 normal1;
-vec3 normal2;
-
-const vec3 ZERO3 = vec3(0.000001);
-const vec4 ZERO4 = vec4(0.000001);
+void getSplitePattern(vec3 p1, vec3 p2, vec3 p3, out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber) {
+    parameterOffset = 0;
+    indexOffset = 0;
+    triangleNumber = 9;
+    pointNumber = 10;
+}
 
 vec3 getAdjacencyNormal(int triangleIndex, vec3 point, vec3 normal) {
     if (triangleIndex == -1) {
@@ -287,128 +413,72 @@ void genPNTriangleP(){
 
 }
 
-void genPNTriangleN(uint index1, uint index2, uint index3) {
-    for (uint i = 0; i < 6; ++i) {
-        PNTriangleN[0] = vec3(1.0);
-    }
-}
-
-const vec3 splitParameter[10] = {
-    {1,0,0},
-    {0.6667, 0.3333, 0}, {0.6667, 0, 0.3333},
-    {0.3333, 0.6667, 0}, {0.3333, 0.3333, 0.3333}, {0.3333, 0, 0.6667},
-    {0, 1, 0}, {0, 0.6667, 0.3333}, {0, 0.3333, 0.6667}, {0, 0, 1}
-};
-
-const uvec3 splitIndex[9] = {
-    {0, 1, 2},
-    {1, 3 ,4}, {1, 4, 2}, {2, 4, 5},
-    {3, 6, 7}, {3, 7, 4}, {4, 7, 8}, {4, 8, 5}, {5, 8, 9}
-};
-
-
-void getSplitePattern(vec3 p1, vec3 p2, vec3 p3, out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber) {
-    parameterOffset = 0;
-    indexOffset = 0;
-    triangleNumber = 9;
-    pointNumber = 10;
-}
-float factorial(int n) {
-    int result = 1;
-    for (int i = 2; i <= n; ++i) {
-        result *= i;
-    }
-    return float(result);
-}
-
-float power(float b, int n) {
-    if (b == 0 && n == 0) {
-        return 1;
+// uvw 为 1 2 3分别代表u v w
+float getNewT(uint uvw, float t) {
+    if (uvw == 1u) {
+        return (t - minU) / lengthU;
+    } else if (uvw == 2u) {
+        return (t - minV) / lengthV;
     } else {
-        return pow(b, n);
+        return (t - minW) / lengthW;
     }
 }
 
-vec4 getPosition(vec3 parameter) {
-    vec3 result = vec3(0);
-    int ctrlPointIndex = 0;
-    for (int i = 3; i >=0; --i) {
-        for (int j = 3 - i; j >= 0; --j) {
-            int k = 3 - i - j;
-
-            float n = 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
-                    / factorial(i) / factorial(j) / factorial(k);
-            result += PNTriangleP[ctrlPointIndex ++] * n;
-        }
+// uvw 为 1 2 3分别代表u v w
+float getBSplineInfoU(float t, out uint leftIndex){
+    float newT = getNewT(1u, t);
+    uint interNumber = uint(controlPointNumU - orderU + 1);
+    float step = 1.0 / float(interNumber);
+    leftIndex = uint(newT / step);
+    if (leftIndex == interNumber) {
+        leftIndex -= 1;
     }
-    return vec4(result, 1);
+    t = newT / step - leftIndex;
+    leftIndex += uint(orderU - 1);
+    return t;
 }
 
-vec4 getNormal(vec3 parameter) {
-    vec3 result = vec3(0);
-    int ctrlPointIndex = 0;
-    for (int i = 2; i >=0; --i) {
-        for (int j = 2 - i; j >= 0; --j) {
-            int k = 2 - i - j;
-            float n = 2f / factorial(i) / factorial(j) / factorial(k)
-                * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
-            result += PNTriangleN[ctrlPointIndex ++] * n;
-        }
+float getBSplineInfoV(float t, out uint leftIndex){
+    float newT = getNewT(2u, t);
+    uint interNumber = uint(controlPointNumV - orderV + 1);
+    float step = 1.0 / float(interNumber);
+    leftIndex = uint(newT  / step);
+    if (leftIndex == interNumber) {
+        leftIndex -= 1;
     }
-    return vec4(result, 1);
+    t = newT / step - leftIndex;
+    leftIndex += uint(orderV - 1);
+    return t;
 }
 
-
-void main() {
-    uint triangleIndex = gl_GlobalInvocationID.x;
-    if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
-        return;
+float getBSplineInfoW(float t, out uint leftIndex){
+    float newT = getNewT(3u, t);
+    uint interNumber = uint(controlPointNumW - orderW + 1);
+    float step = 1.0 / float(interNumber);
+    leftIndex = uint(newT / step);
+    if (leftIndex == interNumber) {
+        leftIndex -= 1;
     }
-
-    // 初始化全局变量
-    // get current original tirangle index
-    original_index_0 = originalIndex[triangleIndex * 3];
-    original_index_1 = originalIndex[triangleIndex * 3 + 1];
-    original_index_2 = originalIndex[triangleIndex * 3 + 2];
-
-    adjacency_triangle_index_0 = adjacencyBuffer[triangleIndex * 3];
-    adjacency_triangle_index_1 = adjacencyBuffer[triangleIndex * 3 + 1];
-    adjacency_triangle_index_2 = adjacencyBuffer[triangleIndex * 3 + 2];
-
-    point0 = vec3(originalVertex[original_index_0]);
-    point1 = vec3(originalVertex[original_index_1]);
-    point2 = vec3(originalVertex[original_index_2]);
-
-    normal0 = vec3(originalNormal[original_index_0]);
-    normal1 = vec3(originalNormal[original_index_1]);
-    normal2 = vec3(originalNormal[original_index_2]);
-
-    // 生成pn-triangle
-    genPNTriangleP();
-
-    // 获取pattern
-    uint splitParameterOffset;
-    uint splitIndexOffset;
-    uint subTriangleNumber;
-    uint pointNumber;
-    getSplitePattern(point0, point1, point2, splitParameterOffset, splitIndexOffset, subTriangleNumber, pointNumber);
-    uint point_index[100];
-    // 生成顶点数据
-    for (int i = 0; i < pointNumber; ++i) {
-        vec3 pointParameter = splitParameter[splitParameterOffset + i];
-        uint point_offset = atomicCounterIncrement(point_counter);
-        splitedVertex[point_offset] = getPosition(pointParameter);
-        splitedNormal[point_offset] = getNormal(pointParameter);
-        bSplineInfo[point_offset] = getBSplineInfo(splitedVertex[point_offset]);
-        point_index[i] = point_offset;
-    }
-    // 生成index数据
-    for (int i = 0; i < 9; ++i) {
-        uvec3 index = splitIndex[splitIndexOffset + i];
-        uint index_offset = atomicCounterIncrement(index_counter);
-        splitedIndex[index_offset * 3] = point_index[index.x];
-        splitedIndex[index_offset * 3 + 1] = point_index[index.y];
-        splitedIndex[index_offset * 3 + 2] = point_index[index.z];
-
-    }
+    t = newT / step - leftIndex;
+    leftIndex += uint(orderW - 1);
+    return t;
 }
+
+BSplineInfo getBSplineInfo(vec4 parameter) {
+    BSplineInfo result;
+    uint knot_left_index_u, knot_left_index_v, knot_left_index_w;
+    float u = getBSplineInfoU(parameter.x, knot_left_index_u);
+    float v = getBSplineInfoV(parameter.y, knot_left_index_v);
+    float w = getBSplineInfoW(parameter.z, knot_left_index_w);
+    uint aux_matrix_offset_u, aux_matrix_offset_v, aux_matrix_offset_w;
+    aux_matrix_offset_u = getAuxMatrixOffset(int(orderU), int(controlPointNumU), int(knot_left_index_u));
+    aux_matrix_offset_v = getAuxMatrixOffset(int(orderV), int(controlPointNumV), int(knot_left_index_v));
+    aux_matrix_offset_w = getAuxMatrixOffset(int(orderW), int(controlPointNumW), int(knot_left_index_w));
+
+    result.t = vec4(u, v, w, 0);
+    result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
+    result.aux_matrix_offset = uvec4(aux_matrix_offset_u, aux_matrix_offset_v, aux_matrix_offset_w, 0);
+
+    return result;
+}
+
