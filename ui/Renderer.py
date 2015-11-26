@@ -164,7 +164,7 @@ class Renderer(QObject):
                 # self.print_vbo(splited_vertex_vbo, (10, 4))
                 # self.print_vbo(splited_normal_vbo, (4, 4))
                 # self.print_vbo(splited_index_vbo, (10, 3), data_type=ctypes.c_uint32)
-                self.print_vbo(sample_point_vbo, (9 * 37 * 3, 4), data_type=ctypes.c_uint32)
+                # self.print_vbo(sample_point_vbo, (9 * 37 * 3, 4), data_type=ctypes.c_uint32)
                 # self.print_vbo(splited_bspline_info_vbo, (10 * 3, 4))
                 # self.print_vbo(debug_vbo, (10, 4))
 
@@ -172,13 +172,13 @@ class Renderer(QObject):
                 renderer_model_task.triangle_number, point_number = self.get_splited_triangle_number(atomic_buffer)
 
                 # alloc memory in gpu for tessellated vertex
-                bindSSBO(vertex_vbo, 6, None, point_number * 16, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(vertex_vbo, 6, None, renderer_model_task.triangle_number * 10 * 16, 'float32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for tessellated normal
-                bindSSBO(normal_vbo, 7, None, point_number * 16, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(normal_vbo, 7, None, renderer_model_task.triangle_number * 10 * 16, 'float32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for tessellated index
-                bindSSBO(index_vbo, 8, None, renderer_model_task.triangle_number * 12, 'uint32', GL_DYNAMIC_DRAW)
+                bindSSBO(index_vbo, 8, None, renderer_model_task.triangle_number * 9 * 3 * 4, 'uint32', GL_DYNAMIC_DRAW)
 
                 # init compute shader before every frame
                 renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader.glsl')
@@ -187,9 +187,9 @@ class Renderer(QObject):
                 glUniform3fv(1, len(self.b_spline_body.ctrlPoints), numpy.array(self.b_spline_body.ctrlPoints, dtype='float32'))
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
 
-                # self.print_vbo(vertex_vbo, (4, 4))
-                # self.print_vbo(normal_vbo, (4, 4))
-                # self.print_vbo(index_vbo, (2, 3), data_type=ctypes.c_uint32)
+                self.print_vbo(vertex_vbo, (90, 4))
+                # self.print_vbo(normal_vbo, (90, 4))
+                # self.print_vbo(index_vbo, (81, 3), data_type=ctypes.c_uint32)
 
                 # check compute result
                 # self.print_vbo(normal_vbo, len(obj.normal) / 4)
@@ -240,8 +240,7 @@ class Renderer(QObject):
             glUniformMatrix4fv(ml, 1, GL_FALSE, wvp_matrix)
 
             glEnable(GL_DEPTH_TEST)
-
-            glDrawElements(GL_TRIANGLES, renderer_model_task.triangle_number * 3, GL_UNSIGNED_INT, None)
+            glDrawElements(GL_TRIANGLES, int(renderer_model_task.triangle_number * 9 * 3), GL_UNSIGNED_INT, None)
             # glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, None)
 
             glUseProgram(0)
