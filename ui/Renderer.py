@@ -102,11 +102,11 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
-                buffers = glGenBuffers(15)
+                buffers = glGenBuffers(16)
                 original_vertex_vbo, original_normal_vbo, original_index_vbo, adjacency_vbo, \
                 atomic_buffer, bspline_body_buffer, sample_point_vbo, \
                 splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, splited_bspline_info_vbo, \
-                vertex_vbo, normal_vbo, index_vbo, debug_vbo = buffers
+                vertex_vbo, normal_vbo, index_vbo, debug_vbo, test_vbo = buffers
 
                 # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
                 bindSSBO(original_vertex_vbo, 0, obj.vertex, len(obj.vertex) * 16, 'float32', GL_STATIC_DRAW)
@@ -184,10 +184,11 @@ class Renderer(QObject):
                 renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader.glsl')
                 glProgramUniform1f(renderer_model_task.deform_compute_shader, 0, renderer_model_task.triangle_number)
                 glUseProgram(renderer_model_task.deform_compute_shader)
-                glUniform3fv(1, len(self.b_spline_body.ctrlPoints), numpy.array(self.b_spline_body.ctrlPoints, dtype='float32'))
+                control_points = self.b_spline_body.ctrlPoints
+                glUniform3fv(1, control_points.size * control_points.itemsize, control_points)
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
 
-                self.print_vbo(vertex_vbo, (90, 4))
+                # self.print_vbo(vertex_vbo, (90, 4))
                 # self.print_vbo(normal_vbo, (90, 4))
                 # self.print_vbo(index_vbo, (81, 3), data_type=ctypes.c_uint32)
 
@@ -227,7 +228,8 @@ class Renderer(QObject):
             # if control points is change, run deform compute shader
             if self.need_deform:
                 glUseProgram(renderer_model_task.deform_compute_shader)
-                glUniform3fv(1, len(self.b_spline_body.ctrlPoints), numpy.array(self.b_spline_body.ctrlPoints, dtype='float32'))
+                control_points = self.b_spline_body.ctrlPoints
+                glUniform3fv(1, control_points.size * control_points.itemsize, control_points)
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
                 self.need_deform = False
 
@@ -299,7 +301,7 @@ class Renderer(QObject):
                     draw_aux.vvbo = vbos[0]
                     glBindBuffer(GL_ARRAY_BUFFER, draw_aux.vvbo)
                     vertices = self.b_spline_body.ctrlPoints
-                    glBufferData(GL_ARRAY_BUFFER, len(vertices) * 12, numpy.array(vertices, dtype='float32'),
+                    glBufferData(GL_ARRAY_BUFFER, vertices.size * vertices.itemsize, vertices,
                                  usage=GL_STATIC_DRAW)
                     vl = glGetAttribLocation(draw_aux.shader, 'vertice')
                     glEnableVertexAttribArray(vl)
@@ -371,10 +373,10 @@ class Renderer(QObject):
                 if self.need_update_control_point:
                     glBindBuffer(GL_ARRAY_BUFFER, draw_aux.vvbo)
                     vertices = self.b_spline_body.ctrlPoints
-                    glBufferData(GL_ARRAY_BUFFER, len(vertices) * 12, numpy.array(vertices, dtype='float32'),
+                    glBufferData(GL_ARRAY_BUFFER, vertices.size * vertices.itemsize, vertices,
                                  usage=GL_STATIC_DRAW)
                     glBindBuffer(GL_ARRAY_BUFFER, 0)
-                    self.need_update_control_point = False;
+                    self.need_update_control_point = False
 
                 # common bind
                 mmatrix = multiply(self.model_view_matrix, self.perspective_matrix)

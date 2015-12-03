@@ -94,8 +94,9 @@ void main() {
         return;
     }
 
-    // 采样控制顶点
+    // 计算采样点
     vec4 sample_points[37];
+    vec4 sample_normal[37];
     for (int i = 0; i < 37; ++i) {
         sample_points[i] = sample_bspline(samplePointBSplineInfo[triangleIndex * 37 + i]);
     }
@@ -106,6 +107,9 @@ void main() {
             bezierControlPoint[i] += sample_points[j] * Mr[i * 37 + j];
         }
     }
+    //todo 调整控制顶点
+
+    //todo 计算法向控制顶点
 
     // 细分
     // 生成顶点数据
