@@ -70,48 +70,51 @@ sample_aux_matrix = [
 
 
 def get_aux_matrix_offset(order, ctrl_point_num, left_index):
+    res = None
     if order == 1:
-        return sample_aux_matrix[0]  # MB1 0
+        res = sample_aux_matrix[0]  # MB1 0
     elif order == 2:
-        return sample_aux_matrix[1]  # MB2 1
+        res = sample_aux_matrix[1]  # MB2 1
     elif order == 3:
         if ctrl_point_num == 3:
-            return sample_aux_matrix[2]  # MB30 5
+            res = sample_aux_matrix[2]  # MB30 5
         else:
             if left_index == 2:
-                return sample_aux_matrix[3]  # MB31 14
+                res = sample_aux_matrix[3]  # MB31 14
             elif left_index == ctrl_point_num - 1:
-                return sample_aux_matrix[4]  # MB32 23
+                res = sample_aux_matrix[4]  # MB32 23
             else:
-                return sample_aux_matrix[5]  # MB33 32
+                res = sample_aux_matrix[5]  # MB33 32
     elif order == 4:
         if ctrl_point_num == 4:
-            return sample_aux_matrix[6]  # MB40 41
+            res = sample_aux_matrix[6]  # MB40 41
         elif ctrl_point_num == 5:
             if left_index == 3:
-                return sample_aux_matrix[7]  # MB41 57
+                res = sample_aux_matrix[7]  # MB41 57
             else:
-                return sample_aux_matrix[8]  # MB42 73
+                res = sample_aux_matrix[8]  # MB42 73
         elif ctrl_point_num == 6:
             if left_index == 3:
-                return sample_aux_matrix[9]  # MB43 89
+                res = sample_aux_matrix[9]  # MB43 89
             elif left_index == 4:
-                return sample_aux_matrix[10]  # MB44 105
+                res = sample_aux_matrix[10]  # MB44 105
             else:
-                return sample_aux_matrix[11]  # MB45 121
+                res = sample_aux_matrix[11]  # MB45 121
         else:
             if left_index == 3:
-                return sample_aux_matrix[9]  # MB43 89
+                res = sample_aux_matrix[9]  # MB43 89
             elif left_index == 4:
-                return sample_aux_matrix[12]  # MB46 137
+                res = sample_aux_matrix[12]  # MB46 137
             elif left_index == ctrl_point_num - 2:
-                return sample_aux_matrix[13]  # MB47 153
+                res = sample_aux_matrix[13]  # MB47 153
             elif left_index == ctrl_point_num - 1:
-                return sample_aux_matrix[11]  # MB45 121
+                res = sample_aux_matrix[11]  # MB45 121
             else:
-                return sample_aux_matrix[14]  # MB48 169
+                res = sample_aux_matrix[14]  # MB48 169
     else:
         raise Exception('order is too high')
+
+    return res.reshape((order, order))
 
 
 if __name__ == '__main__':

@@ -96,7 +96,7 @@ class OBJ:
         self.d_z = (max_z - min_z)
 
         # xyz三个维度中，模型跨度最大值
-        d = max(self.d_x, self.d_y, self.d_z)
+        d = max(self.d_x, self.d_y, self.d_z) / 2
 
         # 首先深拷贝各个顶点的坐标, 用于计算各个顶点在b样条体中的参数
         # self.parameters = deepcopy(self.vertices)

@@ -46,6 +46,7 @@ class BSplineBody:
         #         for w in self.ctrlPoints:
         #             print(w)
         self.control_points_backup = self.ctrlPoints.copy()
+        self.get_control_point_for_sample()
 
         self.is_hit = []
         self.reset_is_hit()
@@ -55,10 +56,7 @@ class BSplineBody:
 
     def get_knot_list(self, length):
         if self.control_point_number_u == 5 and self.order_u == 3:
-            first = -length / 2
-            last = length / 2
-            step = length / 6
-            return [first, first + step, first + 3 * step, first + 5 * step, last]
+            return [-length / 2, -length / 3, 0, length / 3, length / 2]
         else:
             raise Exception('unImplement for other order and ctrl point')
 
@@ -69,9 +67,6 @@ class BSplineBody:
                 v = i % (self.control_point_number_v * self.control_point_number_w) // self.control_point_number_w
                 w = i % self.control_point_number_w
                 self.ctrlPoints[u, v, w] = self.control_points_backup[u, v, w] + [x, y, z]
-                # self.ctrlPoints.flat[i][0] = self.control_points_backup.flat[i][0] + x
-                # self.ctrlPoints.flat[i][1] = self.control_points_backup.flat[i][1] + y
-                # self.ctrlPoints.flat[i][2] = self.control_points_backup.flat[i][2] + z
 
     def get_info(self):
         return np.array(
@@ -106,35 +101,31 @@ class BSplineBody:
             control_point_base_w = left_w_index - self.order_w + 1
 
             intermediate_results_1 = np.zeros((self.order_u, self.order_v, self.order_w, 3))
-            for w, u, v in product(range(self.order_w),
-                                   range(self.order_u),
-                                   range(self.order_v)):
-                control_points = self.ctrlPoints[
-                    (control_point_base_u + l) * self.control_point_number_v * self.control_point_number_w +
-                    (control_point_base_v + v) * self.control_point_number_w +
-                    control_point_base_w + w]
-                intermediate_results_1[w, ..., 0] = mu.dot()
-                mu_u_l = sample_aux_matrix[mu + u * self.order_u + l]
-                aux_multiply(mu_u_l, control_point, intermediate_results_1[u, v, w])
+            for w in range(self.order_w):
+                control_points = self.ctrlPoints[control_point_base_u:control_point_base_u + self.order_u,
+                                    control_point_base_v:control_point_base_v + self.order_v,
+                                    control_point_base_w + w]
+                intermediate_results_1[..., w, 0] = mu.dot(control_points[..., 0])
+                intermediate_results_1[..., w, 1] = mu.dot(control_points[..., 1])
+                intermediate_results_1[..., w, 2] = mu.dot(control_points[..., 2])
 
-            box = np.zeros((self.order_u, self.order_v, self.order_w, 4))
-            for u, v, w, l in product(range(self.order_u),
-                                      range(self.order_v),
-                                      range(self.order_w),
-                                      range(self.order_v)):
-                control_point = result[interval_index_u][interval_index_v][interval_index_w][u][l][w]
-                Mv_v_l = sample_aux_matrix[mv + v * self.order_v + l]
-                aux_multiply(Mv_v_l, control_point, box[u][v][w])
+            intermediate_results_2 = np.zeros((self.order_u, self.order_v, self.order_w, 4))
+            for u in range(self.order_u):
+                control_point = intermediate_results_1[u, ...]
+                intermediate_results_2[u, ..., 0] = mv.dot(control_point[..., 0])
+                intermediate_results_2[u, ..., 1] = mv.dot(control_point[..., 1])
+                intermediate_results_2[u, ..., 2] = mv.dot(control_point[..., 2])
 
-            for v, w, u in product(range(self.order_v),
-                                   range(self.order_w),
-                                   range(self.order_u)):
-                result[interval_index_u, interval_index_v, interval_index_w, u, v, w] = 0
-                for l in range(self.order_w):
-                    control_point = box[interval_index_u, interval_index_v, l]
-                    Mw_k_l = sample_aux_matrix[mw + w * self.order_w + l]
-                    aux_multiply(Mw_k_l, control_point,
-                                 result[interval_index_u, interval_index_v, interval_index_w, u, v, w])
+            for v in range(self.order_v):
+                control_point = intermediate_results_2[:, v, ...]
+                result[interval_index_u, interval_index_v, interval_index_w,
+                    :, v, :, 0] = control_point[..., 0].dot(mw.T)
+                result[interval_index_u, interval_index_v, interval_index_w,
+                    :, v, :, 1] = control_point[..., 1].dot(mw.T)
+                result[interval_index_u, interval_index_v, interval_index_w,
+                    :, v, :, 2] = control_point[..., 2].dot(mw.T)
+        print(result[1,1,1])
+
 
         return result
 

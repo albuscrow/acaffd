@@ -33,7 +33,7 @@ class Renderer(QObject):
 
         self.perspective_matrix = None
 
-        self.translation_matrix = create_from_translation(numpy.array([0, 0, -4.7]), dtype='float32')
+        self.translation_matrix = create_from_translation(numpy.array([0, 0, -8]), dtype='float32')
 
         self.model_view_matrix = multiply(create_from_eulers(create(-self.rotate_x / 180 * math.pi, 0,
                                                                     -self.rotate_y / 180 * math.pi), dtype='float32'),
