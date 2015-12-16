@@ -102,11 +102,13 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
-                buffers = glGenBuffers(16)
+                buffers = glGenBuffers(17)
                 original_vertex_vbo, original_normal_vbo, original_index_vbo, adjacency_vbo, \
                 atomic_buffer, bspline_body_buffer, sample_point_vbo, \
                 splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, splited_bspline_info_vbo, \
-                vertex_vbo, normal_vbo, index_vbo, debug_vbo, test_vbo = buffers
+                control_point_for_sample_buffer, \
+                vertex_vbo, normal_vbo, index_vbo, debug_vbo, test_vbo \
+                    = buffers
 
                 # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
                 bindSSBO(original_vertex_vbo, 0, obj.vertex, len(obj.vertex) * 16, 'float32', GL_STATIC_DRAW)
@@ -179,6 +181,15 @@ class Renderer(QObject):
 
                 # alloc memory in gpu for tessellated index
                 bindSSBO(index_vbo, 8, None, renderer_model_task.triangle_number * 9 * 3 * 4, 'uint32', GL_DYNAMIC_DRAW)
+
+                # copy BSpline body info to gpu
+                glBindBuffer(GL_UNIFORM_BUFFER, control_point_for_sample_buffer)
+                new_control_points = self.b_spline_body.get_control_point_for_sample()
+                glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
+                             new_control_points,
+                             usage=GL_STATIC_DRAW)
+                glBindBufferBase(GL_UNIFORM_BUFFER, 1, control_point_for_sample_buffer)
+                # print(self.print_vbo(control_point_for_sample_buffer, (3, 3, 3, 3, 3, 3, 4))[1,1,1])
 
                 # init compute shader before every frame
                 renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader.glsl')
@@ -283,6 +294,7 @@ class Renderer(QObject):
             print(data)
         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
+        return vbo_array
 
     @pyqtSlot(BSplineBody)
     def show_aux(self, is_show):

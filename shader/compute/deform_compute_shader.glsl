@@ -46,7 +46,13 @@ layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 
 //控制顶点
 layout(location=1) uniform vec3[125] controlPoints;
+
+layout(std140, binding=1) uniform ControlPointForSample{
+    uniform vec4[729] newControlPoints;
+};
+
 vec4 sample_bspline(BSplineInfo bsi);
+vec4 sample_bspline2(BSplineInfo bsi);
 
 const float Mr[370] = {
 //0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -98,7 +104,8 @@ void main() {
     vec4 sample_points[37];
     vec4 sample_normal[37];
     for (int i = 0; i < 37; ++i) {
-        sample_points[i] = sample_bspline(samplePointBSplineInfo[triangleIndex * 37 + i]);
+        sample_points[i] = sample_bspline2(samplePointBSplineInfo[triangleIndex * 37 + i]);
+//        sample_points[i] = sample_bspline(samplePointBSplineInfo[triangleIndex * 37 + i]);
     }
     // 计算Bezier曲面片控制顶点
     for (int i = 0; i < 10; ++i) {
@@ -223,6 +230,64 @@ const float[185] sample_aux_matrix = {
         /*------------------ MB48, 首地址169 -----------------*/
         0.16666666666666666666, 0.66666666666666666666, 0.16666666666666666666, 0.0, -0.5, 0.0, 0.5, 0.0, 0.5, -1.0, 0.5, 0.0, -0.16666666666666666666, 0.5, -0.5, 0.16666666666666666666};
 
+vec4 sample_bspline2(BSplineInfo bsi) {
+    vec4 result;
+    vec3 tempcp1[4];
+    vec3 tempcp2[4][4];
+
+    int uli = int(bsi.knot_left_index.x);
+    float u = bsi.t.x;
+    int vli = int(bsi.knot_left_index.y);
+    float v = bsi.t.y;
+    int wli = int(bsi.knot_left_index.z);
+    float w = bsi.t.z;
+    int controlPointOffset = ((uli - 2) * 9 + (vli - 2) * 3 + (wli - 2)) * 27;
+
+    float temp[4];
+    temp[0] = 1.0f;
+    temp[1] = w;
+    temp[2] = w * w;
+    temp[3] = temp[2] * w;
+
+    for (int i = 0; i < 3; ++i){
+        for (int j = 0; j < 3; ++j){
+            tempcp2[i][j] = vec3(0.0f);
+            for (int k = 0; k < 3; ++k) {
+                vec4 cp = newControlPoints[int(controlPointOffset + i * 9 + j * 3 + k)];
+                tempcp2[i][j].x += cp.x * temp[k];
+                tempcp2[i][j].y += cp.y * temp[k];
+                tempcp2[i][j].z += cp.z * temp[k];
+            }
+        }
+    }
+
+    temp[1] = v;
+    temp[2] = v * v;
+    temp[3] = temp[2] * v;
+
+    for (int i = 0; i < 3; ++i) {
+        tempcp1[i] = vec3(0.0);
+        for (int j = 0; j < 3; ++j) {
+            tempcp1[i].x += tempcp2[i][j].x * temp[j];
+            tempcp1[i].y += tempcp2[i][j].y * temp[j];
+            tempcp1[i].z += tempcp2[i][j].z * temp[j];
+        }
+    }
+
+    temp[1] = u;
+    temp[2] = u * u;
+    temp[3] = temp[2] * u;
+
+    result = vec4(0);
+    for (int i = 0; i < 3; ++i) {
+        result.x += tempcp1[i].x * temp[i];
+        result.y += tempcp1[i].y * temp[i];
+        result.z += tempcp1[i].z * temp[i];
+    }
+    result.w = 1;
+    return result;
+}
+
 vec4 sample_bspline(BSplineInfo bsi) {
     vec4 result;
     vec3 tempcp1[4];
@@ -234,6 +299,7 @@ vec4 sample_bspline(BSplineInfo bsi) {
     float v = bsi.t.y;
     int wli = int(bsi.knot_left_index.z);
     float w = bsi.t.z;
+    int controlPointOffset = (uli * 9 + vli * 3 + wli) * 27;
 //    return vec4(bsi.aux_matrix_offset.z, bsi.aux_matrix_offset.y, bsi.aux_matrix_offset.z, 1);
 
     float temp[4];
@@ -257,6 +323,7 @@ vec4 sample_bspline(BSplineInfo bsi) {
             tempcp2[i][j] = vec3(0.0f);
             for (int k = 0; k < 3; ++k) {
                 vec3 cp = controlPoints[int((uli - i) * 25 + (vli - j) * 5 + wli - k)];
+//                vec3 cp = newControlPoints[int(controlPointOffset + (2 - i) * 9 + (2 - j) * 3 + 2 - k)];
                 tempcp2[i][j].x += cp.x * muli[2 - k];
                 tempcp2[i][j].y += cp.y * muli[2 - k];
                 tempcp2[i][j].z += cp.z * muli[2 - k];

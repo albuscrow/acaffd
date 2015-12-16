@@ -46,7 +46,6 @@ class BSplineBody:
         #         for w in self.ctrlPoints:
         #             print(w)
         self.control_points_backup = self.ctrlPoints.copy()
-        self.get_control_point_for_sample()
 
         self.is_hit = []
         self.reset_is_hit()
@@ -70,10 +69,10 @@ class BSplineBody:
 
     def get_info(self):
         return np.array(
-            [self.order_u, self.order_v, self.order_w,
-             self.control_point_number_u, self.control_point_number_v, self.control_point_number_w,
-             self.lu, self.lv, self.lw,
-             -self.lu / 2, -self.lv / 2, -self.lw / 2], dtype='float32')
+                [self.order_u, self.order_v, self.order_w,
+                 self.control_point_number_u, self.control_point_number_v, self.control_point_number_w,
+                 self.lu, self.lv, self.lw,
+                 -self.lu / 2, -self.lv / 2, -self.lw / 2], dtype='float32')
 
     def get_control_point_for_sample(self):
         # uvw三个方向的区间数
@@ -82,7 +81,7 @@ class BSplineBody:
         interval_number_w = self.control_point_number_w - self.order_w + 1
         result = np.zeros((interval_number_u, interval_number_v, interval_number_w,
                            self.order_u, self.order_v, self.order_w,
-                           3))
+                           4), dtype=np.float32)
         for interval_index_u, interval_index_v, interval_index_w in \
                 product(range(interval_number_u),
                         range(interval_number_v),
@@ -103,8 +102,8 @@ class BSplineBody:
             intermediate_results_1 = np.zeros((self.order_u, self.order_v, self.order_w, 3))
             for w in range(self.order_w):
                 control_points = self.ctrlPoints[control_point_base_u:control_point_base_u + self.order_u,
-                                    control_point_base_v:control_point_base_v + self.order_v,
-                                    control_point_base_w + w]
+                                                 control_point_base_v:control_point_base_v + self.order_v,
+                                                 control_point_base_w + w]
                 intermediate_results_1[..., w, 0] = mu.dot(control_points[..., 0])
                 intermediate_results_1[..., w, 1] = mu.dot(control_points[..., 1])
                 intermediate_results_1[..., w, 2] = mu.dot(control_points[..., 2])
@@ -118,14 +117,13 @@ class BSplineBody:
 
             for v in range(self.order_v):
                 control_point = intermediate_results_2[:, v, ...]
-                result[interval_index_u, interval_index_v, interval_index_w,
-                    :, v, :, 0] = control_point[..., 0].dot(mw.T)
-                result[interval_index_u, interval_index_v, interval_index_w,
-                    :, v, :, 1] = control_point[..., 1].dot(mw.T)
-                result[interval_index_u, interval_index_v, interval_index_w,
-                    :, v, :, 2] = control_point[..., 2].dot(mw.T)
-        print(result[1,1,1])
-
+                result[interval_index_u, interval_index_v, interval_index_w, :, v, :, 0] = \
+                    control_point[..., 0].dot(mw.T)
+                result[interval_index_u, interval_index_v, interval_index_w, :, v, :, 1] = \
+                    control_point[..., 1].dot(mw.T)
+                result[interval_index_u, interval_index_v, interval_index_w, :, v, :, 2] = \
+                    control_point[..., 2].dot(mw.T)
+        print(result[1, 1, 1])
 
         return result
 
