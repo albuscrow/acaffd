@@ -32,9 +32,9 @@ class BSplineBody:
         self.lu = lx
         self.lv = ly
         self.lw = lz
-        aux_x = self.get_knot_list(self.lu)
-        aux_y = self.get_knot_list(self.lv)
-        aux_z = self.get_knot_list(self.lw)
+        aux_x = self.get_control_point_aux_list(self.lu)
+        aux_y = self.get_control_point_aux_list(self.lv)
+        aux_z = self.get_control_point_aux_list(self.lw)
         for u, x in enumerate(aux_x):
             for v, y in enumerate(aux_y):
                 for w, z in enumerate(aux_z):
@@ -53,7 +53,7 @@ class BSplineBody:
     def reset_is_hit(self):
         self.is_hit = [False] * self.control_point_number_u * self.control_point_number_v * self.control_point_number_w
 
-    def get_knot_list(self, length):
+    def get_control_point_aux_list(self, length):
         if self.control_point_number_u == 5 and self.order_u == 3:
             return [-length / 2, -length / 3, 0, length / 3, length / 2]
         else:

@@ -102,11 +102,11 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
-                buffers = glGenBuffers(17)
+                buffers = glGenBuffers(16)
                 original_vertex_vbo, original_normal_vbo, original_index_vbo, adjacency_vbo, \
                 atomic_buffer, bspline_body_buffer, sample_point_vbo, \
-                splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, splited_bspline_info_vbo, \
-                control_point_for_sample_buffer, \
+                splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, \
+                self.control_point_for_sample_buffer, \
                 vertex_vbo, normal_vbo, index_vbo, debug_vbo, test_vbo \
                     = buffers
 
@@ -151,10 +151,10 @@ class Renderer(QObject):
                 bindSSBO(splited_index_vbo, 5, None, len(obj.index) * 4 * 50, 'uint32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for bspline info
-                bindSSBO(splited_bspline_info_vbo, 10, None, len(obj.vertex) * 48 * 50, 'uint32', GL_DYNAMIC_DRAW)
+                # bindSSBO(splited_bspline_info_vbo, 10, None, len(obj.vertex) * 48 * 50, 'uint32', GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for sample point bspline info
-                bindSSBO(sample_point_vbo, 13, None, len(obj.index) / 3 * 50 * 37 * 48, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(sample_point_vbo, 13, None, len(obj.index) / 3 * 50 * 37 * 64, 'float32', GL_DYNAMIC_DRAW)
 
                 # run previous compute shader
                 previous_compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
@@ -183,12 +183,12 @@ class Renderer(QObject):
                 bindSSBO(index_vbo, 8, None, renderer_model_task.triangle_number * 9 * 3 * 4, 'uint32', GL_DYNAMIC_DRAW)
 
                 # copy BSpline body info to gpu
-                glBindBuffer(GL_UNIFORM_BUFFER, control_point_for_sample_buffer)
+                glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_buffer)
                 new_control_points = self.b_spline_body.get_control_point_for_sample()
                 glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
                              new_control_points,
                              usage=GL_STATIC_DRAW)
-                glBindBufferBase(GL_UNIFORM_BUFFER, 1, control_point_for_sample_buffer)
+                glBindBufferBase(GL_UNIFORM_BUFFER, 1, self.control_point_for_sample_buffer)
                 # print(self.print_vbo(control_point_for_sample_buffer, (3, 3, 3, 3, 3, 3, 4))[1,1,1])
 
                 # init compute shader before every frame
@@ -239,8 +239,14 @@ class Renderer(QObject):
             # if control points is change, run deform compute shader
             if self.need_deform:
                 glUseProgram(renderer_model_task.deform_compute_shader)
-                control_points = self.b_spline_body.ctrlPoints
-                glUniform3fv(1, control_points.size * control_points.itemsize, control_points)
+                # control_points = self.b_spline_body.ctrlPoints
+                # glUniform3fv(1, control_points.size * control_points.itemsize, control_points)
+
+                glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_buffer)
+                new_control_points = self.b_spline_body.get_control_point_for_sample()
+                glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
+                             new_control_points,
+                             usage=GL_STATIC_DRAW)
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
                 self.need_deform = False
 

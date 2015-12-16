@@ -29,12 +29,9 @@ layout(std430, binding=11) buffer AdjacencyBuffer{
 
 struct BSplineInfo {
     vec4 t;
+    vec4 n;
     uvec4 knot_left_index;
     uvec4 aux_matrix_offset;
-};
-
-layout(std430, binding=10) buffer SplitedBSplineInfoBuffer{
-    BSplineInfo[] bSplineInfo;
 };
 
 layout(std430, binding=13) buffer SamplePointBSplineInfoBuffer{
@@ -165,7 +162,7 @@ void main() {
         uint point_offset = atomicCounterIncrement(point_counter);
         splitedVertex[point_offset] = getPosition(pointParameter);
         splitedNormal[point_offset] = getNormal(pointParameter);
-        bSplineInfo[point_offset] = getBSplineInfo(splitedVertex[point_offset]);
+//        bSplineInfo[point_offset] = getBSplineInfo(splitedVertex[point_offset]);
         point_index[i] = point_offset;
 
     }
@@ -228,10 +225,17 @@ void genSamplePointBsplineInfo(uint index_offset) {
     vec4 p0 = splitedVertex[splitedIndex[index_offset * 3]];
     vec4 p1 = splitedVertex[splitedIndex[index_offset * 3 + 1]];
     vec4 p2 = splitedVertex[splitedIndex[index_offset * 3 + 2]];
+
+    vec4 n0 = splitedNormal[splitedIndex[index_offset * 3]];
+    vec4 n1 = splitedNormal[splitedIndex[index_offset * 3 + 1]];
+    vec4 n2 = splitedNormal[splitedIndex[index_offset * 3 + 2]];
+
     for (int i = 0; i < 37; ++i) {
         vec3 uvw = sampleParameter[i];
         vec4 position = p0 * uvw.x + p1 * uvw.y + p2 * uvw.z;
+        vec4 normal   = n0 * uvw.x + n1 * uvw.y + n2 * uvw.z;
         samplePointBSplineInfo[index_offset * 37 + i] = getBSplineInfo(position);
+        samplePointBSplineInfo[index_offset * 37 + i].n = normal;
     }
 }
 
