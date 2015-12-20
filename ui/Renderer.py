@@ -102,8 +102,8 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
-                buffers = glGenBuffers(16)
-                original_vertex_vbo, original_normal_vbo, original_index_vbo, adjacency_vbo, \
+                buffers = glGenBuffers(17)
+                original_vertex_vbo, original_normal_vbo, original_index_vbo, adjacency_vbo, share_adjacency_buffer,\
                 atomic_buffer, bspline_body_buffer, sample_point_vbo, \
                 splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, \
                 self.control_point_for_sample_buffer, \
@@ -121,6 +121,8 @@ class Renderer(QObject):
 
                 # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
                 bindSSBO(adjacency_vbo, 11, obj.adjacency, len(obj.adjacency) * 12, 'int32', GL_STATIC_DRAW)
+
+                bindSSBO(share_adjacency_buffer, 14, None, len(obj.index) / 3 * 6 * 16, 'float32', GL_DYNAMIC_DRAW)
 
                 bindSSBO(debug_vbo, 12, None, 16 * 10, 'float32', GL_DYNAMIC_DRAW)
 

@@ -1,50 +1,25 @@
 #version 450
+//input
 layout(std430, binding=0) buffer OriginalVertexBuffer{
     vec4[] originalVertex;
 };
 
+//input
 layout(std430, binding=1) buffer OrinigalNormalBuffer{
     vec4[] originalNormal;
 };
 
+//input
 layout(std430, binding=2) buffer OriginalNormalBuffer{
     uint[] originalIndex;
 };
 
-layout(std430, binding=3) buffer SplitedVertexBuffer{
-    vec4[] splitedVertex;
-};
-
-layout(std430, binding=4) buffer SplitedNormalBuffer{
-    vec4[] splitedNormal;
-};
-
-layout(std430, binding=5) buffer SplitedIndexBuffer{
-    uint[] splitedIndex;
-};
-
+//input
 layout(std430, binding=11) buffer AdjacencyBuffer{
     int[] adjacencyBuffer;
 };
 
-struct BSplineInfo {
-    vec4 t;
-    vec4 n;
-    uvec4 knot_left_index;
-    uvec4 aux_matrix_offset;
-};
-
-layout(std430, binding=13) buffer SamplePointBSplineInfoBuffer{
-    BSplineInfo[] samplePointBSplineInfo;
-};
-
-layout(std430, binding=12) buffer OutputDebugBuffer{
-    vec4[] myOutputBuffer;
-};
-
-layout(binding = 0) uniform atomic_uint index_counter;
-layout(binding = 0) uniform atomic_uint point_counter;
-
+//input
 layout(std140, binding=0) uniform BSplineBodyData{
     uniform float orderU;
     uniform float orderV;
@@ -62,11 +37,58 @@ layout(std140, binding=0) uniform BSplineBodyData{
     uniform float minW;
 };
 
+
+//output
+layout(std430, binding=3) buffer SplitedVertexBuffer{
+    vec4[] splitedVertex;
+};
+
+//output
+layout(std430, binding=4) buffer SplitedNormalBuffer{
+    vec4[] splitedNormal;
+};
+
+//output
+layout(std430, binding=15) buffer SplitedNormalAdjacencyBuffer{
+    vec4[] splitedNormalAdjacency;
+};
+
+//output
+layout(std430, binding=5) buffer SplitedIndexBuffer{
+    uint[] splitedIndex;
+};
+
+struct BSplineInfo {
+    vec4 t;
+    vec4 n;
+    uvec4 knot_left_index;
+    uvec4 aux_matrix_offset;
+};
+
+//output
+layout(std430, binding=13) buffer SamplePointBSplineInfoBuffer{
+    BSplineInfo[] samplePointBSplineInfo;
+};
+
+//share
+layout(std430, binding=14) buffer PNTriangleNShareBuffer{
+    vec3[] PNTriangleN_shared;
+};
+
+
+//debug
+layout(std430, binding=12) buffer OutputDebugBuffer{
+    vec4[] myOutputBuffer;
+};
+
+layout(binding = 0) uniform atomic_uint index_counter;
+layout(binding = 0) uniform atomic_uint point_counter;
+
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 
 BSplineInfo getBSplineInfo(vec4 parameter);
 
-
+//代表PNtriangle
 vec3 PNTriangleP[10];
 vec3 PNTriangleN[6];
 
@@ -76,7 +98,7 @@ uint original_index_0;
 uint original_index_1;
 uint original_index_2;
 
-// 30,01,12这三条边对应的邻接三角形
+// 20,01,12这三条边对应的邻接三角形
 int adjacency_triangle_index_0;
 int adjacency_triangle_index_1;
 int adjacency_triangle_index_2;
@@ -119,6 +141,9 @@ vec4 getPosition(vec3 parameter);
 // 根据 parameter 获得PNTriangle中的法向
 vec4 getNormal(vec3 parameter);
 
+// 根据 parameter 获得另接三角形PNTriangle中的法向
+//vec4 getNormalAdjacency(vec3 parameter);
+
 // 计算采样点的BSpline body 信息
 void genSamplePointBsplineInfo(uint index_offset);
 
@@ -148,6 +173,10 @@ void main() {
 
     // 生成pn-triangle
     genPNTriangleP();
+    for (int i = 0; i < 6; ++i) {
+        PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
+    }
+    memoryBarrierBuffer();
 
     // 获取pattern
     uint splitParameterOffset;
@@ -162,6 +191,7 @@ void main() {
         uint point_offset = atomicCounterIncrement(point_counter);
         splitedVertex[point_offset] = getPosition(pointParameter);
         splitedNormal[point_offset] = getNormal(pointParameter);
+//        splitedNormalAdjacency[point_offset] = getNormalAdjacency(pointParameter);
 //        bSplineInfo[point_offset] = getBSplineInfo(splitedVertex[point_offset]);
         point_index[i] = point_offset;
 
@@ -237,6 +267,12 @@ void genSamplePointBsplineInfo(uint index_offset) {
         samplePointBSplineInfo[index_offset * 37 + i] = getBSplineInfo(position);
         samplePointBSplineInfo[index_offset * 37 + i].n = normal;
     }
+//    splitedNormalAdjacency[index_offset * 6] = getAdjacencyNormalForSubTriangle();
+//    splitedNormalAdjacency[index_offset * 6 + 1] = getAdjacencyNormalForSubTriangle();
+//    splitedNormalAdjacency[index_offset * 6 + 2] = getAdjacencyNormalForSubTriangle();
+//    splitedNormalAdjacency[index_offset * 6 + 3] = getAdjacencyNormalForSubTriangle();
+//    splitedNormalAdjacency[index_offset * 6 + 4] = getAdjacencyNormalForSubTriangle();
+//    splitedNormalAdjacency[index_offset * 6 + 5] = getAdjacencyNormalForSubTriangle();
 }
 
 
@@ -322,6 +358,9 @@ vec4 getNormal(vec3 parameter) {
     return vec4(result, 1);
 }
 
+//vec4 getNormalAdjacency(vec3 parameter) {
+//}
+
 vec4 getPosition(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
@@ -342,6 +381,22 @@ void getSplitePattern(vec3 p1, vec3 p2, vec3 p3, out uint parameterOffset, out u
     indexOffset = 0;
     triangleNumber = 9;
     pointNumber = 10;
+}
+
+vec3 getAdjacencyNormalForSubTriangle(int triangleIndex, vec3 point, vec3 normal) {
+    if (triangleIndex == -1) {
+        return normal;
+    }
+    uint index0 = originalIndex[triangleIndex];
+    uint index1 = originalIndex[triangleIndex + 1];
+    uint index2 = originalIndex[triangleIndex + 2];
+    if (all(lessThan(abs(vec3(originalVertex[index0]) - point), ZERO3))) {
+        return vec3(originalNormal[index0]);
+    } else if (all(lessThan(abs(vec3(originalVertex[index1]) - point), ZERO3))) {
+        return vec3(originalNormal[index1]);
+    } else {
+        return vec3(originalNormal[index2]);
+    }
 }
 
 vec3 getAdjacencyNormal(int triangleIndex, vec3 point, vec3 normal) {
@@ -381,7 +436,7 @@ void genPNTriangleP(){
     PNTriangleP[6] = point1;
     PNTriangleP[9] = point2;
 
-    //另接三角形的六个法向nij,i表示近顶点编号,j远顶点编号
+    //邻接三角形的六个法向nij,i表示近顶点编号,j远顶点编号
     vec3 n02, n01, n10, n12, n21, n20;
     n02 = getAdjacencyNormal(adjacency_triangle_index_0, point0, normal0);
     n01 = getAdjacencyNormal(adjacency_triangle_index_1, point0, normal0);

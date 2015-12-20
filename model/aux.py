@@ -123,7 +123,6 @@ class BSplineBody:
                     control_point[..., 1].dot(mw.T)
                 result[interval_index_u, interval_index_v, interval_index_w, :, v, :, 2] = \
                     control_point[..., 2].dot(mw.T)
-        print(result[1, 1, 1])
 
         return result
 
@@ -132,7 +131,6 @@ def aux_multiply(value, v, result):
     result[0] += value * v[0]
     result[1] += value * v[1]
     result[2] += value * v[2]
-
 
 if __name__ == '__main__':
     def foo(x, y, z, *all, **dict):

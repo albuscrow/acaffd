@@ -65,7 +65,7 @@ class Controller(QObject):
         self.move_control_points.connect(renderer.move_control_points)
         # todo test code
         # raw_obj = OBJ("data/767.obj", ModelFileFormatType.obj)
-        raw_obj = OBJ("data/ttest.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/bishop.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("data/ttest.obj", ModelFileFormatType.obj)
+        raw_obj = OBJ("data/bishop.obj", ModelFileFormatType.obj)
         self.read_obj_success.emit(raw_obj)
         self.show_aux_signal.emit(True)
