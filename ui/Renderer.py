@@ -88,14 +88,22 @@ class Renderer(QObject):
                 glBindVertexArray(renderer_model_task.vao)
 
                 # 原始顶点数据,也是顶点在b样条体中的参数;要满足这一条件必须使控制顶点和节点向量满足一定条件。
-                # original_vertex_vbo
-                # original_normal_vbo
-                # original_index_vbo
+                # original_vertex_vbo original_normal_vbo original_index_vbo
+
+                # 原始面片邻接关系, 共享的原始面片pn triangle
+                # adjacency_vbo share_adjacency_pn_triangle_vbo
+
+                # 用于同步
+                # atomic_buffer
+
+                # b样条体相关信息
+                # bspline_body_ubo
 
                 # 经过分割以后的数据。
-                # splited_vertex_vbo
-                # splited_normal_vbo
-                # splited_index_vbo
+                # splited_triangle_vbo
+
+                # 加速采样后的控制顶点
+                # self.control_point_for_sample_ubo
 
                 # 经过tessellate后最终用于绘制的数据。
                 # vertice_vbo
@@ -103,13 +111,14 @@ class Renderer(QObject):
                 # index_vbo
 
                 # create vbo
-                buffers = glGenBuffers(17)
-                original_vertex_vbo, original_normal_vbo, original_index_vbo, adjacency_vbo, share_adjacency_pntriangle_buffer, \
-                atomic_buffer, bspline_body_buffer, sample_point_vbo, \
-                splited_vertex_vbo, splited_normal_vbo, splited_index_vbo, \
-                self.control_point_for_sample_buffer, \
-                vertex_vbo, normal_vbo, index_vbo, debug_vbo, test_vbo \
-                    = buffers
+                buffers = glGenBuffers(13)
+                original_vertex_vbo, original_normal_vbo, original_index_vbo, \
+                adjacency_vbo, share_adjacency_pn_triangle_vbo, \
+                atomic_ubo, \
+                bspline_body_ubo, \
+                splited_triangle_vbo, \
+                self.control_point_for_sample_ubo, \
+                vertex_vbo, normal_vbo, index_vbo, debug_vbo = buffers
 
                 # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
                 bindSSBO(original_vertex_vbo, 0, obj.vertex, obj.original_vertex_number * VERTEX_SIZE, np.float32,
@@ -127,7 +136,7 @@ class Renderer(QObject):
                 bindSSBO(adjacency_vbo, 3, obj.adjacency,
                          obj.original_triangle_number * PER_TRIANGLE_ADJACENCY_INDEX_SIZE, np.uint32, GL_STATIC_DRAW)
 
-                bindSSBO(share_adjacency_pntriangle_buffer, 4, None,
+                bindSSBO(share_adjacency_pn_triangle_vbo, 4, None,
                          obj.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE, np.float32,
                          GL_DYNAMIC_DRAW)
 
@@ -138,33 +147,24 @@ class Renderer(QObject):
                 # self.print_vbo(original_index_vbo, (1, 3), data_type=ctypes.c_uint32)
 
                 # copy BSpline body info to gpu
-                self.bindUBO(0, bspline_body_buffer, data)
+                bspline_body_info = self.b_spline_body.get_info()
+                self.bindUBO(0, bspline_body_ubo, bspline_body_info,
+                             bspline_body_info.size * bspline_body_info.itemsize)
 
                 # init atom buffer for count splited triangle number
-                self.init_atomic(atomic_buffer)
+                self.init_atomic(atomic_ubo)
 
                 # alloc memory in gpu for splited vertex, and
-                bindSSBO(splited_vertex_vbo, 3, None, len(obj.vertex) * 16 * 50, 'float32', GL_DYNAMIC_DRAW)
-
-                # alloc memory in gpu for splited normal
-                bindSSBO(splited_normal_vbo, 4, None, len(obj.normal) * 16 * 50, 'float32', GL_DYNAMIC_DRAW)
-
-                # alloc memory in gpu for splited index
-                bindSSBO(splited_index_vbo, 5, None, len(obj.index) * 4 * 50, 'uint32', GL_DYNAMIC_DRAW)
-
-                # alloc memory in gpu for bspline info
-                # bindSSBO(splited_bspline_info_vbo, 10, None, len(obj.vertex) * 48 * 50, 'uint32', GL_DYNAMIC_DRAW)
-
-                # alloc memory in gpu for sample point bspline info
-                bindSSBO(sample_point_vbo, 13, None, original_triangle_number * 50 * 37 * 64, 'float32',
-                         GL_DYNAMIC_DRAW)
+                bindSSBO(splited_triangle_vbo, 5, None,
+                         obj.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE * SPLITED_TRIANGLE_SIZE,
+                         np.float32, GL_DYNAMIC_DRAW)
 
                 # run previous compute shader
-                previous_compute_shader = get_compute_shader_program('previous_compute_shader.glsl')
+                previous_compute_shader = get_compute_shader_program('previous_compute_shader_oo.glsl')
                 glUseProgram(previous_compute_shader)
 
                 # self.print_vbo(debug_vbo, (10, 4))
-                glDispatchCompute(int(original_triangle_number / 512 + 1), 1, 1)
+                glDispatchCompute(int(obj.original_triangle_number / 512 + 1), 1, 1)
 
                 # self.print_vbo(splited_vertex_vbo, (10, 4))
                 # self.print_vbo(splited_normal_vbo, (4, 4))
@@ -174,32 +174,39 @@ class Renderer(QObject):
                 # self.print_vbo(debug_vbo, (10, 4))
 
                 # get number of splited triangle
-                renderer_model_task.triangle_number, = self.get_splited_triangle_number(atomic_buffer)
+                renderer_model_task.triangle_number, = self.get_splited_triangle_number(atomic_ubo)
 
                 # alloc memory in gpu for tessellated vertex
-                bindSSBO(vertex_vbo, 6, None, renderer_model_task.triangle_number * 10 * 16, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(vertex_vbo, 6, None,
+                         renderer_model_task.triangle_number * TESSELLATED_POINT_NUMBER_PRE_SPLITED_TRIANGLE * VERTEX_SIZE,
+                         np.float32, GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for tessellated normal
-                bindSSBO(normal_vbo, 7, None, renderer_model_task.triangle_number * 10 * 16, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(normal_vbo, 7, None,
+                         renderer_model_task.triangle_number * TESSELLATED_POINT_NUMBER_PRE_SPLITED_TRIANGLE * VERTEX_SIZE,
+                         np.float32, GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for tessellated index
-                bindSSBO(index_vbo, 8, None, renderer_model_task.triangle_number * 9 * 3 * 4, 'uint32', GL_DYNAMIC_DRAW)
+                bindSSBO(index_vbo, 8, None,
+                         renderer_model_task.triangle_number * TESSELLATED_POINT_NUMBER_PRE_SPLITED_TRIANGLE * PER_TRIANGLE_INDEX_SIZE,
+                         np.uint32, GL_DYNAMIC_DRAW)
 
-                # copy BSpline body info to gpu
-                glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_buffer)
+                # copy control point info to gpu
                 new_control_points = self.b_spline_body.get_control_point_for_sample()
-                glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
-                             new_control_points,
-                             usage=GL_STATIC_DRAW)
-                glBindBufferBase(GL_UNIFORM_BUFFER, 1, self.control_point_for_sample_buffer)
+                self.bindUBO(1, self.control_point_for_sample_ubo, new_control_points,
+                             new_control_points.size * new_control_points.itemsize)
+                # glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_ubo)
+                # glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
+                #              new_control_points,
+                #              usage=GL_STATIC_DRAW)
+                # glBindBufferBase(GL_UNIFORM_BUFFER, 1, self.control_point_for_sample_ubo)
                 # print(self.print_vbo(control_point_for_sample_buffer, (3, 3, 3, 3, 3, 3, 4))[1,1,1])
 
                 # init compute shader before every frame
-                renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader.glsl')
+                renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader_oo.glsl')
                 glProgramUniform1f(renderer_model_task.deform_compute_shader, 0, renderer_model_task.triangle_number)
+
                 glUseProgram(renderer_model_task.deform_compute_shader)
-                control_points = self.b_spline_body.ctrlPoints
-                glUniform3fv(1, control_points.size * control_points.itemsize, control_points)
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
 
                 # self.print_vbo(vertex_vbo, (90, 4))
@@ -245,7 +252,7 @@ class Renderer(QObject):
                 # control_points = self.b_spline_body.ctrlPoints
                 # glUniform3fv(1, control_points.size * control_points.itemsize, control_points)
 
-                glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_buffer)
+                glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_ubo)
                 new_control_points = self.b_spline_body.get_control_point_for_sample()
                 glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
                              new_control_points,
@@ -268,7 +275,6 @@ class Renderer(QObject):
             glUseProgram(0)
             glBindVertexArray(0)
 
-
         self.renderer_model_task = renderer_model_task
         self.updateScene.emit()
 
@@ -280,10 +286,9 @@ class Renderer(QObject):
         glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, atomic_buffer)
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0)
 
-    def bindUBO(self, binding_point, bspline_body_buffer, data, length):
+    def bindUBO(self, binding_point, bspline_body_buffer, data, size):
         glBindBuffer(GL_UNIFORM_BUFFER, bspline_body_buffer)
-        data = self.b_spline_body.get_info()
-        glBufferData(GL_UNIFORM_BUFFER, length, data, usage=GL_STATIC_DRAW)
+        glBufferData(GL_UNIFORM_BUFFER, size, data, usage=GL_STATIC_DRAW)
         glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, bspline_body_buffer)
 
     @pyqtSlot(int, int)

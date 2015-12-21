@@ -57,7 +57,7 @@ struct SplitedTriangle {
 
 
 //output
-layout(std430, binding=5) buffer AdjacencyBuffer{
+layout(std430, binding=5) buffer OutputTriangleBuffer{
     SplitedTriangle[] output_triangles;
 };
 
@@ -114,111 +114,6 @@ const uvec3 splitIndex[9] = {
     {3, 6, 7}, {3, 7, 4}, {4, 7, 8}, {4, 8, 5}, {5, 8, 9}
 };
 
-
-// 生成PN-Triangle
-void genPNTriangleP();
-
-// 根据 parameter 获得PNTriangle中的法向
-vec4 getNormal(vec3 parameter);
-
-// 根据 parameter 获得PNTriangle中的位置
-vec4 getPosition(vec3 parameter);
-
-// 根据在整个bspline体中的参数求该采样点的相关信息
-SamplePointInfo getBSplineInfo(vec4 parameter);
-
-// 根据三角形形状，取得splite pattern
-void getSplitePattern(vec3 p1, vec3 p2, vec3 p3, out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber);
-
-// 生成切割后的子三角形
-SplitedTriangle genSubSplitedTriangle();
-
-// 计算采样点的BSpline body 信息
-void genSamplePointBsplineInfo(uint index_offset);
-
-void main() {
-    uint triangleIndex = gl_GlobalInvocationID.x;
-    if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
-        return;
-    }
-
-    // 初始化全局变量
-    // get current original tirangle index
-    original_index_0 = originalIndex[triangleIndex * 3];
-    original_index_1 = originalIndex[triangleIndex * 3 + 1];
-    original_index_2 = originalIndex[triangleIndex * 3 + 2];
-
-    adjacency_triangle_index_0 = adjacencyBuffer[triangleIndex * 3];
-    adjacency_triangle_index_1 = adjacencyBuffer[triangleIndex * 3 + 1];
-    adjacency_triangle_index_2 = adjacencyBuffer[triangleIndex * 3 + 2];
-
-    point0 = vec3(originalVertex[original_index_0]);
-    point1 = vec3(originalVertex[original_index_1]);
-    point2 = vec3(originalVertex[original_index_2]);
-
-    normal0 = vec3(originalNormal[original_index_0]);
-    normal1 = vec3(originalNormal[original_index_1]);
-    normal2 = vec3(originalNormal[original_index_2]);
-
-    // 生成pn-triangle
-    genPNTriangleP();
-    for (int i = 0; i < 6; ++i) {
-        PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
-    }
-    memoryBarrierBuffer();
-
-    // 获取pattern
-    uint splitParameterOffset;
-    uint splitIndexOffset;
-    uint subTriangleNumber;
-    uint pointNumber;
-    getSplitePattern(point0, point1, point2, splitParameterOffset, splitIndexOffset, subTriangleNumber, pointNumber);
-
-
-    vec4 new_position[pointNumber];
-    vec4 new_normal[pointNumber];
-    // 生成顶点数据
-    for (int i = 0; i < pointNumber; ++i) {
-        vec3 pointParameter = splitParameter[splitParameterOffset + i];
-        new_position[i] = getPosition(pointParameter);
-        new_normal[i] = getNormal(pointParameter);
-    }
-
-    //生成分割三角形
-    for (int i = 0; i < subTriangleNumber; ++i) {
-        uvec3 index = splitIndex[splitIndexOffset + i];
-        SplitedTriangle st;
-
-        st.position[0] = new_position[index.x];
-        st.position[1] = new_position[index.y];
-        st.position[2] = new_position[index.z];
-
-        st.normal[0] = new_normal[index.x];
-        st.normal[1] = new_normal[index.y];
-        st.normal[2] = new_normal[index.z];
-
-        for (int i = 0; i < 37; ++i) {
-            vec3 uvw = sampleParameter[i];
-            vec4 position = st.position[0] * uvw.x + st.position[1] * uvw.y + st.position[2] * uvw.z;
-            vec4 normal = st.normal[0] * uvw.x + st.normal[1] * uvw.y + st.normal[2] * uvw.z;
-            st.samplePoint[i] = getBSplineInfo(position);
-            st.samplePoint[i].original_normal = normal;
-        }
-
-        output_triangles[atomicCounterIncrement(triangle_counter)] = st;
-    }
-
-//    // 生成index数据
-//    for (int i = 0; i < 9; ++i) {
-//        uvec3 index = splitIndex[splitIndexOffset + i];
-//        uint index_offset = atomicCounterIncrement(index_counter);
-//        splitedIndex[index_offset * 3] = point_index[index.x];
-//        splitedIndex[index_offset * 3 + 1] = point_index[index.y];
-//        splitedIndex[index_offset * 3 + 2] = point_index[index.z];
-//        genSamplePointBsplineInfo(index_offset);
-//    }
-}
-
 const vec3 sampleParameter[37] = {
     {1.000000, 0.000000, 0.000000},
 
@@ -263,29 +158,140 @@ const vec3 sampleParameter[37] = {
 };
 
 
-void genSamplePointBsplineInfo(uint index_offset) {
-    vec4 p0 = splitedVertex[splitedIndex[index_offset * 3]];
-    vec4 p1 = splitedVertex[splitedIndex[index_offset * 3 + 1]];
-    vec4 p2 = splitedVertex[splitedIndex[index_offset * 3 + 2]];
 
-    vec4 n0 = splitedNormal[splitedIndex[index_offset * 3]];
-    vec4 n1 = splitedNormal[splitedIndex[index_offset * 3 + 1]];
-    vec4 n2 = splitedNormal[splitedIndex[index_offset * 3 + 2]];
+// 生成PN-Triangle
+void genPNTriangleP();
 
-    for (int i = 0; i < 37; ++i) {
-        vec3 uvw = sampleParameter[i];
-        vec4 position = p0 * uvw.x + p1 * uvw.y + p2 * uvw.z;
-        vec4 normal   = n0 * uvw.x + n1 * uvw.y + n2 * uvw.z;
-        samplePointBSplineInfo[index_offset * 37 + i] = getBSplineInfo(position);
-        samplePointBSplineInfo[index_offset * 37 + i].n = normal;
+// 根据 parameter 获得PNTriangle中的法向
+vec4 getNormal(vec3 parameter);
+
+// 根据 parameter 获得PNTriangle中的位置
+vec4 getPosition(vec3 parameter);
+
+// 根据在整个bspline体中的参数求该采样点的相关信息
+SamplePointInfo getBSplineInfo(vec4 parameter);
+
+// 根据三角形形状，取得splite pattern
+void getSplitePattern(vec3 p1, vec3 p2, vec3 p3, out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber);
+
+// 生成切割后的子三角形
+SplitedTriangle genSubSplitedTriangle();
+
+// 计算采样点的BSpline body 信息
+//void genSamplePointBsplineInfo(uint index_offset);
+
+void main() {
+    uint triangleIndex = gl_GlobalInvocationID.x;
+    if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
+        return;
     }
+
+    // 初始化全局变量
+    // get current original tirangle index
+    original_index_0 = originalIndex[triangleIndex * 3];
+    original_index_1 = originalIndex[triangleIndex * 3 + 1];
+    original_index_2 = originalIndex[triangleIndex * 3 + 2];
+
+    adjacency_triangle_index_0 = adjacencyBuffer[triangleIndex * 3];
+    adjacency_triangle_index_1 = adjacencyBuffer[triangleIndex * 3 + 1];
+    adjacency_triangle_index_2 = adjacencyBuffer[triangleIndex * 3 + 2];
+
+    point0 = vec3(originalVertex[original_index_0]);
+    point1 = vec3(originalVertex[original_index_1]);
+    point2 = vec3(originalVertex[original_index_2]);
+
+    normal0 = vec3(originalNormal[original_index_0]);
+    normal1 = vec3(originalNormal[original_index_1]);
+    normal2 = vec3(originalNormal[original_index_2]);
+
+    // 生成pn-triangle
+    genPNTriangleP();
+    for (int i = 0; i < 6; ++i) {
+        PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
+    }
+    memoryBarrierBuffer();
+
+    // 获取pattern
+    uint splitParameterOffset;
+    uint splitIndexOffset;
+    uint subTriangleNumber;
+    uint pointNumber;
+    getSplitePattern(point0, point1, point2, splitParameterOffset, splitIndexOffset, subTriangleNumber, pointNumber);
+
+
+    vec4 new_position[100];
+    vec4 new_normal[100];
+    // 生成顶点数据
+    for (int i = 0; i < pointNumber; ++i) {
+        vec3 pointParameter = splitParameter[splitParameterOffset + i];
+        new_position[i] = getPosition(pointParameter);
+        new_normal[i] = getNormal(pointParameter);
+    }
+
+    //生成分割三角形
+    for (int i = 0; i < subTriangleNumber; ++i) {
+        uvec3 index = splitIndex[splitIndexOffset + i];
+        SplitedTriangle st;
+
+        st.position[0] = new_position[index.x];
+        st.position[1] = new_position[index.y];
+        st.position[2] = new_position[index.z];
+
+        st.normal[0] = new_normal[index.x];
+        st.normal[1] = new_normal[index.y];
+        st.normal[2] = new_normal[index.z];
+
+        for (int i = 0; i < 37; ++i) {
+            vec3 uvw = sampleParameter[i];
+            vec4 position = st.position[0] * uvw.x + st.position[1] * uvw.y + st.position[2] * uvw.z;
+            vec4 normal = st.normal[0] * uvw.x + st.normal[1] * uvw.y + st.normal[2] * uvw.z;
+            st.samplePoint[i] = getBSplineInfo(position);
+            st.samplePoint[i].original_normal = normal;
+        }
+
+        for (int i = 0; i < 6; ++i) {
+            st.adjacency_normal[i] = vec4(0);
+        }
+
+        output_triangles[atomicCounterIncrement(triangle_counter)] = st;
+
+    }
+
+//    // 生成index数据
+//    for (int i = 0; i < 9; ++i) {
+//        uvec3 index = splitIndex[splitIndexOffset + i];
+//        uint index_offset = atomicCounterIncrement(index_counter);
+//        splitedIndex[index_offset * 3] = point_index[index.x];
+//        splitedIndex[index_offset * 3 + 1] = point_index[index.y];
+//        splitedIndex[index_offset * 3 + 2] = point_index[index.z];
+//        genSamplePointBsplineInfo(index_offset);
+//    }
+}
+
+
+//void genSamplePointBsplineInfo(uint index_offset) {
+//    vec4 p0 = splitedVertex[splitedIndex[index_offset * 3]];
+//    vec4 p1 = splitedVertex[splitedIndex[index_offset * 3 + 1]];
+//    vec4 p2 = splitedVertex[splitedIndex[index_offset * 3 + 2]];
+//
+//    vec4 n0 = splitedNormal[splitedIndex[index_offset * 3]];
+//    vec4 n1 = splitedNormal[splitedIndex[index_offset * 3 + 1]];
+//    vec4 n2 = splitedNormal[splitedIndex[index_offset * 3 + 2]];
+//
+//    for (int i = 0; i < 37; ++i) {
+//        vec3 uvw = sampleParameter[i];
+//        vec4 position = p0 * uvw.x + p1 * uvw.y + p2 * uvw.z;
+//        vec4 normal   = n0 * uvw.x + n1 * uvw.y + n2 * uvw.z;
+//        samplePointBSplineInfo[index_offset * 37 + i] = getBSplineInfo(position);
+//        samplePointBSplineInfo[index_offset * 37 + i].n = normal;
+//    }
 //    splitedNormalAdjacency[index_offset * 6] = getAdjacencyNormalForSubTriangle();
 //    splitedNormalAdjacency[index_offset * 6 + 1] = getAdjacencyNormalForSubTriangle();
 //    splitedNormalAdjacency[index_offset * 6 + 2] = getAdjacencyNormalForSubTriangle();
 //    splitedNormalAdjacency[index_offset * 6 + 3] = getAdjacencyNormalForSubTriangle();
 //    splitedNormalAdjacency[index_offset * 6 + 4] = getAdjacencyNormalForSubTriangle();
 //    splitedNormalAdjacency[index_offset * 6 + 5] = getAdjacencyNormalForSubTriangle();
-}
+//}
 
 
 int getAuxMatrixOffset(in int order,in int ctrlPointNum,in int leftIdx) {
