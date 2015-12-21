@@ -2,9 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="76e13a63-b527-40bc-8bab-c177130a27e6" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/dictionaries/ac.xml" afterPath="$PROJECT_DIR$/.idea/dictionaries/ac.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Constant.py" afterPath="$PROJECT_DIR$/Constant.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/shader/compute/previous_compute_shader_oo.glsl" afterPath="$PROJECT_DIR$/shader/compute/previous_compute_shader_oo.glsl" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ui/Renderer.py" afterPath="$PROJECT_DIR$/ui/Renderer.py" />
     </list>
     <ignored path="affd.iws" />
@@ -35,8 +32,8 @@
       <file leaf-file-name="Renderer.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ui/Renderer.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.26293558">
-              <caret line="197" column="67" selection-start-line="197" selection-start-column="67" selection-end-line="197" selection-end-column="67" />
+            <state vertical-scroll-proportion="3.4160507">
+              <caret line="249" column="0" selection-start-line="249" selection-start-column="0" selection-end-line="249" selection-end-column="0" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -1030,8 +1027,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ui/Renderer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.26293558">
-          <caret line="197" column="67" selection-start-line="197" selection-start-column="67" selection-end-line="197" selection-end-column="67" />
+        <state vertical-scroll-proportion="3.4160507">
+          <caret line="249" column="0" selection-start-line="249" selection-start-column="0" selection-end-line="249" selection-end-column="0" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
           </folding>

@@ -142,10 +142,6 @@ class Renderer(QObject):
 
                 # bindSSBO(debug_vbo, 20, None, 16 * 10, 'float32', GL_DYNAMIC_DRAW)
 
-                # self.print_vbo(original_vertex_vbo, (3, 4))
-                # self.print_vbo(original_normal_vbo, (3, 4))
-                # self.print_vbo(original_index_vbo, (1, 3), data_type=ctypes.c_uint32)
-
                 # copy BSpline body info to gpu
                 bspline_body_info = self.b_spline_body.get_info()
                 self.bindUBO(0, bspline_body_ubo, bspline_body_info,
@@ -165,13 +161,6 @@ class Renderer(QObject):
 
                 # self.print_vbo(debug_vbo, (10, 4))
                 glDispatchCompute(int(obj.original_triangle_number / 512 + 1), 1, 1)
-
-                # self.print_vbo(splited_vertex_vbo, (10, 4))
-                # self.print_vbo(splited_normal_vbo, (4, 4))
-                # self.print_vbo(splited_index_vbo, (10, 3), data_type=ctypes.c_uint32)
-                # self.print_vbo(sample_point_vbo, (9 * 37 * 3, 4), data_type=ctypes.c_uint32)
-                # self.print_vbo(splited_bspline_info_vbo, (10 * 3, 4))
-                # self.print_vbo(debug_vbo, (10, 4))
 
                 # get number of splited triangle
                 renderer_model_task.triangle_number, = self.get_splited_triangle_number(atomic_ubo)
@@ -195,12 +184,6 @@ class Renderer(QObject):
                 new_control_points = self.b_spline_body.get_control_point_for_sample()
                 self.bindUBO(1, self.control_point_for_sample_ubo, new_control_points,
                              new_control_points.size * new_control_points.itemsize)
-                # glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_ubo)
-                # glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
-                #              new_control_points,
-                #              usage=GL_STATIC_DRAW)
-                # glBindBufferBase(GL_UNIFORM_BUFFER, 1, self.control_point_for_sample_ubo)
-                # print(self.print_vbo(control_point_for_sample_buffer, (3, 3, 3, 3, 3, 3, 4))[1,1,1])
 
                 # init compute shader before every frame
                 renderer_model_task.deform_compute_shader = get_compute_shader_program('deform_compute_shader_oo.glsl')
@@ -208,10 +191,6 @@ class Renderer(QObject):
 
                 glUseProgram(renderer_model_task.deform_compute_shader)
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
-
-                # self.print_vbo(vertex_vbo, (90, 4))
-                # self.print_vbo(normal_vbo, (90, 4))
-                # self.print_vbo(index_vbo, (81, 3), data_type=ctypes.c_uint32)
 
                 # check compute result
                 # self.print_vbo(normal_vbo, len(obj.normal) / 4)
@@ -249,8 +228,6 @@ class Renderer(QObject):
             # if control points is change, run deform compute shader
             if self.need_deform:
                 glUseProgram(renderer_model_task.deform_compute_shader)
-                # control_points = self.b_spline_body.ctrlPoints
-                # glUniform3fv(1, control_points.size * control_points.itemsize, control_points)
 
                 glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_ubo)
                 new_control_points = self.b_spline_body.get_control_point_for_sample()
@@ -270,7 +247,6 @@ class Renderer(QObject):
 
             glEnable(GL_DEPTH_TEST)
             glDrawElements(GL_TRIANGLES, int(renderer_model_task.triangle_number * 9 * 3), GL_UNSIGNED_INT, None)
-            # glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, None)
 
             glUseProgram(0)
             glBindVertexArray(0)
