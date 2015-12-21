@@ -137,7 +137,7 @@ class OBJ:
             self.index.append(aux_vertex_map[v])
         self.adjacency.append([-1, -1, -1])
 
-        current_triangle_index = len(self.index) - 3
+        current_triangle_index = int((len(self.index) - 3) / 3)
         # 建立邻接关系
         for i in range(len(point_indexes)):
             current_vertex_index = point_indexes[i]
@@ -148,11 +148,12 @@ class OBJ:
             common_triangle_number = len(triangle_index_set)
             if common_triangle_number == 1:
                 triangle_index = triangle_index_set.pop()
-                self.adjacency[-1][i] = triangle_index
                 temp = temp_vertices[prev_vertex_index]
                 for j in range(3):
-                    if self.vertex[self.index[triangle_index + j]] == temp:
-                        self.adjacency[int(triangle_index / 3)][j] = current_triangle_index
+                    if self.vertex[self.index[triangle_index * 3 + j]] == temp:
+                        self.adjacency[triangle_index][j] = current_triangle_index * 4 + i
+                        self.adjacency[-1][i] = triangle_index * 4 + j
+                        break
             elif common_triangle_number >= 2:
                 raise Exception('3 or more triangle adjacency with the same edge')
 

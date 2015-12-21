@@ -34,7 +34,7 @@ layout(std430, binding=2) buffer OriginalNormalBuffer{
 
 //input
 layout(std430, binding=3) buffer AdjacencyBuffer{
-    int[] adjacencyBuffer;
+    uint[] adjacencyBuffer;
 };
 
 //share
@@ -82,10 +82,9 @@ uint original_index_0;
 uint original_index_1;
 uint original_index_2;
 
-// 20,01,12这三条边对应的邻接三角形
-int adjacency_triangle_index_0;
-int adjacency_triangle_index_1;
-int adjacency_triangle_index_2;
+// 20,01,12这三条边对应的邻接三角形, 以及邻接三角形的边
+uint adjacency_triangle_index[3];
+uint adjacency_triangle_edge[3];
 
 // 三个顶点位置
 vec3 point0;
@@ -192,9 +191,13 @@ void main() {
     original_index_1 = originalIndex[triangleIndex * 3 + 1];
     original_index_2 = originalIndex[triangleIndex * 3 + 2];
 
-    adjacency_triangle_index_0 = adjacencyBuffer[triangleIndex * 3];
-    adjacency_triangle_index_1 = adjacencyBuffer[triangleIndex * 3 + 1];
-    adjacency_triangle_index_2 = adjacencyBuffer[triangleIndex * 3 + 2];
+    adjacency_triangle_index[0] = uint(adjacencyBuffer[triangleIndex * 3] / 4);
+    adjacency_triangle_index[1] = uint(adjacencyBuffer[triangleIndex * 3 + 1] / 4);
+    adjacency_triangle_index[2] = uint(adjacencyBuffer[triangleIndex * 3 + 2] / 4);
+
+    adjacency_triangle_edge[0] = adjacencyBuffer[triangleIndex * 3] & 3;
+    adjacency_triangle_edge[1] = adjacencyBuffer[triangleIndex * 3 + 1] & 3;
+    adjacency_triangle_edge[2] = adjacencyBuffer[triangleIndex * 3 + 2] & 3;
 
     point0 = vec3(originalVertex[original_index_0]);
     point1 = vec3(originalVertex[original_index_1]);
@@ -255,93 +258,12 @@ void main() {
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
 
-    }
-
-//    // 生成index数据
-//    for (int i = 0; i < 9; ++i) {
-//        uvec3 index = splitIndex[splitIndexOffset + i];
-//        uint index_offset = atomicCounterIncrement(index_counter);
-//        splitedIndex[index_offset * 3] = point_index[index.x];
-//        splitedIndex[index_offset * 3 + 1] = point_index[index.y];
-//        splitedIndex[index_offset * 3 + 2] = point_index[index.z];
-//        genSamplePointBsplineInfo(index_offset);
-//    }
-}
+        // get adjacency PN normal triangle controlPoint T0
+//        uint T0 = adjacency_triangle_index_0 * 6;
 
 
-//void genSamplePointBsplineInfo(uint index_offset) {
-//    vec4 p0 = splitedVertex[splitedIndex[index_offset * 3]];
-//    vec4 p1 = splitedVertex[splitedIndex[index_offset * 3 + 1]];
-//    vec4 p2 = splitedVertex[splitedIndex[index_offset * 3 + 2]];
-//
-//    vec4 n0 = splitedNormal[splitedIndex[index_offset * 3]];
-//    vec4 n1 = splitedNormal[splitedIndex[index_offset * 3 + 1]];
-//    vec4 n2 = splitedNormal[splitedIndex[index_offset * 3 + 2]];
-//
-//    for (int i = 0; i < 37; ++i) {
-//        vec3 uvw = sampleParameter[i];
-//        vec4 position = p0 * uvw.x + p1 * uvw.y + p2 * uvw.z;
-//        vec4 normal   = n0 * uvw.x + n1 * uvw.y + n2 * uvw.z;
-//        samplePointBSplineInfo[index_offset * 37 + i] = getBSplineInfo(position);
-//        samplePointBSplineInfo[index_offset * 37 + i].n = normal;
-//    }
-//    splitedNormalAdjacency[index_offset * 6] = getAdjacencyNormalForSubTriangle();
-//    splitedNormalAdjacency[index_offset * 6 + 1] = getAdjacencyNormalForSubTriangle();
-//    splitedNormalAdjacency[index_offset * 6 + 2] = getAdjacencyNormalForSubTriangle();
-//    splitedNormalAdjacency[index_offset * 6 + 3] = getAdjacencyNormalForSubTriangle();
-//    splitedNormalAdjacency[index_offset * 6 + 4] = getAdjacencyNormalForSubTriangle();
-//    splitedNormalAdjacency[index_offset * 6 + 5] = getAdjacencyNormalForSubTriangle();
-//}
 
 
-int getAuxMatrixOffset(in int order,in int ctrlPointNum,in int leftIdx) {
-    if (order == 1){
-        return 0;                // MB1
-    } else if (order == 2) {
-        return 1;                // MB2
-    } else if (order == 3) {
-        if (ctrlPointNum == 3){
-            return 5;            // MB30
-        } else {
-            if (leftIdx == 2){
-                return 14;    // MB31
-            } else if (leftIdx == ctrlPointNum - 1){
-                return 23;    // MB32
-            } else{
-                return 32;    // MB33
-            }
-        }
-    } else {
-        if (ctrlPointNum == 4){
-            return 41;        // MB40
-        } else if (ctrlPointNum == 5) {
-            if (leftIdx == 3){
-                return 57;    // MB41
-            } else {
-                return 73;    // MB42
-            }
-        } else if (ctrlPointNum == 6) {
-            if (leftIdx == 3){
-                return 89;    // MB43
-            } else if (leftIdx == 4) {
-
-                return 105;    // MB44
-            } else {
-                return 121;    // MB45
-            }
-        } else {
-            if (leftIdx == 3){
-                return 89;    // MB43
-            } else if (leftIdx == 4) {
-                return 137;    // MB46
-            } else if (leftIdx == ctrlPointNum - 2) {
-                return 153;    // MB47
-            } else if (leftIdx == ctrlPointNum - 1) {
-                return 121;    // MB45
-            }else {
-                return 169;    // MB48
-            }
-        }
     }
 }
 
@@ -416,20 +338,24 @@ vec3 getAdjacencyNormalForSubTriangle(int triangleIndex, vec3 point, vec3 normal
     }
 }
 
-vec3 getAdjacencyNormal(int triangleIndex, vec3 point, vec3 normal) {
+vec3 getAdjacencyNormal(uint adjacency_index, bool isFirst, vec3 normal) {
+    uint triangleIndex = adjacency_triangle_index[adjacency_index];
     if (triangleIndex == -1) {
         return normal;
     }
-    uint index0 = originalIndex[triangleIndex];
-    uint index1 = originalIndex[triangleIndex + 1];
-    uint index2 = originalIndex[triangleIndex + 2];
-    if (all(lessThan(abs(vec3(originalVertex[index0]) - point), ZERO3))) {
-        return vec3(originalNormal[index0]);
-    } else if (all(lessThan(abs(vec3(originalVertex[index1]) - point), ZERO3))) {
-        return vec3(originalNormal[index1]);
-    } else {
-        return vec3(originalNormal[index2]);
+    uint pointIndex = adjacency_triangle_edge[adjacency_index];
+    if (isFirst) {
+        if (pointIndex == 0) {
+            pointIndex = 3;
+        }
+        pointIndex -= 1;
     }
+    return vec3(originalNormal[
+                               originalIndex[
+                                             triangleIndex * 3
+                                             + pointIndex
+                                            ]
+                              ]);
 }
 
 vec3 genPNControlPoint(vec3 p_s, vec3 p_e, vec3 n, vec3 n_adj) {
@@ -455,14 +381,14 @@ void genPNTriangleP(){
 
     //邻接三角形的六个法向nij,i表示近顶点编号,j远顶点编号
     vec3 n02, n01, n10, n12, n21, n20;
-    n02 = getAdjacencyNormal(adjacency_triangle_index_0, point0, normal0);
-    n01 = getAdjacencyNormal(adjacency_triangle_index_1, point0, normal0);
+    n02 = getAdjacencyNormal(0, true, normal0);
+    n01 = getAdjacencyNormal(1, false, normal0);
 
-    n10 = getAdjacencyNormal(adjacency_triangle_index_1, point1, normal1);
-    n12 = getAdjacencyNormal(adjacency_triangle_index_2, point1, normal1);
+    n10 = getAdjacencyNormal(1, true, normal1);
+    n12 = getAdjacencyNormal(2, false, normal1);
 
-    n21 = getAdjacencyNormal(adjacency_triangle_index_2, point2, normal2);
-    n20 = getAdjacencyNormal(adjacency_triangle_index_0, point2, normal2);
+    n21 = getAdjacencyNormal(2, true, normal2);
+    n20 = getAdjacencyNormal(0, false, normal2);
 
     //two control point near p0
     PNTriangleP[2] = genPNControlPoint(point0, point2, normal0, n02);
