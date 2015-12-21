@@ -1,16 +1,12 @@
 import logging
 from enum import Enum
-from copy import deepcopy
-
+import numpy as np
 
 class ModelFileFormatType(Enum):
     obj = 1
 
 
 class OBJ:
-    # class Material: def __int__(self, filename):
-    #         self.name = filename
-
     def __init__(self, file_path, format_type):
         self.vertex = []
         self.normal = []
@@ -107,49 +103,15 @@ class OBJ:
             v[1] = (v[1] - mid_y) / d
             v[2] = (v[2] - mid_z) / d
 
-        # 计算模型在b样条体中的参数
-        # 将parameters归一化到0～1
-        # for v in self.parameters:
-        #     v[0] = (v[0] - mid_x) / self.d_x
-        #     v[1] = (v[1] - mid_y) / self.d_y
-        #     v[2] = (v[2] - mid_z) / self.d_z
-
         self.d_x /= d
         self.d_y /= d
         self.d_z /= d
 
-        # for i in range(len(self.adjacency)):
-        #     indexes = self.index[i * 3:i * 3 + 3]
-        #     current_triangle = [self.vertex[x] for x in indexes]
-        #     current_triangleN = [self.normal[x] for x in indexes]
-        #     for temp in current_triangle:
-        #         print(temp)
-        #     print()
-        #     current_n = self.normal[indexes[0]]
-        #     current_p = self.vertex[indexes[0]]
-        #     for j in range(3):
-        #         adj_begin_index = self.adjacency[i][j]
-        #         adj_index = self.index[adj_begin_index:adj_begin_index + 3]
-        #         another_triangle_vertex = [self.vertex[x] for x in adj_index]
-        #         for t in another_triangle_vertex:
-        #             print(t)
-        #
-        #         index1 = another_triangle_vertex.index(current_triangle[j])
-        #         normal1 = self.normal[adj_index[index1]]
-        #         r = [x - y for x, y in zip(current_triangleN[j], normal1)]
-        #         if r != [0, 0, 0, 0]:
-        #             print(r)
-        #
-        #         index2 = another_triangle_vertex.index(current_triangle[j - 1])
-        #         normal2 = self.normal[adj_index[index2]]
-        #         r = [x - y for x, y in zip(current_triangleN[j - 1], normal2)]
-        #         if r != [0, 0, 0, 0]:
-        #             print(r)
-        #
-        #
-        #     print()
-        #     print()
         logging.info('load obj finish, has vertices:' + str(len(self.vertex)))
+        self.original_index_number = len(self.index)
+        self.original_triangle_number = self.original_index_number / 3
+        self.original_vertex_number = len(self.vertex)
+        self.original_normal_number = len(self.normal)
 
     def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
         # 纪录该三角形的三个顶点
