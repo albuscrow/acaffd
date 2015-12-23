@@ -34,7 +34,7 @@ layout(std430, binding=2) buffer OriginalNormalBuffer{
 
 //input
 layout(std430, binding=3) buffer AdjacencyBuffer{
-    uint[] adjacencyBuffer;
+    int[] adjacencyBuffer;
 };
 
 //share
@@ -57,7 +57,7 @@ struct SplitedTriangle {
 
 
 //output
-layout(std430, binding=5) buffer OutputTriangleBuffer{
+layout(std430, binding=5) buffer TriangleBuffer{
     SplitedTriangle[] output_triangles;
 };
 
@@ -83,8 +83,8 @@ uint original_index_1;
 uint original_index_2;
 
 // 20,01,12这三条边对应的邻接三角形, 以及邻接三角形的边
-uint adjacency_triangle_index[3];
-uint adjacency_triangle_edge[3];
+int adjacency_triangle_index[3];
+int adjacency_triangle_edge[3];
 
 // 三个顶点位置
 vec3 point0;
@@ -196,7 +196,7 @@ vec4 getPosition(vec3 parameter);
 SamplePointInfo getBSplineInfo(vec4 parameter);
 
 // 根据三角形形状，取得splite pattern
-void getSplitePattern(vec3 p1, vec3 p2, vec3 p3, out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber);
+void getSplitePattern(out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber);
 
 // 生成切割后的子三角形
 SplitedTriangle genSubSplitedTriangle();
@@ -217,13 +217,15 @@ void main() {
     original_index_1 = originalIndex[triangleIndex * 3 + 1];
     original_index_2 = originalIndex[triangleIndex * 3 + 2];
 
-    adjacency_triangle_index[0] = uint(adjacencyBuffer[triangleIndex * 3] / 4);
-    adjacency_triangle_index[1] = uint(adjacencyBuffer[triangleIndex * 3 + 1] / 4);
-    adjacency_triangle_index[2] = uint(adjacencyBuffer[triangleIndex * 3 + 2] / 4);
-
-    adjacency_triangle_edge[0] = adjacencyBuffer[triangleIndex * 3] & 3;
-    adjacency_triangle_edge[1] = adjacencyBuffer[triangleIndex * 3 + 1] & 3;
-    adjacency_triangle_edge[2] = adjacencyBuffer[triangleIndex * 3 + 2] & 3;
+    for (int i = 0; i < 3; ++i) {
+        if (adjacencyBuffer[triangleIndex * 3 + i] == -1) {
+            adjacency_triangle_index[i] = -1;
+            adjacency_triangle_edge[i] = -1;
+        } else {
+            adjacency_triangle_index[i] = int(adjacencyBuffer[triangleIndex * 3 + i] / 4);
+            adjacency_triangle_edge[i] = adjacencyBuffer[triangleIndex * 3 + i] & 3;
+        }
+    }
 
     point0 = vec3(originalVertex[original_index_0]);
     point1 = vec3(originalVertex[original_index_1]);
@@ -232,6 +234,10 @@ void main() {
     normal0 = vec3(originalNormal[original_index_0]);
     normal1 = vec3(originalNormal[original_index_1]);
     normal2 = vec3(originalNormal[original_index_2]);
+
+    normal0 = normalize(normal0);
+    normal1 = normalize(normal1);
+    normal2 = normalize(normal2);
 
     // 生成pn-triangle
     genPNTriangleP();
@@ -245,7 +251,7 @@ void main() {
     uint splitIndexOffset;
     uint subTriangleNumber;
     uint pointNumber;
-    getSplitePattern(point0, point1, point2, splitParameterOffset, splitIndexOffset, subTriangleNumber, pointNumber);
+    getSplitePattern(splitParameterOffset, splitIndexOffset, subTriangleNumber, pointNumber);
 
 
     vec4 new_position[100];
@@ -261,17 +267,50 @@ void main() {
     }
 
     //生成分割三角形
+
+    uint aux1[6] = {5,0,1,2,3,4};
+    uint aux2[6] = {2,0,0,1,1,2};
     for (int i = 0; i < subTriangleNumber; ++i) {
         uvec3 index = splitIndex[splitIndexOffset + i];
         SplitedTriangle st;
-
         st.position[0] = new_position[index.x];
         st.position[1] = new_position[index.y];
         st.position[2] = new_position[index.z];
-
         st.normal[0] = new_normal[index.x];
         st.normal[1] = new_normal[index.y];
         st.normal[2] = new_normal[index.z];
+//        st.position[0] = new_position[0];
+//        st.position[1] = new_position[1];
+//        st.position[2] = new_position[2];
+
+//        st.position[0].xyz = point0;
+//        st.position[1].xyz = point1;
+//        st.position[2].xyz = point2;
+//
+//        st.position[0].w = 1;
+//        st.position[1].w = 1;
+//        st.position[2].w = 1;
+
+//        st.normal[0] = new_normal[0];
+//        st.normal[1] = new_normal[1];
+//        st.normal[2] = new_normal[2];
+
+//        st.normal[0].xyz = normal0;
+//        st.normal[1].xyz = normal1;
+//        st.normal[2].xyz = normal2;
+//
+//        st.normal[0].w = 0;
+//        st.normal[1].w = 0;
+//        st.normal[2].w = 0;
+
+//        st.position[0] = new_position[index.x];
+//        st.position[1] = new_position[index.y];
+//        st.position[2] = new_position[index.z];
+//
+//        st.normal[0] = new_normal[index.x];
+//        st.normal[1] = new_normal[index.y];
+//        st.normal[2] = new_normal[index.z];
+
 
         vec3 parameter[3];
         parameter[0] = new_parameter[index.x];
@@ -289,8 +328,6 @@ void main() {
         adjacency_triangle_index_edge[1] = splitParameterEdgeInfoAux[edgeInfo[0] & edgeInfo[1]];
         adjacency_triangle_index_edge[2] = splitParameterEdgeInfoAux[edgeInfo[1] & edgeInfo[2]];
 
-        uint aux1[6] = {5,0,1,2,3,4};
-        uint aux2[6] = {2,0,0,1,1,2};
         for (int i = 0; i < 3; ++i) {
             uint currentEdge = adjacency_triangle_index_edge[i];
             uint adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
@@ -313,12 +350,7 @@ void main() {
             st.samplePoint[i].original_normal = normal;
         }
 
-        for (int i = 0; i < 6; ++i) {
-            st.adjacency_normal[i] = vec4(0);
-        }
-
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
-
     }
 }
 
@@ -351,7 +383,7 @@ vec4 getNormal(vec3 parameter) {
             result += PNTriangleN[ctrlPointIndex ++] * n;
         }
     }
-    return vec4(result, 1);
+    return vec4(result, 0);
 }
 
 vec4 getAdjacencyNormal(vec3 parameter,uint adjacency_triangle_index_) {
@@ -384,7 +416,7 @@ vec4 getPosition(vec3 parameter) {
     return vec4(result, 1);
 }
 
-void getSplitePattern(vec3 p1, vec3 p2, vec3 p3, out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber) {
+void getSplitePattern(out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber) {
     parameterOffset = 0;
     indexOffset = 0;
     triangleNumber = 9;

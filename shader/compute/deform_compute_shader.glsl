@@ -364,7 +364,7 @@ vec4 sample_bspline_normal_fast(BSplineInfo bsi) {
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
     result.z = n.x * J_bar_star_T_0 * x_stride + n.y * J_bar_star_T_1 * y_stride + n.z * J_bar_star_T_2 * z_stride;
 
-    normalize(result);
+    result = normalize(result);
 
 
     return vec4(result, 1);

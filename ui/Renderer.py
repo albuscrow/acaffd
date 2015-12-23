@@ -36,9 +36,12 @@ class Renderer(QObject):
 
         self.translation_matrix = create_from_translation(numpy.array([0, 0, -8]), dtype='float32')
 
-        self.model_view_matrix = multiply(create_from_eulers(create(-self.rotate_x / 180 * math.pi, 0,
-                                                                    -self.rotate_y / 180 * math.pi), dtype='float32'),
-                                          self.translation_matrix)
+        # self.model_view_matrix = multiply(create_from_eulers(create(-self.rotate_x / 180 * math.pi, 0,
+        #                                                             -self.rotate_y / 180 * math.pi), dtype='float32'),
+        #                                   self.translation_matrix)
+        self.model_view_matrix = self.translation_matrix
+
+
         self.model = None
         self.b_spline_body = None
         self.need_deform = False
@@ -134,7 +137,7 @@ class Renderer(QObject):
 
                 # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
                 bindSSBO(adjacency_vbo, 3, obj.adjacency,
-                         obj.original_triangle_number * PER_TRIANGLE_ADJACENCY_INDEX_SIZE, np.uint32, GL_STATIC_DRAW)
+                         obj.original_triangle_number * PER_TRIANGLE_ADJACENCY_INDEX_SIZE, np.int32, GL_STATIC_DRAW)
 
                 bindSSBO(share_adjacency_pn_triangle_vbo, 4, None,
                          obj.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE, np.float32,
@@ -244,6 +247,9 @@ class Renderer(QObject):
 
             ml = glGetUniformLocation(renderer_model_task.shader, 'wvp_matrix')
             glUniformMatrix4fv(ml, 1, GL_FALSE, wvp_matrix)
+
+            ml = glGetUniformLocation(renderer_model_task.shader, 'wv_matrix')
+            glUniformMatrix4fv(ml, 1, GL_FALSE, self.model_view_matrix)
 
             glEnable(GL_DEPTH_TEST)
             glDrawElements(GL_TRIANGLES, int(renderer_model_task.triangle_number * 9 * 3), GL_UNSIGNED_INT, None)
@@ -398,7 +404,7 @@ class Renderer(QObject):
                 # common bind
                 mmatrix = multiply(self.model_view_matrix, self.perspective_matrix)
 
-                ml = glGetUniformLocation(draw_aux.shader, 'mmatrix')
+                ml = glGetUniformLocation(draw_aux.shader, 'wvp_matrix')
                 glUniformMatrix4fv(ml, 1, GL_FALSE, mmatrix)
 
                 glEnable(GL_DEPTH_TEST)

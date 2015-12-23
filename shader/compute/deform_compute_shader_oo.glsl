@@ -12,7 +12,7 @@ struct SplitedTriangle {
     vec4 adjacency_normal[6];
 };
 //input
-layout(std430, binding=5) buffer AdjacencyBuffer{
+layout(std430, binding=5) buffer TriangleBuffer{
     SplitedTriangle[] input_triangles;
 };
 
@@ -68,6 +68,8 @@ const uvec3 tessellateIndex[9] = {
     {3, 6, 7}, {3, 7, 4}, {4, 7, 8}, {4, 8, 5}, {5, 8, 9}
 };
 
+const vec4 ZERO4 = vec4(0);
+const vec3 ZERO3 = vec3(0);
 
 vec4 sample_bspline_position_fast(SamplePointInfo bsi);
 vec4 sample_bspline_normal_fast(SamplePointInfo bsi);
@@ -82,13 +84,14 @@ void main() {
     if (triangleIndex >= uint(triangleNumber)) {
         return;
     }
+    SplitedTriangle currentTriangle = input_triangles[triangleIndex];
 
     // 计算采样点
     vec4 sample_points[37];
     vec4 sample_normals[37];
     for (int i = 0; i < 37; ++i) {
-        sample_points[i] = sample_bspline_position_fast(input_triangles[triangleIndex].samplePoint[i]);
-        sample_normals[i] = sample_bspline_normal_fast(input_triangles[triangleIndex].samplePoint[i]);
+        sample_points[i] = sample_bspline_position_fast(currentTriangle.samplePoint[i]);
+        sample_normals[i] = sample_bspline_normal_fast(currentTriangle.samplePoint[i]);
     }
 
     // 计算Bezier曲面片控制顶点
@@ -101,7 +104,50 @@ void main() {
         }
     }
 
-    //todo 调整控制顶点
+//    uint aux1[6] = {5,0,1,2,3,4};
+//    uint current_point_index[6] = {2,0,0,1,1,2};
+//    uint oppo_point_index[6] =    {0,2,1,0,2,1};
+//    uint move_control_point[6] =  {5,2,1,3,7,8};
+//    vec3 delta = vec3(0);
+//    vec3 sum = vec3(0);
+//    for (int i = 0; i < 6; ++i) {
+//        vec3 adj_normal = currentTriangle.adjacency_normal[i].xyz;
+//        vec3 current_normal = currentTriangle.normal[current_point_index[i]].xyz;
+//        vec3 current_point = currentTriangle.position[current_point_index[i]].xyz;
+//        vec3 oppo_point = currentTriangle.position[oppo_point_index[i]].xyz;
+//        vec3 v = oppo_point - current_point;
+//        vec3 mid = (oppo_point + current_point) / 2;
+//        vec3 p = bezierPositionControlPoint[move_control_point[i]].xyz;
+//        vec3 result;
+//        if (adj_normal == ZERO3) {
+//            result = p - dot((p - current_point), current_normal) * current_normal;
+//        } else {
+//            vec3 n_ave = cross(current_normal, adj_normal);
+//            normalize(n_ave);
+//            result = current_point + dot(p - current_point, n_ave) * n_ave;
+//        }
+//        delta += (result - p);
+//        sum += result;
+//        bezierPositionControlPoint[move_control_point[i]].xyz = result;
+//    }
+//
+//    bezierPositionControlPoint[4].xyz += delta * 1.5 / 6;
+
+//    //输出分割三角形
+//    // 生成顶点数据
+//    uint point_index[100];
+//    for (int i = 0; i < 3; ++i) {
+//        vec3 pointParameter = tessellatedParameter[i];
+//        uint point_offset = triangleIndex * 3 + i;
+//        tessellatedVertex[point_offset] = currentTriangle.position[i];
+//        tessellatedNormal[point_offset] = currentTriangle.normal[i];
+//        point_index[i] = point_offset;
+//    }
+//    // 生成index数据
+//    uint index_offset = triangleIndex;
+//    tessellatedIndex[index_offset * 3] = point_index[0];
+//    tessellatedIndex[index_offset * 3 + 1] = point_index[1];
+//    tessellatedIndex[index_offset * 3 + 2] = point_index[2];
 
 
     // 细分
@@ -152,8 +198,7 @@ vec4 getNormal(vec3 parameter) {
             result += bezierNormalControlPoint[ctrlPointIndex ++] * n;
         }
     }
-    return vec4(result.xyz, 1);
-//    return vec4(1.0);
+    return vec4(result.xyz, 0);
 }
 
 vec4 getPosition(vec3 parameter) {
@@ -284,9 +329,7 @@ vec4 sample_bspline_normal_fast(SamplePointInfo spi) {
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
     result.z = n.x * J_bar_star_T_0 * x_stride + n.y * J_bar_star_T_1 * y_stride + n.z * J_bar_star_T_2 * z_stride;
 
-    normalize(result);
-
-    return vec4(result, 1);
+    return vec4(normalize(result), 1);
 //    return n;
 
 }
