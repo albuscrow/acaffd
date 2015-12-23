@@ -9,6 +9,7 @@ struct SplitedTriangle {
     SamplePointInfo samplePoint[37];
     vec4 position[3];
     vec4 normal[3];
+    vec4 normal_adj[3];
     vec4 adjacency_normal[6];
 };
 //input
@@ -104,37 +105,37 @@ void main() {
         }
     }
 
-//    uint aux1[6] = {5,0,1,2,3,4};
-//    uint current_point_index[6] = {2,0,0,1,1,2};
-//    uint oppo_point_index[6] =    {0,2,1,0,2,1};
-//    uint move_control_point[6] =  {5,2,1,3,7,8};
-//    vec3 delta = vec3(0);
-//    vec3 sum = vec3(0);
-//    for (int i = 0; i < 6; ++i) {
-//        vec3 adj_normal = currentTriangle.adjacency_normal[i].xyz;
-//        vec3 current_normal = currentTriangle.normal[current_point_index[i]].xyz;
-//        vec3 current_point = currentTriangle.position[current_point_index[i]].xyz;
-//        vec3 oppo_point = currentTriangle.position[oppo_point_index[i]].xyz;
-//        vec3 v = oppo_point - current_point;
-//        vec3 mid = (oppo_point + current_point) / 2;
-//        vec3 p = bezierPositionControlPoint[move_control_point[i]].xyz;
-//        vec3 result;
-//        if (adj_normal == ZERO3) {
-//            result = p - dot((p - current_point), current_normal) * current_normal;
-//        } else {
-//            vec3 n_ave = cross(current_normal, adj_normal);
-//            normalize(n_ave);
-//            result = current_point + dot(p - current_point, n_ave) * n_ave;
-//        }
-//        delta += (result - p);
-//        sum += result;
-//        bezierPositionControlPoint[move_control_point[i]].xyz = result;
-//    }
-//
-//    bezierPositionControlPoint[4].xyz += delta * 1.5 / 6;
+    uint aux1[6] = {5,0,1,2,3,4};
+    uint current_point_index[6] = {2,0,0,1,1,2};
+    uint oppo_point_index[6] =    {0,2,1,0,2,1};
+    uint move_control_point[6] =  {5,2,1,3,7,8};
+    vec3 delta = vec3(0);
+    vec3 sum = vec3(0);
+    for (int i = 0; i < 6; ++i) {
+        vec3 adj_normal = currentTriangle.adjacency_normal[aux1[i]].xyz;
+        vec3 current_normal = currentTriangle.normal_adj[current_point_index[i]].xyz;
+        vec3 current_point = currentTriangle.position[current_point_index[i]].xyz;
+        vec3 oppo_point = currentTriangle.position[oppo_point_index[i]].xyz;
+        vec3 v = oppo_point - current_point;
+        vec3 mid = (oppo_point + current_point) / 2;
+        vec3 p = bezierPositionControlPoint[move_control_point[i]].xyz;
+        vec3 result;
+        if (adj_normal == ZERO3) {
+            result = p - dot((p - current_point), current_normal) * current_normal;
+        } else {
+            vec3 n_ave = cross(adj_normal, current_normal);
+            n_ave = normalize(n_ave);
+            result = current_point + dot(p - current_point, n_ave) * n_ave;
+        }
+        delta += (result - p);
+        sum += result;
+        bezierPositionControlPoint[move_control_point[i]].xyz = result;
+    }
 
-//    //输出分割三角形
-//    // 生成顶点数据
+    bezierPositionControlPoint[4].xyz += delta * 1.5 / 6;
+
+    // 输出分割三角形
+    // 生成顶点数据
 //    uint point_index[100];
 //    for (int i = 0; i < 3; ++i) {
 //        vec3 pointParameter = tessellatedParameter[i];

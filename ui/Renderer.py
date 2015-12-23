@@ -41,7 +41,6 @@ class Renderer(QObject):
         #                                   self.translation_matrix)
         self.model_view_matrix = self.translation_matrix
 
-
         self.model = None
         self.b_spline_body = None
         self.need_deform = False
@@ -143,7 +142,7 @@ class Renderer(QObject):
                          obj.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE, np.float32,
                          GL_DYNAMIC_DRAW)
 
-                # bindSSBO(debug_vbo, 20, None, 16 * 10, 'float32', GL_DYNAMIC_DRAW)
+                bindSSBO(debug_vbo, 14, None, (2 * 9 * 6 + 1) * 16, 'float32', GL_DYNAMIC_DRAW)
 
                 # copy BSpline body info to gpu
                 bspline_body_info = self.b_spline_body.get_info()
@@ -162,8 +161,9 @@ class Renderer(QObject):
                 previous_compute_shader = get_compute_shader_program('previous_compute_shader_oo.glsl')
                 glUseProgram(previous_compute_shader)
 
-                # self.print_vbo(debug_vbo, (10, 4))
                 glDispatchCompute(int(obj.original_triangle_number / 512 + 1), 1, 1)
+                # self.print_vbo(debug_vbo, (2 * 9 * 6 + 1, 4))
+                # self.print_vbo(share_adjacency_pn_triangle_vbo, (obj.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE / 16, 4))
 
                 # get number of splited triangle
                 renderer_model_task.triangle_number, = self.get_splited_triangle_number(atomic_ubo)
@@ -253,6 +253,7 @@ class Renderer(QObject):
 
             glEnable(GL_DEPTH_TEST)
             glDrawElements(GL_TRIANGLES, int(renderer_model_task.triangle_number * 9 * 3), GL_UNSIGNED_INT, None)
+            # glDrawElements(GL_TRIANGLES, int(renderer_model_task.triangle_number * 1 * 3), GL_UNSIGNED_INT, None)
 
             glUseProgram(0)
             glBindVertexArray(0)
@@ -373,7 +374,7 @@ class Renderer(QObject):
 
                     mmatrix = multiply(self.model_view_matrix, multiply(self.perspective_matrix, pick_matrix))
 
-                    ml = glGetUniformLocation(draw_aux.shader, 'mmatrix')
+                    ml = glGetUniformLocation(draw_aux.shader, 'wvp_matrix')
                     glUniformMatrix4fv(ml, 1, GL_FALSE, mmatrix)
 
                     glEnable(GL_DEPTH_TEST)
