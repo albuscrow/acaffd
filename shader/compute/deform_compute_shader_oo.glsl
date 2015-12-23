@@ -70,7 +70,7 @@ const uvec3 tessellateIndex[9] = {
 };
 
 const vec4 ZERO4 = vec4(0);
-const vec3 ZERO3 = vec3(0);
+const vec3 ZERO3 = vec3(0.0001, 0.0001, 0.0001);
 
 vec4 sample_bspline_position_fast(SamplePointInfo bsi);
 vec4 sample_bspline_normal_fast(SamplePointInfo bsi);
@@ -120,12 +120,16 @@ void main() {
         vec3 mid = (oppo_point + current_point) / 2;
         vec3 p = bezierPositionControlPoint[move_control_point[i]].xyz;
         vec3 result;
-        if (adj_normal == ZERO3) {
+        if (all(lessThan(abs(adj_normal), ZERO3))) {
             result = p - dot((p - current_point), current_normal) * current_normal;
         } else {
-            vec3 n_ave = cross(adj_normal, current_normal);
-            n_ave = normalize(n_ave);
-            result = current_point + dot(p - current_point, n_ave) * n_ave;
+            if (all(lessThan(abs(current_normal - adj_normal), ZERO3))) {
+                result = p - dot((p - current_point), adj_normal) * current_normal;
+            } else {
+                vec3 n_ave = cross( current_normal, adj_normal);
+                n_ave = normalize(n_ave);
+                result = current_point + dot(p - current_point, n_ave) * n_ave;
+            }
         }
         delta += (result - p);
         sum += result;
@@ -330,8 +334,7 @@ vec4 sample_bspline_normal_fast(SamplePointInfo spi) {
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
     result.z = n.x * J_bar_star_T_0 * x_stride + n.y * J_bar_star_T_1 * y_stride + n.z * J_bar_star_T_2 * z_stride;
 
-    return vec4(normalize(result), 1);
-//    return n;
+    return vec4(normalize(result), 0);
 
 }
 vec4 sample_bspline_position_fast(SamplePointInfo spi) {
