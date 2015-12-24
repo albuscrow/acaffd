@@ -232,11 +232,17 @@ class Renderer(QObject):
             if self.need_deform:
                 glUseProgram(renderer_model_task.deform_compute_shader)
 
+                # new_control_points = self.b_spline_body.get_control_point_for_sample()
+                # self.bindUBO(1, self.control_point_for_sample_ubo, new_control_points,
+                #              new_control_points.size * new_control_points.itemsize)
+
                 glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_ubo)
                 new_control_points = self.b_spline_body.get_control_point_for_sample()
-                glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
-                             new_control_points,
-                             usage=GL_STATIC_DRAW)
+                glBufferSubData(GL_UNIFORM_BUFFER, 0, new_control_points.size * new_control_points.itemsize,
+                                new_control_points)
+                # glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
+                #              new_control_points,
+                #              usage=GL_STATIC_DRAW)
                 glDispatchCompute(int(renderer_model_task.triangle_number / 512 + 1), 1, 1)
                 self.need_deform = False
 

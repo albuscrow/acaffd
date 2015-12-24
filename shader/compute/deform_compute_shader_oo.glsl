@@ -110,7 +110,7 @@ void main() {
     uint oppo_point_index[6] =    {0,2,1,0,2,1};
     uint move_control_point[6] =  {5,2,1,3,7,8};
     vec3 delta = vec3(0);
-    vec3 sum = vec3(0);
+//    vec3 sum = vec3(0);
     for (int i = 0; i < 6; ++i) {
         vec3 adj_normal = currentTriangle.adjacency_normal[aux1[i]].xyz;
         vec3 current_normal = currentTriangle.normal_adj[current_point_index[i]].xyz;
@@ -132,11 +132,11 @@ void main() {
             }
         }
         delta += (result - p);
-        sum += result;
+//        sum += result;
         bezierPositionControlPoint[move_control_point[i]].xyz = result;
     }
 
-    bezierPositionControlPoint[4].xyz += delta * 1.5 / 6;
+    bezierPositionControlPoint[4].xyz += delta / 6 * 1.5;
 
     // 输出分割三角形
     // 生成顶点数据
