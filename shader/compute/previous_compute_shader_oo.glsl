@@ -50,10 +50,9 @@ struct SamplePointInfo {
 
 struct SplitedTriangle {
     SamplePointInfo samplePoint[37];
-    vec4 position[3];
-    vec4 normal[3];
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
+    bool need_adj[6];
 };
 
 
@@ -273,54 +272,15 @@ void main() {
     }
 
     //生成分割三角形
-
     uint aux1[6] = {5,0,1,2,3,4};
     uint aux2[6] = {2,0,0,1,1,2};
     for (int i = 0; i < subTriangleNumber; ++i) {
         uvec3 index = splitIndex[splitIndexOffset + i];
         SplitedTriangle st;
-        st.position[0] = new_position[index.x];
-        st.position[1] = new_position[index.y];
-        st.position[2] = new_position[index.z];
-        st.normal[0] = new_normal_org[index.x];
-        st.normal[1] = new_normal_org[index.y];
-        st.normal[2] = new_normal_org[index.z];
 
         st.normal_adj[0] = new_normal_adj[index.x];
         st.normal_adj[1] = new_normal_adj[index.y];
         st.normal_adj[2] = new_normal_adj[index.z];
-//        st.position[0] = new_position[0];
-//        st.position[1] = new_position[1];
-//        st.position[2] = new_position[2];
-
-//        st.position[0].xyz = point0;
-//        st.position[1].xyz = point1;
-//        st.position[2].xyz = point2;
-//
-//        st.position[0].w = 1;
-//        st.position[1].w = 1;
-//        st.position[2].w = 1;
-
-//        st.normal[0] = new_normal[0];
-//        st.normal[1] = new_normal[1];
-//        st.normal[2] = new_normal[2];
-
-//        st.normal[0].xyz = normal0;
-//        st.normal[1].xyz = normal1;
-//        st.normal[2].xyz = normal2;
-//
-//        st.normal[0].w = 0;
-//        st.normal[1].w = 0;
-//        st.normal[2].w = 0;
-
-//        st.position[0] = new_position[index.x];
-//        st.position[1] = new_position[index.y];
-//        st.position[2] = new_position[index.z];
-//
-//        st.normal[0] = new_normal[index.x];
-//        st.normal[1] = new_normal[index.y];
-//        st.normal[2] = new_normal[index.z];
-
 
         vec3 parameter[3];
         parameter[0] = new_parameter[index.x];
@@ -342,25 +302,25 @@ void main() {
             uint currentEdge = adjacency_triangle_index_edge[j];
             uint adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
             if (currentEdge == -1 || adjacency_triangle_index_ == -1) {
-                st.adjacency_normal[aux1[j * 2]] = vec4(0);
-                st.adjacency_normal[aux1[j * 2 + 1]] = vec4(0);
+                st.need_adj[aux1[j * 2]] = false;
+                st.need_adj[aux1[j * 2 + 1]] = false;
             } else {
                 for (int k = 0; k < 2; ++k) {
                     int index = j * 2 + k;
                     vec3 adjacency_parameter = translate_parameter(parameter[aux2[index]], currentEdge);
                     st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
+                    st.need_adj[aux1[index]] = !all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4));
                 }
             }
         }
 
         for (int j = 0; j < 37; ++j) {
             vec3 uvw = sampleParameter[j];
-            vec4 position = st.position[0] * uvw.x + st.position[1] * uvw.y + st.position[2] * uvw.z;
-            vec4 normal = st.normal[0] * uvw.x + st.normal[1] * uvw.y + st.normal[2] * uvw.z;
+            vec4 position = new_position[index.x] * uvw.x + new_position[index.y] * uvw.y + new_position[index.z] * uvw.z;
+            vec4 normal = new_normal_org[index.x] * uvw.x + new_normal_org[index.y] * uvw.y + new_normal_org[index.z] * uvw.z;
             st.samplePoint[j] = getBSplineInfo(position);
             st.samplePoint[j].original_normal = normal;
         }
-
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
