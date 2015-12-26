@@ -55,18 +55,32 @@ const float Mr[370] = {
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
 };
 
-const vec3 tessellatedParameter[10] = {
-    {1,0,0},
-    {0.6667, 0.3333, 0}, {0.6667, 0, 0.3333},
-    {0.3333, 0.6667, 0}, {0.3333, 0.3333, 0.3333}, {0.3333, 0, 0.6667},
-    {0, 1, 0}, {0, 0.6667, 0.3333}, {0, 0.3333, 0.6667}, {0, 0, 1}
-};
+!?include1
 
-const uvec3 tessellateIndex[9] = {
-    {0, 1, 2},
-    {1, 3 ,4}, {1, 4, 2}, {2, 4, 5},
-    {3, 6, 7}, {3, 7, 4}, {4, 7, 8}, {4, 8, 5}, {5, 8, 9}
-};
+//const vec3 tessellatedParameter[10] = {
+//{1,0,0},
+//{0.6666666666666667,0.33333333333333326,0.0}, {0.6666666666666667,-5.551115123125783e-17,0.3333333333333333},
+//{0.3333333333333334,0.6666666666666665,0.0},{0.3333333333333334,0.3333333333333332,0.3333333333333333},{0.3333333333333334,-1.1102230246251565e-16,0.6666666666666666},
+//{1.1102230246251565e-16,0.9999999999999999,0.0},{1.1102230246251565e-16,0.6666666666666665,0.33333333333333337},{1.1102230246251565e-16,0.3333333333333332,0.6666666666666667},{1.1102230246251565e-16,-1.1102230246251565e-16,1.0}};
+//const uvec3 tessellateIndex[9] = {{1,2,0},
+//{3,4,1},{2,1,4}, {4,5,2},
+//{6,7,3},{4,3,7},{7,8,4},{5,4,8},{8,9,5}};
+//const vec3 tessellatedParameter[{0}] = {1};
+//
+//const uvec3 tessellateIndex[{2}] = {3};
+
+//const vec3 tessellatedParameter[10] = {
+//    {1,0,0},
+//    {0.6667, 0.3333, 0}, {0.6667, 0, 0.3333},
+//    {0.3333, 0.6667, 0}, {0.3333, 0.3333, 0.3333}, {0.3333, 0, 0.6667},
+//    {0, 1, 0}, {0, 0.6667, 0.3333}, {0, 0.3333, 0.6667}, {0, 0, 1}
+//};
+//
+//const uvec3 tessellateIndex[9] = {
+//    {0, 1, 2},
+//    {1, 3 ,4}, {1, 4, 2}, {2, 4, 5},
+//    {3, 6, 7}, {3, 7, 4}, {4, 7, 8}, {4, 8, 5}, {5, 8, 9}
+//};
 
 const vec3 ZERO3 = vec3(0.0001, 0.0001, 0.0001);
 
@@ -118,7 +132,6 @@ void main() {
     uint oppo_point_index[6] =    {2,1,0,2,1,0};
     uint move_control_point[6] =  {2,1,3,7,8,5};
     vec3 delta = vec3(0);
-//    vec3 sum = vec3(0);
     for (int i = 0; i < 6; ++i) {
         vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
         vec3 current_point = position[i/2].xyz;
@@ -135,7 +148,6 @@ void main() {
             result = p - dot((p - current_point), current_normal) * current_normal;
         }
         delta += (result - p);
-        sum += result;
         bezierPositionControlPoint[move_control_point[i]] = result;
     }
 
@@ -161,17 +173,17 @@ void main() {
     // 细分
     // 生成顶点数据
     uint point_index[100];
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < tessellatedParameter.length(); ++i) {
         vec3 pointParameter = tessellatedParameter[i];
-        uint point_offset = triangleIndex * 10 + i;
+        uint point_offset = triangleIndex * tessellatedParameter.length() + i;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         point_index[i] = point_offset;
     }
     // 生成index数据
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < tessellateIndex.length(); ++i) {
         uvec3 index = tessellateIndex[i];
-        uint index_offset = triangleIndex * 9 + i;
+        uint index_offset = triangleIndex * tessellateIndex.length() + i;
         tessellatedIndex[index_offset * 3] = point_index[index.x];
         tessellatedIndex[index_offset * 3 + 1] = point_index[index.y];
         tessellatedIndex[index_offset * 3 + 2] = point_index[index.z];

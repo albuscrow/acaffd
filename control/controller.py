@@ -1,6 +1,7 @@
 import logging
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot
 from model.model import OBJ, ModelFileFormatType
+import shader.ShaderUtil as su
 
 __author__ = 'ac'
 
@@ -14,6 +15,12 @@ class Controller(QObject):
 
     def __init__(self):
         super().__init__()
+        self.tessellationLevel = 2
+        su.shader_parameter.init_tessllation_level(self.tessellationLevel)
+
+    @pyqtSlot(int)
+    def change_tessellation_level(self):
+        su.shader_parameter.init_tessllation_level(self.tessellationLevel)
 
     @pyqtSlot(str)
     def load_file(self, file_url):

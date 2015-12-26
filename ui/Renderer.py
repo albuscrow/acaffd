@@ -13,6 +13,7 @@ from OpenGL.GLU import *
 from queue import Queue
 from util.GLUtil import bindSSBO
 from Constant import *
+from shader.ShaderUtil import shader_parameter
 
 
 class Renderer(QObject):
@@ -170,17 +171,20 @@ class Renderer(QObject):
 
                 # alloc memory in gpu for tessellated vertex
                 bindSSBO(vertex_vbo, 6, None,
-                         renderer_model_task.triangle_number * TESSELLATED_POINT_NUMBER_PRE_SPLITED_TRIANGLE * VERTEX_SIZE,
+                         renderer_model_task.triangle_number *
+                         shader_parameter.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
                          np.float32, GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for tessellated normal
                 bindSSBO(normal_vbo, 7, None,
-                         renderer_model_task.triangle_number * TESSELLATED_POINT_NUMBER_PRE_SPLITED_TRIANGLE * VERTEX_SIZE,
+                         renderer_model_task.triangle_number *
+                         shader_parameter.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
                          np.float32, GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for tessellated index
                 bindSSBO(index_vbo, 8, None,
-                         renderer_model_task.triangle_number * TESSELLATED_POINT_NUMBER_PRE_SPLITED_TRIANGLE * PER_TRIANGLE_INDEX_SIZE,
+                         renderer_model_task.triangle_number *
+                         shader_parameter.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE,
                          np.uint32, GL_DYNAMIC_DRAW)
 
                 # copy control point info to gpu
@@ -258,7 +262,9 @@ class Renderer(QObject):
             glUniformMatrix4fv(ml, 1, GL_FALSE, self.model_view_matrix)
 
             glEnable(GL_DEPTH_TEST)
-            glDrawElements(GL_TRIANGLES, int(renderer_model_task.triangle_number * 9 * 3), GL_UNSIGNED_INT, None)
+            glDrawElements(GL_TRIANGLES, int(
+                    renderer_model_task.triangle_number * shader_parameter.tessellated_triangle_number_pre_splited_triangle * 3),
+                           GL_UNSIGNED_INT, None)
             # glDrawElements(GL_TRIANGLES, int(renderer_model_task.triangle_number * 1 * 3), GL_UNSIGNED_INT, None)
 
             glUseProgram(0)
