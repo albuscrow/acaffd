@@ -54,8 +54,11 @@ def gen_shader(shader_type, shader_file_name):
     """
     with open(shader_file_name) as file:
         source_code = file.read()
-        print(source_code.replace('!?include1', shader_parameter.get_for_shader()))
-        return compileShader(source_code.replace('!?include1', shader_parameter.get_for_shader()), shader_type)
+        # print(source_code.replace('!?include1', shader_parameter.get_for_shader()))
+        if shader_type == GL_COMPUTE_SHADER:
+            return compileShader(source_code.replace('!?include1', shader_parameter.get_for_shader()), shader_type)
+        else:
+            return compileShader(source_code, shader_type)
 
 
 def get_renderer_shader_file_path(file_name):
@@ -111,6 +114,7 @@ class TessellationParameters:
 
 
 shader_parameter = TessellationParameters()
+shader_parameter.init_tessllation_level(3)
 
 if __name__ == '__main__':
     shader_parameter.init_tessllation_level(4)

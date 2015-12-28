@@ -15,12 +15,13 @@ class Controller(QObject):
 
     def __init__(self):
         super().__init__()
-        self.tessellationLevel = 2
-        su.shader_parameter.init_tessllation_level(self.tessellationLevel)
+        # self.tessellation_shader_parameter =
+        # self.tessellationLevel = 2
+        # su.shader_parameter.init_tessllation_level(self.tessellationLevel)
 
     @pyqtSlot(int)
-    def change_tessellation_level(self):
-        su.shader_parameter.init_tessllation_level(self.tessellationLevel)
+    def change_tessellation_level(self, level):
+        su.shader_parameter.init_tessllation_level(level)
 
     @pyqtSlot(str)
     def load_file(self, file_url):
@@ -74,11 +75,11 @@ class Controller(QObject):
         # raw_obj = OBJ("data/767.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/ttest.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/test2.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/bishop.obj", ModelFileFormatType.obj)
+        raw_obj = OBJ("data/bishop.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/test_same_normal.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/star.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/legoDog.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/test_2_triangle.obj", ModelFileFormatType.obj)
-        raw_obj = OBJ("data/Mobile.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("data/Mobile.obj", ModelFileFormatType.obj)
         self.read_obj_success.emit(raw_obj)
         self.show_aux_signal.emit(True)

@@ -77,6 +77,10 @@ ApplicationWindow {
 
                     SpinBox {
                         id: split_param_spin_box
+                        value: 3
+                        onValueChanged: {
+                            controller.change_tessellation_level(value)
+                        }
                     }
 
                     Label {

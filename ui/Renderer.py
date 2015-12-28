@@ -11,9 +11,10 @@ from pyrr.euler import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from queue import Queue
-from util.GLUtil import bindSSBO
+from util.GLUtil import bind_ssbo
 from Constant import *
 from shader.ShaderUtil import shader_parameter
+from shader.ShaderWrapper import ModelShader
 
 
 class Renderer(QObject):
@@ -27,7 +28,7 @@ class Renderer(QObject):
         self.w = 0
         self.h = 0
         self.gl_task = Queue()
-        self.renderer_model_task = None
+        self.model_shader = None
         self.renderer_aux_task = None
 
         self.rotate_x = 0
@@ -70,16 +71,23 @@ class Renderer(QObject):
         glClearColor(0, 0, 0, 1)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        if self.renderer_aux_task and self.renderer_aux_task.is_show:
-            self.renderer_aux_task()
+        # if self.renderer_aux_task and self.renderer_aux_task.is_show:
+        #     self.renderer_aux_task()
 
-        if self.renderer_model_task:
-            self.renderer_model_task()
+        if self.model_shader:
+            self.model_shader.draw(self.model_view_matrix, self.perspective_matrix)
+            self.updateScene.emit()
 
         glDisable(GL_SCISSOR_TEST)
 
     @pyqtSlot(OBJ)
     def handle_new_obj(self, obj):
+        self.model = obj
+        self.b_spline_body = BSplineBody(*self.model.get_length_xyz())
+        self.model_shader = ModelShader(obj)
+
+    @pyqtSlot(OBJ)
+    def handle_new_obj2(self, obj):
         self.model = obj
 
         @static_var(shader=None, vao=None, deform_compute_shader=None, triangle_number=None)
@@ -124,26 +132,26 @@ class Renderer(QObject):
                 vertex_vbo, normal_vbo, index_vbo, debug_vbo = buffers
 
                 # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
-                bindSSBO(original_vertex_vbo, 0, obj.vertex, obj.original_vertex_number * VERTEX_SIZE, np.float32,
-                         GL_STATIC_DRAW)
+                bind_ssbo(original_vertex_vbo, 0, obj.vertex, obj.original_vertex_number * VERTEX_SIZE, np.float32,
+                          GL_STATIC_DRAW)
 
                 # copy original normal to gpu, and bind original_normal_vbo to bind point 1
-                bindSSBO(original_normal_vbo, 1, obj.normal, obj.original_normal_number * NORMAL_SIZE, np.float32,
-                         GL_STATIC_DRAW)
+                bind_ssbo(original_normal_vbo, 1, obj.normal, obj.original_normal_number * NORMAL_SIZE, np.float32,
+                          GL_STATIC_DRAW)
 
                 # copy original index to gpu, and bind original_index_vbo to bind point 2
-                bindSSBO(original_index_vbo, 2, obj.index, obj.original_triangle_number * PER_TRIANGLE_INDEX_SIZE,
-                         np.uint32, GL_STATIC_DRAW)
+                bind_ssbo(original_index_vbo, 2, obj.index, obj.original_triangle_number * PER_TRIANGLE_INDEX_SIZE,
+                          np.uint32, GL_STATIC_DRAW)
 
                 # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
-                bindSSBO(adjacency_vbo, 3, obj.adjacency,
-                         obj.original_triangle_number * PER_TRIANGLE_ADJACENCY_INDEX_SIZE, np.int32, GL_STATIC_DRAW)
+                bind_ssbo(adjacency_vbo, 3, obj.adjacency,
+                          obj.original_triangle_number * PER_TRIANGLE_ADJACENCY_INDEX_SIZE, np.int32, GL_STATIC_DRAW)
 
-                bindSSBO(share_adjacency_pn_triangle_vbo, 4, None,
-                         obj.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE, np.float32,
-                         GL_DYNAMIC_DRAW)
+                bind_ssbo(share_adjacency_pn_triangle_vbo, 4, None,
+                          obj.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE, np.float32,
+                          GL_DYNAMIC_DRAW)
 
-                bindSSBO(debug_vbo, 14, None, (2 * 9 * 6 + 1) * 16, 'float32', GL_DYNAMIC_DRAW)
+                bind_ssbo(debug_vbo, 14, None, (2 * 9 * 6 + 1) * 16, 'float32', GL_DYNAMIC_DRAW)
 
                 # copy BSpline body info to gpu
                 bspline_body_info = self.b_spline_body.get_info()
@@ -154,9 +162,9 @@ class Renderer(QObject):
                 self.init_atomic(atomic_ubo)
 
                 # alloc memory in gpu for splited vertex, and
-                bindSSBO(splited_triangle_vbo, 5, None,
-                         obj.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE * SPLITED_TRIANGLE_SIZE,
-                         np.float32, GL_DYNAMIC_DRAW)
+                bind_ssbo(splited_triangle_vbo, 5, None,
+                          obj.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE * SPLITED_TRIANGLE_SIZE,
+                          np.float32, GL_DYNAMIC_DRAW)
 
                 # run previous compute shader
                 previous_compute_shader = get_compute_shader_program('previous_compute_shader_oo.glsl')
@@ -170,22 +178,22 @@ class Renderer(QObject):
                 renderer_model_task.triangle_number, = self.get_splited_triangle_number(atomic_ubo)
 
                 # alloc memory in gpu for tessellated vertex
-                bindSSBO(vertex_vbo, 6, None,
-                         renderer_model_task.triangle_number *
-                         shader_parameter.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
-                         np.float32, GL_DYNAMIC_DRAW)
+                bind_ssbo(vertex_vbo, 6, None,
+                          renderer_model_task.triangle_number *
+                          shader_parameter.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
+                          np.float32, GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for tessellated normal
-                bindSSBO(normal_vbo, 7, None,
-                         renderer_model_task.triangle_number *
-                         shader_parameter.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
-                         np.float32, GL_DYNAMIC_DRAW)
+                bind_ssbo(normal_vbo, 7, None,
+                          renderer_model_task.triangle_number *
+                          shader_parameter.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
+                          np.float32, GL_DYNAMIC_DRAW)
 
                 # alloc memory in gpu for tessellated index
-                bindSSBO(index_vbo, 8, None,
-                         renderer_model_task.triangle_number *
-                         shader_parameter.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE,
-                         np.uint32, GL_DYNAMIC_DRAW)
+                bind_ssbo(index_vbo, 8, None,
+                          renderer_model_task.triangle_number *
+                          shader_parameter.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE,
+                          np.uint32, GL_DYNAMIC_DRAW)
 
                 # copy control point info to gpu
                 new_control_points = self.b_spline_body.get_control_point_for_sample()
@@ -236,14 +244,15 @@ class Renderer(QObject):
             if self.need_deform:
                 glUseProgram(renderer_model_task.deform_compute_shader)
 
-                # new_control_points = self.b_spline_body.get_control_point_for_sample()
-                # self.bindUBO(1, self.control_point_for_sample_ubo, new_control_points,
-                #              new_control_points.size * new_control_points.itemsize)
-
-                glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_ubo)
                 new_control_points = self.b_spline_body.get_control_point_for_sample()
-                glBufferSubData(GL_UNIFORM_BUFFER, 0, new_control_points.size * new_control_points.itemsize,
-                                new_control_points)
+
+                self.bindUBO(1, self.control_point_for_sample_ubo, new_control_points,
+                             new_control_points.size * new_control_points.itemsize)
+
+                # glBindBuffer(GL_UNIFORM_BUFFER, self.control_point_for_sample_ubo)
+                # new_control_points = self.b_spline_body.get_control_point_for_sample()
+                # glBufferSubData(GL_UNIFORM_BUFFER, 0, new_control_points.size * new_control_points.itemsize,
+                #                 new_control_points)
                 # glBufferData(GL_UNIFORM_BUFFER, new_control_points.size * new_control_points.itemsize,
                 #              new_control_points,
                 #              usage=GL_STATIC_DRAW)
@@ -281,7 +290,8 @@ class Renderer(QObject):
         glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, atomic_buffer)
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0)
 
-    def bindUBO(self, binding_point, bspline_body_buffer, data, size):
+    @staticmethod
+    def bindUBO(binding_point, bspline_body_buffer, data, size):
         glBindBuffer(GL_UNIFORM_BUFFER, bspline_body_buffer)
         glBufferData(GL_UNIFORM_BUFFER, size, data, usage=GL_STATIC_DRAW)
         glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, bspline_body_buffer)
@@ -434,16 +444,16 @@ class Renderer(QObject):
 
     @pyqtSlot(int, int, int, int)
     def select(self, x, y, x2, y2):
-        if self.renderer_aux_task.is_show:
-            self.renderer_aux_task.x1 = x
-            self.renderer_aux_task.y1 = self.h - y2
-            self.renderer_aux_task.x2 = x2
-            self.renderer_aux_task.y2 = self.h - y
-            self.renderer_aux_task.need_select = True
+        # if self.renderer_aux_task.is_show:
+        #     self.renderer_aux_task.x1 = x
+        #     self.renderer_aux_task.y1 = self.h - y2
+        #     self.renderer_aux_task.x2 = x2
+        #     self.renderer_aux_task.y2 = self.h - y
+        #     self.renderer_aux_task.need_select = True
+        self.model_shader.select(x, self.h - y2, x2, self.h - y)
         self.updateScene.emit()
 
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
-        self.b_spline_body.move(x, y, z)
-        self.need_update_control_point = True
-        self.need_deform = True
+        self.model_shader.move_control_points(x, y, z)
+        self.updateScene.emit()
