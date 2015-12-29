@@ -1,11 +1,10 @@
 import numpy
 from model.aux import BSplineBody
-from shader.ShaderUtil import get_renderer_shader_program
 from pyrr.matrix44 import *
 from OpenGL.GLU import *
 from util.GLUtil import *
 from Constant import *
-from shader.ShaderWrapper import PrevComputeProgramWrap, DeformComputeProgramWrap
+from shader.ShaderWrapper import PrevComputeProgramWrap, DeformComputeProgramWrap, DrawProgramWrap
 
 
 class GLProxy:
@@ -30,6 +29,7 @@ class GLProxy:
         self.need_update_control_point = False
         self.need_select = False
         self.tessellation_factor_is_change = False
+        self._show_control_point = True
 
         self.vertex_vbo = None
         self.normal_vbo = None
@@ -39,6 +39,12 @@ class GLProxy:
         self.y1 = None
         self.x2 = None
         self.y2 = None
+
+    def draw(self, model_view_matrix, perspective_matrix):
+        if not self.is_inited:
+            self.init_gl()
+        self.deform_and_draw_model(model_view_matrix, perspective_matrix)
+        self.draw_b_spline(model_view_matrix, perspective_matrix)
 
     def init_gl(self):
         # init code for openGL
@@ -59,14 +65,14 @@ class GLProxy:
         self.b_spline_body_vao = glGenVertexArrays(1)
         glBindVertexArray(self.b_spline_body_vao)
         vbos = glGenBuffers(2)
-        self.b_spline_body_renderer_shader = get_renderer_shader_program('aux.v.glsl', 'aux.f.glsl')
-        glUseProgram(self.b_spline_body_renderer_shader)
+        self.b_spline_body_renderer_shader = DrawProgramWrap('aux.v.glsl', 'aux.f.glsl')
+        glUseProgram(self.b_spline_body_renderer_shader.get_program())
         self.control_point_vertex_vbo = vbos[0]
         glBindBuffer(GL_ARRAY_BUFFER, self.control_point_vertex_vbo)
         vertices = self.b_spline_body.ctrlPoints
         glBufferData(GL_ARRAY_BUFFER, vertices.size * vertices.itemsize, vertices,
                      usage=GL_STATIC_DRAW)
-        vl = glGetAttribLocation(self.b_spline_body_renderer_shader, 'vertice')
+        vl = glGetAttribLocation(self.b_spline_body_renderer_shader.get_program(), 'vertice')
         glEnableVertexAttribArray(vl)
         glVertexAttribPointer(vl, 3, GL_FLOAT, False, 0, None)
         self.control_point_color_vbo = vbos[1]
@@ -74,22 +80,18 @@ class GLProxy:
         hits = self.b_spline_body.is_hit
         glBufferData(GL_ARRAY_BUFFER, len(hits) * 4, numpy.array(hits, dtype='float32'),
                      usage=GL_DYNAMIC_DRAW)
-        hl = glGetAttribLocation(self.b_spline_body_renderer_shader, 'isHit')
+        hl = glGetAttribLocation(self.b_spline_body_renderer_shader.get_program(), 'isHit')
         glEnableVertexAttribArray(hl)
         glVertexAttribPointer(hl, 1, GL_FLOAT, False, 0, None)
         glUseProgram(0)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
 
-    def draw(self, model_view_matrix, perspective_matrix):
-        if not self.is_inited:
-            self.init_gl()
-        self.deform_and_draw_model(model_view_matrix, perspective_matrix)
-        self.draw_b_spline(model_view_matrix, perspective_matrix)
-
     def draw_b_spline(self, model_view_matrix, perspective_matrix):
+        if not self._show_control_point:
+            return
         glBindVertexArray(self.b_spline_body_vao)
-        glUseProgram(self.b_spline_body_renderer_shader)
+        glUseProgram(self.b_spline_body_renderer_shader.get_program())
         if self.need_select:
             self.select_control_point(model_view_matrix, perspective_matrix)
         if self.need_update_control_point:
@@ -102,7 +104,7 @@ class GLProxy:
 
         # common bind
         mmatrix = multiply(model_view_matrix, perspective_matrix)
-        ml = glGetUniformLocation(self.b_spline_body_renderer_shader, 'wvp_matrix')
+        ml = glGetUniformLocation(self.b_spline_body_renderer_shader.get_program(), 'wvp_matrix')
         glUniformMatrix4fv(ml, 1, GL_FALSE, mmatrix)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_PROGRAM_POINT_SIZE)
@@ -129,7 +131,7 @@ class GLProxy:
                       glGetDoublev(GL_VIEWPORT))
         pick_matrix = glGetDoublev(GL_PROJECTION_MATRIX)
         mmatrix = multiply(model_view_matrix, multiply(perspective_matrix, pick_matrix))
-        ml = glGetUniformLocation(self.b_spline_body_renderer_shader, 'wvp_matrix')
+        ml = glGetUniformLocation(self.b_spline_body_renderer_shader.get_program(), 'wvp_matrix')
         glUniformMatrix4fv(ml, 1, GL_FALSE, mmatrix)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_PROGRAM_POINT_SIZE)
@@ -157,12 +159,12 @@ class GLProxy:
                      new_control_points.size * new_control_points.itemsize)
             glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
             self.need_deform = False
-        glUseProgram(self.model_renderer_shader)
+        glUseProgram(self.model_renderer_shader.get_program())
         # common bind
         wvp_matrix = multiply(model_view_matrix, perspective_matrix)
-        ml = glGetUniformLocation(self.model_renderer_shader, 'wvp_matrix')
+        ml = glGetUniformLocation(self.model_renderer_shader.get_program(), 'wvp_matrix')
         glUniformMatrix4fv(ml, 1, GL_FALSE, wvp_matrix)
-        ml = glGetUniformLocation(self.model_renderer_shader, 'wv_matrix')
+        ml = glGetUniformLocation(self.model_renderer_shader.get_program(), 'wv_matrix')
         glUniformMatrix4fv(ml, 1, GL_FALSE, model_view_matrix)
         glEnable(GL_DEPTH_TEST)
         glDrawElements(GL_TRIANGLES, int(
@@ -201,8 +203,8 @@ class GLProxy:
         # self.print_vbo(normal_vbo, len(obj.normal) / 4)
         # run renderer shader
         # gen renderer program
-        self.model_renderer_shader = get_renderer_shader_program('vertex.glsl', 'fragment.glsl')
-        glUseProgram(self.model_renderer_shader)
+        self.model_renderer_shader = DrawProgramWrap('vertex.glsl', 'fragment.glsl')
+        glUseProgram(self.model_renderer_shader.get_program())
         # set vertice attribute
         glBindBuffer(GL_ARRAY_BUFFER, self.vertex_vbo)
         vertex_location = 0

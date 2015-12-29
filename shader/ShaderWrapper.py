@@ -1,10 +1,8 @@
 from OpenGL.GL import *
 from OpenGL.GL.shaders import *
 from PyQt5.QtGui import QOpenGLShaderProgram, QOpenGLShader
-from Constant import *
 
 __author__ = 'ac'
-
 
 class ShaderProgramWrap:
     def __init__(self):
@@ -51,6 +49,14 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
         super().__init__()
         self.file_name_prefix = 'shader/compute/'
         super().add_shader(GL_COMPUTE_SHADER, file_name)
+
+
+class DrawProgramWrap(ShaderProgramWrap):
+    def __init__(self, vertex_shader_file_name, fragment_shader_file_name):
+        super().__init__()
+        self.file_name_prefix = 'shader/renderer/'
+        super().add_shader(GL_VERTEX_SHADER, vertex_shader_file_name)
+        super().add_shader(GL_FRAGMENT_SHADER, fragment_shader_file_name)
 
 
 class DeformComputeProgramWrap(ShaderProgramWrap):
