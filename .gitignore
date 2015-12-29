@@ -60,4 +60,4 @@ target/
 
 # Created by .ignore support plugin (hsz.mobi)
 .idea
-__pycache__
+*__pycache__*
