@@ -14,7 +14,7 @@ from queue import Queue
 from util.GLUtil import bind_ssbo
 from Constant import *
 from shader.ShaderUtil import shader_parameter
-from shader.ShaderWrapper import ModelShader
+from shader.GLProxy import GLProxy
 
 
 class Renderer(QObject):
@@ -28,7 +28,7 @@ class Renderer(QObject):
         self.w = 0
         self.h = 0
         self.gl_task = Queue()
-        self.model_shader = None
+        self.model = None
         self.renderer_aux_task = None
 
         self.rotate_x = 0
@@ -74,19 +74,16 @@ class Renderer(QObject):
         # if self.renderer_aux_task and self.renderer_aux_task.is_show:
         #     self.renderer_aux_task()
 
-        if self.model_shader:
-            self.model_shader.draw(self.model_view_matrix, self.perspective_matrix)
+        if self.model:
+            self.model.draw(self.model_view_matrix, self.perspective_matrix)
             self.updateScene.emit()
 
         glDisable(GL_SCISSOR_TEST)
 
-    @pyqtSlot(OBJ)
     def handle_new_obj(self, obj):
         self.model = obj
-        self.b_spline_body = BSplineBody(*self.model.get_length_xyz())
-        self.model_shader = ModelShader(obj)
+        self.model = GLProxy(obj)
 
-    @pyqtSlot(OBJ)
     def handle_new_obj2(self, obj):
         self.model = obj
 
@@ -296,7 +293,6 @@ class Renderer(QObject):
         glBufferData(GL_UNIFORM_BUFFER, size, data, usage=GL_STATIC_DRAW)
         glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, bspline_body_buffer)
 
-    @pyqtSlot(int, int)
     def change_rotate(self, x, y):
         self.rotate_y += x
         self.rotate_x += y
@@ -330,7 +326,6 @@ class Renderer(QObject):
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
         return vbo_array
 
-    @pyqtSlot(BSplineBody)
     def show_aux(self, is_show):
         if not self.renderer_aux_task:
             @static_var(is_show=is_show, shader=None, vao=None, is_select=False, hvbo=None, vvbo=None,
@@ -442,7 +437,6 @@ class Renderer(QObject):
 
         self.renderer_aux_task.is_show = is_show
 
-    @pyqtSlot(int, int, int, int)
     def select(self, x, y, x2, y2):
         # if self.renderer_aux_task.is_show:
         #     self.renderer_aux_task.x1 = x
@@ -450,10 +444,14 @@ class Renderer(QObject):
         #     self.renderer_aux_task.x2 = x2
         #     self.renderer_aux_task.y2 = self.h - y
         #     self.renderer_aux_task.need_select = True
-        self.model_shader.select(x, self.h - y2, x2, self.h - y)
+        self.model.set_select_region(x, self.h - y2, x2, self.h - y)
         self.updateScene.emit()
 
-    @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
-        self.model_shader.move_control_points(x, y, z)
+        self.model.move_control_points(x, y, z)
         self.updateScene.emit()
+
+    def change_tessellation_level(self, level):
+        self.model.change_tessellation_level(level)
+        self.updateScene.emit()
+

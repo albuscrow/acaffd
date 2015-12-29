@@ -22,8 +22,8 @@ layout(std140, binding=1) uniform ControlPointForSample{
     uniform vec4[729] newControlPoints;
 };
 
-//input
-layout(location=0) uniform float triangleNumber;
+////input
+//layout(location=0) uniform float triangleNumber;
 
 //output
 layout(std430, binding=6) buffer TesselatedVertexBuffer{
@@ -94,7 +94,7 @@ vec4 getNormal(vec3 parameter);
 
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
-    if (triangleIndex >= uint(triangleNumber)) {
+    if (triangleIndex >= triangleNumber) {
         return;
     }
     SplitedTriangle currentTriangle = input_triangles[triangleIndex];
