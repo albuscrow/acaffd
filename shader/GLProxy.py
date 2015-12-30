@@ -6,7 +6,6 @@ from util.GLUtil import *
 from Constant import *
 from shader.ShaderWrapper import PrevComputeProgramWrap, DeformComputeProgramWrap, DrawProgramWrap
 
-
 class GLProxy:
     def __init__(self, model):
         self.model = model
@@ -256,7 +255,7 @@ class GLProxy:
         # 经过分割以后的数据。
         # splited_triangle_vbo
         original_vertex_vbo, original_normal_vbo, original_index_vbo, adjacency_vbo, share_adjacency_pn_triangle_vbo, \
-            splited_triangle_vbo = buffers
+        splited_triangle_vbo = buffers
 
         # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
         bind_ssbo(original_vertex_vbo, 0, self.model.vertex, self.model.original_vertex_number * VERTEX_SIZE,
@@ -319,3 +318,18 @@ class GLProxy:
         self.need_deform = True
         self.tessellation_factor_is_change = True
         # self.init_renderer_model_buffer()
+
+
+def print_vbo(vbo_name, shape, data_type=ctypes.c_float):
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, vbo_name)
+    pointer_to_buffer = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY)
+    vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(data_type))
+    # Turn that pointer into a numpy array that spans
+    # the whole block.(buffer size is the size of your buffer)
+    vbo_array = numpy.ctypeslib.as_array(vbo_pointer, shape)
+    #
+    for data in vbo_array:
+        print(data)
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
+    return vbo_array

@@ -152,7 +152,7 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         minimumValue: -1
                         onValueChanged: {
-                            controller.move_control_points(value, 0, 0);
+                            controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
                         }
                     }
 
@@ -165,7 +165,7 @@ ApplicationWindow {
                         id: slider_y
                         minimumValue: -1
                         onValueChanged: {
-                            controller.move_control_points(0, value, 0);
+                            controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
                         }
                     }
 
@@ -178,7 +178,7 @@ ApplicationWindow {
                         id: slider_z
                         minimumValue: -1
                         onValueChanged: {
-                            controller.move_control_points(0, 0, value);
+                            controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
                         }
                     }
                 }

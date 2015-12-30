@@ -12,6 +12,7 @@ class Controller(QObject):
 
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
+        print(x, y, z)
         self.renderer.move_control_points(x, y, z)
 
     @pyqtSlot(int)

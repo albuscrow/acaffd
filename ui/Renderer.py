@@ -77,21 +77,6 @@ class Renderer(QObject):
                                           self.translation_matrix)
         self.updateScene.emit()
 
-    # @staticmethod
-    # def print_vbo(vbo_name, shape, data_type=ctypes.c_float):
-    #     glBindBuffer(GL_SHADER_STORAGE_BUFFER, vbo_name)
-    #     pointer_to_buffer = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY)
-    #     vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(data_type))
-    #     # Turn that pointer into a numpy array that spans
-    #     # the whole block.(buffer size is the size of your buffer)
-    #     vbo_array = numpy.ctypeslib.as_array(vbo_pointer, shape)
-    #     #
-    #     for data in vbo_array:
-    #         print(data)
-    #     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER)
-    #     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
-    #     return vbo_array
-
     def show_aux(self, is_show):
         self.model._show_control_point = is_show
 
