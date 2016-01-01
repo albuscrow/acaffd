@@ -63,19 +63,23 @@ class BSplineBody:
                 # k = length / ((1 + (control_point_number - 1) / 2) * (control_point_number - 1) / 2)
                 result = [0]
                 for i in range(1, int(control_point_number / 2) + 1):
-                    result.append(result[-1] + i)
+                    step = min(i, order - 1)
+                    result.append(result[-1] + step)
 
                 for i in range(int(control_point_number / 2), 0, -1):
-                    result.append(result[-1] + i)
+                    step = min(i, order - 1)
+                    result.append(result[-1] + step)
             else:
                 # k = length / ((1 + (control_point_number - 2) / 2) * (
                 #     control_point_number - 2) / 2 + control_point_number / 2)
                 result = [0]
                 for i in range(1, int(control_point_number / 2) + 1):
-                    result.append(result[-1] + i)
+                    step = min(i, order - 1)
+                    result.append(result[-1] + step)
                 for i in range(int(control_point_number / 2) - 1, 0, -1):
-                    result.append(result[-1] + i)
-            print(result)
+                    step = min(i, order - 1)
+                    result.append(result[-1] + step)
+            # print(result)
             return [(x / result[-1] - 0.5) * length for x in result]
         else:
             raise Exception('control point number can not less than order')
