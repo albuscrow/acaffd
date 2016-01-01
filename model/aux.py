@@ -11,9 +11,9 @@ class BSplineBody:
             self.order_v = 3
             self.order_w = 3
             # 控制顶点数，knot节点数 = 阶数 + 控制顶点数
-            self.control_point_number_u = 5
-            self.control_point_number_v = 5
-            self.control_point_number_w = 5
+            self.control_point_number_u = 3
+            self.control_point_number_v = 4
+            self.control_point_number_w = 6
         elif len(argv) == 6:
             self.order_u = argv[0]
             self.order_v = argv[1]
@@ -32,9 +32,9 @@ class BSplineBody:
         self.lu = lx
         self.lv = ly
         self.lw = lz
-        aux_x = self.get_control_point_aux_list(self.lu)
-        aux_y = self.get_control_point_aux_list(self.lv)
-        aux_z = self.get_control_point_aux_list(self.lw)
+        aux_x = self.get_control_point_aux_list(self.lu, self.control_point_number_u, self.order_u)
+        aux_y = self.get_control_point_aux_list(self.lv, self.control_point_number_v, self.order_v)
+        aux_z = self.get_control_point_aux_list(self.lw, self.control_point_number_w, self.order_w)
         for u, x in enumerate(aux_x):
             for v, y in enumerate(aux_y):
                 for w, z in enumerate(aux_z):
@@ -53,11 +53,31 @@ class BSplineBody:
     def reset_is_hit(self):
         self.is_hit = [False] * self.control_point_number_u * self.control_point_number_v * self.control_point_number_w
 
-    def get_control_point_aux_list(self, length):
-        if self.control_point_number_u == 5 and self.order_u == 3:
-            return [-length / 2, -length / 3, 0, length / 3, length / 2]
+    @staticmethod
+    def get_control_point_aux_list(length, control_point_number, order):
+        if control_point_number == order:
+            step = length / (control_point_number - 1)
+            return np.arange(-length / 2, length / 2 + step / 2, step)
+        elif control_point_number > order:
+            if control_point_number % 2 == 1:
+                k = length / ((1 + (control_point_number - 1) / 2) * (control_point_number - 1) / 2)
+                result = [0]
+                for i in range(1, int(control_point_number / 2) + 1):
+                    result.append(result[-1] + i)
+
+                for i in range(int(control_point_number / 2), 0, -1):
+                    result.append(result[-1] + i)
+            else:
+                k = length / ((1 + (control_point_number - 2) / 2) * (
+                    control_point_number - 2) / 2 + control_point_number / 2)
+                result = [0]
+                for i in range(1, int(control_point_number / 2) + 1):
+                    result.append(result[-1] + i)
+                for i in range(int(control_point_number / 2) - 1, 0, -1):
+                    result.append(result[-1] + i)
+            return [(x / result[-1] - 0.5) * length for x in result]
         else:
-            raise Exception('unImplement for other order and ctrl point')
+            raise Exception('control point number can not less than order')
 
     def move(self, x, y, z):
         for i, is_hit in enumerate(self.is_hit):
@@ -76,9 +96,7 @@ class BSplineBody:
 
     def get_control_point_for_sample(self):
         # uvw三个方向的区间数
-        interval_number_u = self.control_point_number_u - self.order_u + 1
-        interval_number_v = self.control_point_number_v - self.order_v + 1
-        interval_number_w = self.control_point_number_w - self.order_w + 1
+        interval_number_u, interval_number_v, interval_number_w = self.get_cage_size()
         result = np.zeros((interval_number_u, interval_number_v, interval_number_w,
                            self.order_u, self.order_v, self.order_w,
                            4), dtype=np.float32)
@@ -102,13 +120,13 @@ class BSplineBody:
             intermediate_results_1 = np.zeros((self.order_u, self.order_v, self.order_w, 3))
             for w in range(self.order_w):
                 control_points = self.ctrlPoints[control_point_base_u:control_point_base_u + self.order_u,
-                                                 control_point_base_v:control_point_base_v + self.order_v,
-                                                 control_point_base_w + w]
+                                 control_point_base_v:control_point_base_v + self.order_v,
+                                 control_point_base_w + w]
                 intermediate_results_1[..., w, 0] = mu.dot(control_points[..., 0])
                 intermediate_results_1[..., w, 1] = mu.dot(control_points[..., 1])
                 intermediate_results_1[..., w, 2] = mu.dot(control_points[..., 2])
 
-            intermediate_results_2 = np.zeros((self.order_u, self.order_v, self.order_w, 4))
+            intermediate_results_2 = np.zeros((self.order_u, self.order_v, self.order_w, 3))
             for u in range(self.order_u):
                 control_point = intermediate_results_1[u, ...]
                 intermediate_results_2[u, ..., 0] = mv.dot(control_point[..., 0])
@@ -126,22 +144,24 @@ class BSplineBody:
 
         return result
 
+    def get_control_point_number(self):
+        return self.control_point_number_u * self.control_point_number_v * self.control_point_number_w
+
+    def get_cage_size(self):
+        interval_number_u = self.control_point_number_u - self.order_u + 1
+        interval_number_v = self.control_point_number_v - self.order_v + 1
+        interval_number_w = self.control_point_number_w - self.order_w + 1
+        return [interval_number_u, interval_number_v, interval_number_w]
+
 
 def aux_multiply(value, v, result):
     result[0] += value * v[0]
     result[1] += value * v[1]
     result[2] += value * v[2]
 
+
 if __name__ == '__main__':
-    def foo(x, y, z, *all, **dict):
-        print(x)
-        print(y)
-        print(z)
-        for i in all:
-            print(i)
-        for k, v in dict.items():
-            print(k)
-            print(v)
-
-
-    foo(2, 1, 3, a=2, b=3)
+    print(BSplineBody.get_control_point_aux_list(1, 5, 3))
+    print(BSplineBody.get_control_point_aux_list(1, 6, 2))
+    print(BSplineBody.get_control_point_aux_list(1, 6, 6))
+    print(BSplineBody.get_control_point_aux_list(1, 6, 7))

@@ -22,6 +22,7 @@ class GLProxy:
 
         self.b_spline_body_vao = None
         self.b_spline_body_renderer_shader = None
+        self.b_spline_body_ubo = None
         self.control_point_vertex_vbo = None
         self.control_point_color_vbo = None
         self.is_inited = False
@@ -107,7 +108,7 @@ class GLProxy:
         glUniformMatrix4fv(ml, 1, GL_FALSE, mmatrix)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_PROGRAM_POINT_SIZE)
-        glDrawArrays(GL_POINTS, 0, 125)
+        glDrawArrays(GL_POINTS, 0, self.b_spline_body.get_control_point_number())
         glUseProgram(0)
         glBindVertexArray(0)
 
@@ -134,7 +135,7 @@ class GLProxy:
         glUniformMatrix4fv(ml, 1, GL_FALSE, mmatrix)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_PROGRAM_POINT_SIZE)
-        for i in range(125):
+        for i in range(self.b_spline_body.get_control_point_number()):
             glLoadName(i)
             glDrawArrays(GL_POINTS, i, 1)
         hit_info = glRenderMode(GL_RENDER)
@@ -189,7 +190,7 @@ class GLProxy:
         self.control_point_for_sample_ubo, self.vertex_vbo, self.normal_vbo, self.index_vbo = buffers
 
         self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
-                                                              self.splited_triangle_number)
+                                                              self.splited_triangle_number, self.b_spline_body)
         self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
         # copy control point info to gpu
         new_control_points = self.b_spline_body.get_control_point_for_sample()
@@ -240,9 +241,10 @@ class GLProxy:
 
     def load_b_spline_body_to_gpu(self):
         # b样条体相关信息
-        bspline_body_ubo = glGenBuffers(1)
+        if not self.b_spline_body_ubo:
+            self.b_spline_body_ubo = glGenBuffers(1)
         bspline_body_info = self.b_spline_body.get_info()
-        bind_ubo(bspline_body_ubo, 0, bspline_body_info,
+        bind_ubo(self.b_spline_body_ubo, 0, bspline_body_info,
                  bspline_body_info.size * bspline_body_info.itemsize)
 
     def load_model_to_gpu_and_init_some_fix_buffer_in_gpu(self):

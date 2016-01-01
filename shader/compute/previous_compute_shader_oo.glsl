@@ -553,10 +553,6 @@ SamplePointInfo getBSplineInfo(vec4 parameter) {
     float u = getBSplineInfoU(parameter.x, knot_left_index_u);
     float v = getBSplineInfoV(parameter.y, knot_left_index_v);
     float w = getBSplineInfoW(parameter.z, knot_left_index_w);
-//    uint aux_matrix_offset_u, aux_matrix_offset_v, aux_matrix_offset_w;
-//    aux_matrix_offset_u = getAuxMatrixOffset(int(orderU), int(controlPointNumU), int(knot_left_index_u));
-//    aux_matrix_offset_v = getAuxMatrixOffset(int(orderV), int(controlPointNumV), int(knot_left_index_v));
-//    aux_matrix_offset_w = getAuxMatrixOffset(int(orderW), int(controlPointNumW), int(knot_left_index_w));
 
     result.parameter = vec4(u, v, w, 0);
     result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);

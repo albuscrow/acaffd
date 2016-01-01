@@ -12,7 +12,6 @@ class Controller(QObject):
 
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
-        print(x, y, z)
         self.renderer.move_control_points(x, y, z)
 
     @pyqtSlot(int)
@@ -61,6 +60,10 @@ class Controller(QObject):
             miny = y
             maxy = y2
         self.renderer.select(minx, miny, maxx, maxy)
+
+    @pyqtSlot(int, int, int)
+    def change_control_point_number(self, u, v, w):
+        print(u, v, w)
 
     def connect_with_renderer(self, renderer):
         self.renderer = renderer

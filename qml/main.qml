@@ -76,7 +76,6 @@ ApplicationWindow {
                     }
 
                     SpinBox {
-                        id: split_param_spin_box
                         value: 3
                         onValueChanged: {
                             controller.change_tessellation_level(value)
@@ -92,42 +91,57 @@ ApplicationWindow {
                     }
 
                     Label {
-                        text: "切割参数"
+                        text: "cp_u"
+                    }
+
+                    SpinBox {
+                        id: cp_u
+                        value: 5
+                        onValueChanged: {
+                            controller.change_control_point_number(cp_u.value, cp_v.value, cp_w.value)
+                        }
+                    }
+
+                    Label {
+                        text: "order_u"
                     }
 
                     SpinBox {
                     }
 
                     Label {
-                        text: "细分参数"
+                        text: "cp_v"
+                    }
+
+                    SpinBox {
+                        id: cp_v
+                        value: 5
+                        onValueChanged: {
+                            controller.change_control_point_number(cp_u.value, cp_v.value, cp_w.value)
+                        }
+                    }
+
+                    Label {
+                        text: "order_v"
                     }
 
                     SpinBox {
                     }
 
                     Label {
-                        text: "切割参数"
+                        text: "cp_w"
                     }
 
                     SpinBox {
+                        id: cp_w
+                        value: 5
+                        onValueChanged: {
+                            controller.change_control_point_number(cp_u.value, cp_v.value, cp_w.value)
+                        }
                     }
 
                     Label {
-                        text: "细分参数"
-                    }
-
-                    SpinBox {
-                    }
-
-                    Label {
-                        text: "切割参数"
-                    }
-
-                    SpinBox {
-                    }
-
-                    Label {
-                        text: "细分参数"
+                        text: "order_w"
                     }
 
                     SpinBox {

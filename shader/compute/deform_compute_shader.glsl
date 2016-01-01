@@ -46,27 +46,14 @@ layout(location=0) uniform float triangleNumber;
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 
 //控制顶点
-layout(location=1) uniform vec3[125] controlPoints;
-
 layout(std140, binding=1) uniform ControlPointForSample{
     uniform vec4[729] newControlPoints;
 };
 
-vec4 sample_bspline(BSplineInfo bsi);
 vec4 sample_bspline_fast(BSplineInfo bsi);
 vec4 sample_bspline_normal_fast(BSplineInfo bsi);
 
 const float Mr[370] = {
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4390243902439024, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4390243902439024, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4390243902439024, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.4390243902439024, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6585365853658537, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.8780487804878049, 0.0, 0.0
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.8333333333333334, 3.0, 0.0, -1.5, 0.0, 0.3333333333333333, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.8333333333333334, 0.0, 3.0, 0.0, -1.5, 0.0, 0.0, 0.0, 0.3333333333333333,
@@ -398,89 +385,3 @@ vec4 sample_bspline_fast(BSplineInfo bsi) {
     return sample_helper(bsi, un, vn, wn);
 }
 
-vec4 sample_bspline(BSplineInfo bsi) {
-    vec4 result;
-    vec3 tempcp1[4];
-    vec3 tempcp2[4][4];
-
-    int uli = int(bsi.knot_left_index.x);
-    float u = bsi.t.x;
-    int vli = int(bsi.knot_left_index.y);
-    float v = bsi.t.y;
-    int wli = int(bsi.knot_left_index.z);
-    float w = bsi.t.z;
-    int controlPointOffset = (uli * 9 + vli * 3 + wli) * 27;
-//    return vec4(bsi.aux_matrix_offset.z, bsi.aux_matrix_offset.y, bsi.aux_matrix_offset.z, 1);
-
-    float temp[4];
-    float muli[4];
-    temp[0] = 1.0f;
-    temp[1] = w;
-    temp[2] = w * w;
-    temp[3] = temp[2] * w;
-
-    int matrix_offset = int(bsi.aux_matrix_offset.z);
-
-    for (int i = 0; i < 3; ++i) {
-        muli[i] = 0.0f;
-        for (int j = 0; j < 3; ++j) {
-            muli[i] += temp[j] * sample_aux_matrix[matrix_offset + j * 3 + i];
-        }
-    }
-
-    for (int i = 0; i < 3; ++i){
-        for (int j = 0; j < 3; ++j){
-            tempcp2[i][j] = vec3(0.0f);
-            for (int k = 0; k < 3; ++k) {
-                vec3 cp = controlPoints[int((uli - i) * 25 + (vli - j) * 5 + wli - k)];
-//                vec3 cp = newControlPoints[int(controlPointOffset + (2 - i) * 9 + (2 - j) * 3 + 2 - k)];
-                tempcp2[i][j].x += cp.x * muli[2 - k];
-                tempcp2[i][j].y += cp.y * muli[2 - k];
-                tempcp2[i][j].z += cp.z * muli[2 - k];
-            }
-        }
-    }
-
-    temp[1] = v;
-    temp[2] = v * v;
-    temp[3] = temp[2] * v;
-
-    matrix_offset = int(bsi.aux_matrix_offset.y);
-    for (int i = 0; i < 3; ++i) {
-        muli[i] = 0.0;
-        for (int j = 0; j < 3; ++j) {
-            muli[i] += temp[j] * sample_aux_matrix[matrix_offset + j * 3 + i];
-        }
-    }
-
-    for (int i = 0; i < 3; ++i) {
-        tempcp1[i] = vec3(0.0);
-        for (int j = 0; j < 3; ++j) {
-            tempcp1[i].x += tempcp2[i][j].x * muli[2 - j];
-            tempcp1[i].y += tempcp2[i][j].y * muli[2 - j];
-            tempcp1[i].z += tempcp2[i][j].z * muli[2 - j];
-        }
-    }
-
-    temp[1] = u;
-    temp[2] = u * u;
-    temp[3] = temp[2] * u;
-
-    matrix_offset = int(bsi.aux_matrix_offset.x);
-
-    for (int i = 0; i < 3; ++i) {
-        muli[i] = 0.0;
-        for (int j = 0; j < 3; ++j) {
-            muli[i] += temp[j] * sample_aux_matrix[matrix_offset + j * 3 + i];
-        }
-    }
-
-    result = vec4(0);
-    for (int i = 0; i < 3; ++i) {
-        result.x += tempcp1[i].x * muli[2 - i];
-        result.y += tempcp1[i].y * muli[2 - i];
-        result.z += tempcp1[i].z * muli[2 - i];
-    }
-    result.w = 1;
-    return result;
-}
