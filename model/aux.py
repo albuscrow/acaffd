@@ -29,6 +29,10 @@ class BSplineBody:
         self.lv = ly
         self.lw = lz
 
+        self.ctrlPoints = None
+        self.control_points_backup = None
+        self.is_hit = None
+
         self.init_data()
 
     def init_data(self):
@@ -44,7 +48,6 @@ class BSplineBody:
                 for w, z in enumerate(aux_z):
                     self.ctrlPoints[u, v, w] = [x, y, z]
         self.control_points_backup = self.ctrlPoints.copy()
-        self.is_hit = None
         self.reset_is_hit()
 
     def reset_is_hit(self):
@@ -57,7 +60,7 @@ class BSplineBody:
             return np.arange(-length / 2, length / 2 + step / 2, step)
         elif control_point_number > order:
             if control_point_number % 2 == 1:
-                k = length / ((1 + (control_point_number - 1) / 2) * (control_point_number - 1) / 2)
+                # k = length / ((1 + (control_point_number - 1) / 2) * (control_point_number - 1) / 2)
                 result = [0]
                 for i in range(1, int(control_point_number / 2) + 1):
                     result.append(result[-1] + i)
@@ -65,13 +68,14 @@ class BSplineBody:
                 for i in range(int(control_point_number / 2), 0, -1):
                     result.append(result[-1] + i)
             else:
-                k = length / ((1 + (control_point_number - 2) / 2) * (
-                    control_point_number - 2) / 2 + control_point_number / 2)
+                # k = length / ((1 + (control_point_number - 2) / 2) * (
+                #     control_point_number - 2) / 2 + control_point_number / 2)
                 result = [0]
                 for i in range(1, int(control_point_number / 2) + 1):
                     result.append(result[-1] + i)
                 for i in range(int(control_point_number / 2) - 1, 0, -1):
                     result.append(result[-1] + i)
+            print(result)
             return [(x / result[-1] - 0.5) * length for x in result]
         else:
             raise Exception('control point number can not less than order')
