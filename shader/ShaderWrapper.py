@@ -4,6 +4,7 @@ from PyQt5.QtGui import QOpenGLShaderProgram, QOpenGLShader
 
 __author__ = 'ac'
 
+
 class ShaderProgramWrap:
     def __init__(self):
         self.program = None
@@ -60,7 +61,7 @@ class DrawProgramWrap(ShaderProgramWrap):
 
 
 class DeformComputeProgramWrap(ShaderProgramWrap):
-    def __init__(self, file_name, splited_triangle_number, b_spline_body, tessellation_factor=3):
+    def __init__(self, file_name, splited_triangle_number, b_spline_body, tessellation_factor=1):
         super().__init__()
         self._b_spline_body = b_spline_body
         self._tessellation_factor = tessellation_factor
@@ -98,11 +99,14 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
                     tessellation_index.append(next_index)
                 prev = next_index
 
-        _, v, w = self._b_spline_body.get_cage_size()
+        u, v, w = self._b_spline_body.get_cage_size()
 
         return 'const uint triangleNumber = {4};\
                const uint vw = {5}; \
                const uint w = {6}; \
+               const float x_stride = {7};\
+               const float y_stride = {8};\
+               const float z_stride = {9};\
                const vec3 tessellatedParameter[{0}] = {1}; \
                     const uvec3 tessellateIndex[{2}] = {3};' \
             .format(*[len(tessellation_parameter),
@@ -110,7 +114,8 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
                                       tessellation_parameter]) + '}',
                       len(tessellation_index),
                       '{' + ','.join(['{' + ','.join([str(y) for y in x]) + '}\n' for x in
-                                      tessellation_index]) + '}', self.splited_triangle_number, v * w, w])
+                                      tessellation_index]) + '}', self.splited_triangle_number, v * w, w, 1 / u, 1 / v,
+                      1 / w])
 
     @property
     def tessellation_factor(self):

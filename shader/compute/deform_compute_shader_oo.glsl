@@ -10,6 +10,8 @@ struct SplitedTriangle {
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
     bool need_adj[6];
+    vec4 original_normal[3];
+    vec4 original_position[3];
 };
 //input
 layout(std430, binding=5) buffer TriangleBuffer{
@@ -130,39 +132,39 @@ void main() {
 
     // 输出分割三角形
     // 生成顶点数据
-//    uint point_index[100];
-//    for (int i = 0; i < 3; ++i) {
-//        vec3 pointParameter = tessellatedParameter[i];
-//        uint point_offset = triangleIndex * 3 + i;
-//        tessellatedVertex[point_offset] = currentTriangle.position[i];
-//        tessellatedNormal[point_offset] = currentTriangle.normal[i];
-//        point_index[i] = point_offset;
-//    }
-//    // 生成index数据
-//    uint index_offset = triangleIndex;
-//    tessellatedIndex[index_offset * 3] = point_index[0];
-//    tessellatedIndex[index_offset * 3 + 1] = point_index[1];
-//    tessellatedIndex[index_offset * 3 + 2] = point_index[2];
-
-
-    // 细分
-    // 生成顶点数据
     uint point_index[100];
-    for (int i = 0; i < tessellatedParameter.length(); ++i) {
+    for (int i = 0; i < 3; ++i) {
         vec3 pointParameter = tessellatedParameter[i];
-        uint point_offset = triangleIndex * tessellatedParameter.length() + i;
-        tessellatedVertex[point_offset] = getPosition(pointParameter);
-        tessellatedNormal[point_offset] = getNormal(pointParameter);
+        uint point_offset = triangleIndex * 3 + i;
+        tessellatedVertex[point_offset] = vec4(currentTriangle.original_position[i]);
+        tessellatedNormal[point_offset] = vec4(currentTriangle.original_normal[i]);
         point_index[i] = point_offset;
     }
     // 生成index数据
-    for (int i = 0; i < tessellateIndex.length(); ++i) {
-        uvec3 index = tessellateIndex[i];
-        uint index_offset = triangleIndex * tessellateIndex.length() + i;
-        tessellatedIndex[index_offset * 3] = point_index[index.x];
-        tessellatedIndex[index_offset * 3 + 1] = point_index[index.y];
-        tessellatedIndex[index_offset * 3 + 2] = point_index[index.z];
-    }
+    uint index_offset = triangleIndex;
+    tessellatedIndex[index_offset * 3] = point_index[0];
+    tessellatedIndex[index_offset * 3 + 1] = point_index[1];
+    tessellatedIndex[index_offset * 3 + 2] = point_index[2];
+
+
+//    // 细分
+//    // 生成顶点数据
+//    uint point_index[100];
+//    for (int i = 0; i < tessellatedParameter.length(); ++i) {
+//        vec3 pointParameter = tessellatedParameter[i];
+//        uint point_offset = triangleIndex * tessellatedParameter.length() + i;
+//        tessellatedVertex[point_offset] = getPosition(pointParameter);
+//        tessellatedNormal[point_offset] = getNormal(pointParameter);
+//        point_index[i] = point_offset;
+//    }
+//    // 生成index数据
+//    for (int i = 0; i < tessellateIndex.length(); ++i) {
+//        uvec3 index = tessellateIndex[i];
+//        uint index_offset = triangleIndex * tessellateIndex.length() + i;
+//        tessellatedIndex[index_offset * 3] = point_index[index.x];
+//        tessellatedIndex[index_offset * 3 + 1] = point_index[index.y];
+//        tessellatedIndex[index_offset * 3 + 2] = point_index[index.z];
+//    }
 }
 
 float factorial(int n) {
@@ -297,10 +299,6 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     vec4 n = spi.original_normal;
 
     //todo should modify when spline body modify
-    float x_stride = 0.333333;
-    float y_stride = 0.333333;
-    float z_stride = 0.333333;
-
     vec3 result = vec3(1);
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
     float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
@@ -347,6 +345,6 @@ vec3 sample_bspline_position_fast(SamplePointInfo spi) {
     wn[2] = w * w;
     wn[3] = w * wn[3];
 
-    return sample_helper(spi, un, vn, wn).xyz;
+    return sample_helper(spi, un, vn, wn);
 }
 

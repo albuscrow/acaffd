@@ -70,7 +70,6 @@ sample_aux_matrix = [
 
 
 def get_aux_matrix_offset(order, ctrl_point_num, left_index):
-    res = None
     if order == 1:
         res = sample_aux_matrix[0]  # MB1 0
     elif order == 2:
