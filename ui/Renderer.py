@@ -92,3 +92,7 @@ class Renderer(QObject):
         self.model.change_tessellation_level(level)
         self.updateScene.emit()
 
+    def change_control_point(self, u, v, w):
+        self.model.change_control_point(u, v, w)
+        self.updateScene.emit()
+

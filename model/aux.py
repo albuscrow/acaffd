@@ -24,14 +24,18 @@ class BSplineBody:
             self.control_point_number_w = argv[5]
         else:
             raise Exception('input argv number error')
-        self.ctrlPoints = np.zeros((self.control_point_number_u,
-                                    self.control_point_number_v,
-                                    self.control_point_number_w,
-                                    3), dtype=np.float32)
 
         self.lu = lx
         self.lv = ly
         self.lw = lz
+
+        self.init_data()
+
+    def init_data(self):
+        self.ctrlPoints = np.zeros((self.control_point_number_u,
+                                    self.control_point_number_v,
+                                    self.control_point_number_w,
+                                    3), dtype=np.float32)
         aux_x = self.get_control_point_aux_list(self.lu, self.control_point_number_u, self.order_u)
         aux_y = self.get_control_point_aux_list(self.lv, self.control_point_number_v, self.order_v)
         aux_z = self.get_control_point_aux_list(self.lw, self.control_point_number_w, self.order_w)
@@ -39,15 +43,8 @@ class BSplineBody:
             for v, y in enumerate(aux_y):
                 for w, z in enumerate(aux_z):
                     self.ctrlPoints[u, v, w] = [x, y, z]
-
-        # print(self.ctrlPoints.size)
-        # for u in self.ctrlPoints:
-        #     for v in self.ctrlPoints:
-        #         for w in self.ctrlPoints:
-        #             print(w)
         self.control_points_backup = self.ctrlPoints.copy()
-
-        self.is_hit = []
+        self.is_hit = None
         self.reset_is_hit()
 
     def reset_is_hit(self):
@@ -152,6 +149,12 @@ class BSplineBody:
         interval_number_v = self.control_point_number_v - self.order_v + 1
         interval_number_w = self.control_point_number_w - self.order_w + 1
         return [interval_number_u, interval_number_v, interval_number_w]
+
+    def change_control_point(self, u, v, w):
+        self.control_point_number_u = u
+        self.control_point_number_v = v
+        self.control_point_number_w = w
+        self.init_data()
 
 
 def aux_multiply(value, v, result):
