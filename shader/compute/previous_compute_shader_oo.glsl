@@ -53,6 +53,8 @@ struct SplitedTriangle {
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
     bool need_adj[6];
+    vec4 original_normal[3];
+    vec4 original_position[3];
 };
 
 
@@ -278,6 +280,14 @@ void main() {
         uvec3 index = splitIndex[splitIndexOffset + i];
         SplitedTriangle st;
 
+        st.original_normal[0] = new_normal_org[index.x];
+        st.original_normal[1] = new_normal_org[index.y];
+        st.original_normal[2] = new_normal_org[index.z];
+
+        st.original_position[0] = new_position[index.x];
+        st.original_position[1] = new_position[index.y];
+        st.original_position[2] = new_position[index.z];
+
         st.normal_adj[0] = new_normal_adj[index.x];
         st.normal_adj[1] = new_normal_adj[index.y];
         st.normal_adj[2] = new_normal_adj[index.z];
@@ -347,6 +357,7 @@ float power(float b, int n) {
 vec4 getNormalAdj(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
+    //todo
     for (int i = 2; i >=0; --i) {
         for (int j = 2 - i; j >= 0; --j) {
             int k = 2 - i - j;
@@ -366,6 +377,7 @@ vec4 getNormalOrg(vec3 parameter) {
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
     vec3 result = vec3(0);
     uint ctrlPointIndex = adjacency_triangle_index_ * 6;
+    //todo
     for (int i = 2; i >=0; --i) {
         for (int j = 2 - i; j >= 0; --j) {
             int k = 2 - i - j;
@@ -381,6 +393,7 @@ vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
 vec4 getPosition(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
+    //todo
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
             int k = 3 - i - j;

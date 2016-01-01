@@ -23,10 +23,14 @@ MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE = 100
 #     SamplePointInfo samplePoint[37];  48 * 37
 #     vec4 adjacency_normal[6];         16 * 6
 #     bool need_adj[6];                 1 * 6
+#     vec4 original_normal[3];          16 * 3
+#     vec4 original_position[3];        16 * 3
+#
 # };
-SPLITED_TRIANGLE_SIZE = 1926
+
+SPLITED_TRIANGLE_SIZE = 1926 + 48 * 2
 
 ##todo
-TESSELLATED_POINT_NUMBER_PRE_SPLITED_TRIANGLE = 10
-TESSELLATED_TRIANGLE_NUMBER_PRE_SPLITED_TRIANGLE = 9
+TESSELLATED_POINT_NUMBER_PRE_SPLITED_TRIANGLE = 3
+TESSELLATED_TRIANGLE_NUMBER_PRE_SPLITED_TRIANGLE = 1
 
