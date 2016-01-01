@@ -11,9 +11,9 @@ class BSplineBody:
             self.order_v = 3
             self.order_w = 3
             # 控制顶点数，knot节点数 = 阶数 + 控制顶点数
-            self.control_point_number_u = 7
-            self.control_point_number_v = 7
-            self.control_point_number_w = 7
+            self.control_point_number_u = 5
+            self.control_point_number_v = 5
+            self.control_point_number_w = 5
         elif len(argv) == 6:
             self.order_u = argv[0]
             self.order_v = argv[1]

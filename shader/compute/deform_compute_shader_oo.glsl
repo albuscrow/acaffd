@@ -130,41 +130,41 @@ void main() {
 
     bezierPositionControlPoint[4] += delta * 1.5 / 6;
 
-    // 输出分割三角形
-    // 生成顶点数据
-    uint point_index[100];
-    for (int i = 0; i < 3; ++i) {
-        vec3 pointParameter = tessellatedParameter[i];
-        uint point_offset = triangleIndex * 3 + i;
-        tessellatedVertex[point_offset] = vec4(currentTriangle.original_position[i]);
-        tessellatedNormal[point_offset] = vec4(currentTriangle.original_normal[i]);
-        point_index[i] = point_offset;
-    }
-    // 生成index数据
-    uint index_offset = triangleIndex;
-    tessellatedIndex[index_offset * 3] = point_index[0];
-    tessellatedIndex[index_offset * 3 + 1] = point_index[1];
-    tessellatedIndex[index_offset * 3 + 2] = point_index[2];
-
-
-//    // 细分
+//    // 输出分割三角形
 //    // 生成顶点数据
 //    uint point_index[100];
-//    for (int i = 0; i < tessellatedParameter.length(); ++i) {
+//    for (int i = 0; i < 3; ++i) {
 //        vec3 pointParameter = tessellatedParameter[i];
-//        uint point_offset = triangleIndex * tessellatedParameter.length() + i;
-//        tessellatedVertex[point_offset] = getPosition(pointParameter);
-//        tessellatedNormal[point_offset] = getNormal(pointParameter);
+//        uint point_offset = triangleIndex * 3 + i;
+//        tessellatedVertex[point_offset] = vec4(currentTriangle.original_position[i]);
+//        tessellatedNormal[point_offset] = vec4(currentTriangle.original_normal[i]);
 //        point_index[i] = point_offset;
 //    }
 //    // 生成index数据
-//    for (int i = 0; i < tessellateIndex.length(); ++i) {
-//        uvec3 index = tessellateIndex[i];
-//        uint index_offset = triangleIndex * tessellateIndex.length() + i;
-//        tessellatedIndex[index_offset * 3] = point_index[index.x];
-//        tessellatedIndex[index_offset * 3 + 1] = point_index[index.y];
-//        tessellatedIndex[index_offset * 3 + 2] = point_index[index.z];
-//    }
+//    uint index_offset = triangleIndex;
+//    tessellatedIndex[index_offset * 3] = point_index[0];
+//    tessellatedIndex[index_offset * 3 + 1] = point_index[1];
+//    tessellatedIndex[index_offset * 3 + 2] = point_index[2];
+
+
+    // 细分
+    // 生成顶点数据
+    uint point_index[100];
+    for (int i = 0; i < tessellatedParameter.length(); ++i) {
+        vec3 pointParameter = tessellatedParameter[i];
+        uint point_offset = triangleIndex * tessellatedParameter.length() + i;
+        tessellatedVertex[point_offset] = getPosition(pointParameter);
+        tessellatedNormal[point_offset] = getNormal(pointParameter);
+        point_index[i] = point_offset;
+    }
+    // 生成index数据
+    for (int i = 0; i < tessellateIndex.length(); ++i) {
+        uvec3 index = tessellateIndex[i];
+        uint index_offset = triangleIndex * tessellateIndex.length() + i;
+        tessellatedIndex[index_offset * 3] = point_index[index.x];
+        tessellatedIndex[index_offset * 3 + 1] = point_index[index.y];
+        tessellatedIndex[index_offset * 3 + 2] = point_index[index.z];
+    }
 }
 
 float factorial(int n) {

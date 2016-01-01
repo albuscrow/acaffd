@@ -61,7 +61,7 @@ class DrawProgramWrap(ShaderProgramWrap):
 
 
 class DeformComputeProgramWrap(ShaderProgramWrap):
-    def __init__(self, file_name, splited_triangle_number, b_spline_body, tessellation_factor=1):
+    def __init__(self, file_name, splited_triangle_number, b_spline_body, tessellation_factor=3):
         super().__init__()
         self._b_spline_body = b_spline_body
         self._tessellation_factor = tessellation_factor
