@@ -90,7 +90,7 @@ class BSplineBody:
                 u = i // (self.control_point_number_v * self.control_point_number_w)
                 v = i % (self.control_point_number_v * self.control_point_number_w) // self.control_point_number_w
                 w = i % self.control_point_number_w
-                self.ctrlPoints[u, v, w] = self.control_points_backup[u, v, w] + [x, y, z]
+                self.ctrlPoints[u, v, w] += [d / 10 for d in [x, y, z]]
 
     def get_info(self):
         return np.array(

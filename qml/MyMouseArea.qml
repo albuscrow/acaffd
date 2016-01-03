@@ -6,9 +6,11 @@ MouseArea {
     property int threshold: 10
     signal rightMoveDelta(int x, int y)
     signal leftMoveInfo(int x, int y, int x2, int y2)
+    signal wheelMove(int key, int delta_y)
     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
     onPressed: {
+        focus = true
         origin = Qt.point(mouse.x, mouse.y)
         last = Qt.point(mouse.x, mouse.y)
         if (mouse.modifiers & Qt.ShiftModifier) {
@@ -44,6 +46,19 @@ MouseArea {
             break
         }
         last = Qt.point(mouse.x, mouse.y)
+    }
+    focus: true
+
+    property int pressedKey
+    Keys.onPressed: {
+        pressedKey = event.key
+    }
+
+    Keys.onReleased: {
+        pressedKey = -1
+    }
+    onWheel: {
+        wheelMove(pressedKey, wheel.angleDelta.y)
     }
 }
 

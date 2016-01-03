@@ -18,6 +18,8 @@ ApplicationWindow {
         }
     }
 
+
+
     menuBar: MenuBar {
         Menu {
             title: qsTr("File")
@@ -55,6 +57,19 @@ ApplicationWindow {
                 }
                 onLeftMoveInfo: {
                     controller.select(x, y, x2, y2)
+                }
+
+                onWheelMove:{
+                    var delta = delta_y / 120;
+                    if (key == Qt.Key_X) {
+                        controller.move_control_points(delta, 0, 0);
+                    } else if (key == Qt.Key_Y) {
+                        controller.move_control_points(0, delta, 0);
+                    } else if (key == Qt.Key_Z) {
+                        controller.move_control_points(0, 0, delta);
+                    } else {
+                        controller.zoom(delta)
+                    }
                 }
             }
 
@@ -149,54 +164,54 @@ ApplicationWindow {
                 }
             }
 
-            GroupBox {
-                id: edit_panel
-                title: "编辑"
-                Layout.fillWidth: true
+           //GroupBox {
+           //    id: edit_panel
+           //    title: "编辑"
+           //    Layout.fillWidth: true
 
-                GridLayout {
-                    anchors.fill: parent
-                    columns: 2
+           //    GridLayout {
+           //        anchors.fill: parent
+           //        columns: 2
 
-                    Label {
-                        text: "切割参数"
-                    }
-                    Slider {
-                        id: slider_x
-                        Layout.fillWidth: true
-                        minimumValue: -1
-                        onValueChanged: {
-                            controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
-                        }
-                    }
+           //        Label {
+           //            text: "切割参数"
+           //        }
+           //        Slider {
+           //            id: slider_x
+           //            Layout.fillWidth: true
+           //            minimumValue: -1
+           //            onValueChanged: {
+           //                controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
+           //            }
+           //        }
 
-                    Label {
-                        text: "切割参数"
-                    }
+           //        Label {
+           //            text: "切割参数"
+           //        }
 
-                    Slider {
-                        Layout.fillWidth: true
-                        id: slider_y
-                        minimumValue: -1
-                        onValueChanged: {
-                            controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
-                        }
-                    }
+           //        Slider {
+           //            Layout.fillWidth: true
+           //            id: slider_y
+           //            minimumValue: -1
+           //            onValueChanged: {
+           //                controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
+           //            }
+           //        }
 
-                    Label {
-                        text: "切割参数"
-                    }
+           //        Label {
+           //            text: "切割参数"
+           //        }
 
-                    Slider {
-                        Layout.fillWidth: true
-                        id: slider_z
-                        minimumValue: -1
-                        onValueChanged: {
-                            controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
-                        }
-                    }
-                }
-            }
+           //        Slider {
+           //            Layout.fillWidth: true
+           //            id: slider_z
+           //            minimumValue: -1
+           //            onValueChanged: {
+           //                controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
+           //            }
+           //        }
+           //    }
+           //}
         }
     }
 }

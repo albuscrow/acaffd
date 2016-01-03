@@ -65,6 +65,11 @@ class Controller(QObject):
     def change_control_point_number(self, u, v, w):
         self.renderer.change_control_point(u, v, w)
 
+    @pyqtSlot(int)
+    def zoom(self, delta):
+        # self.renderer.change_control_point(u, v, w)
+        pass
+
     def connect_with_renderer(self, renderer):
         self.renderer = renderer
 
