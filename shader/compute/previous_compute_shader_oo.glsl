@@ -65,7 +65,7 @@ layout(std430, binding=5) buffer TriangleBuffer{
 
 //debug
 layout(std430, binding=14) buffer OutputDebugBuffer{
-    vec4[] myOutputBuffer;
+    float[] myOutputBuffer;
 };
 
 //三角形计数器，因为是多个线程一起产生三角形的，并且存在同一个数组。所以需要这个计数器来同步
@@ -80,62 +80,54 @@ vec3 PNTriangleN[6];
 
 // 这些变量在求PNtriangle中也会用到，所以写成全区的
 // 三角形三个顶点的index
-uint original_index_0;
-uint original_index_1;
-uint original_index_2;
+uint original_index[3];
 
 // 20,01,12这三条边对应的邻接三角形, 以及邻接三角形的边
 int adjacency_triangle_index[3];
 int adjacency_triangle_edge[3];
 
 // 三个顶点位置
-vec3 point0;
-vec3 point1;
-vec3 point2;
+vec3 point[3];
 
 // 三个顶点法向
-vec3 normal0;
-vec3 normal1;
-vec3 normal2;
+vec3 normal[3];
+
+// switch
+uvec3 parameterSwitch;
 
 const vec3 ZERO3 = vec3(0.000001);
+const float ZERO = 0.000001;
 const vec4 ZERO4 = vec4(0.000001);
 
-//以下两个定义切割pattern
-const vec3 splitParameter[10] = {
-    {1,0,0},
-    {0.6667, 0.3333, 0}, {0.6667, 0, 0.3333},
-    {0.3333, 0.6667, 0}, {0.3333, 0.3333, 0.3333}, {0.3333, 0, 0.6667},
-    {0, 1, 0}, {0, 0.6667, 0.3333}, {0, 0.3333, 0.6667}, {0, 0, 1}
-};
+!?include1
 
-const uint splitParameterEdgeInfoAux[5] = {-1,2,0,-2,1};
+//layout(std430, binding=10) buffer SplitedData{
+//            uvec4 splitIndex[73605];
+//            vec4 splitParameter[25344];
+//            uint offset_number[1430];
+//        };
+//        const float splite_factor = 0.2;
+//        const int max_splite_factor = 20;
+//        const uint look_up_table_for_i[20] = {0,19,54,102,160,225,294,364,432,495,550,595,631,659,680,695,705,711,714,715};
 
-const uint splitParameterChangeAux[3][3] =
-{{1,0,2},
- {0,2,1},
- {2,1,0}};
-/**
-   v,u,w
-   u,w,v
-   w,v,u
-   splitParameterChangeAux[i][j]
-   i表示当前三角形的边编号
-   j表示邻接三角形的边编号
-   splitParameterChangeAux[i][j]表示从当前三角形的parameter转到邻接三角形,不变的那个分量,另外两个分量交换值
-**/
-
-const uint splitParameterEdgeInfo[10] = {
-6,
-4,2,
-4,0,2,
-5,1,1,3};
-
-const uvec3 splitIndex[9] = {
-    {0, 1, 2},
-    {1, 3 ,4}, {1, 4, 2}, {2, 4, 5},
-    {3, 6, 7}, {3, 7, 4}, {4, 7, 8}, {4, 8, 5}, {5, 8, 9}
-};
+//const float splite_factor = 0.2;
+//const int max_splite_factor = 20;
+//const uint look_up_table_for_i[20] =
+//{0, 19, 54, 102, 160, 225, 294, 364, 432, 495, 550, 595, 631, 659, 680, 695, 705, 711, 714, 715};
+//
+//
+////以下两个定义切割pattern
+//const vec4 splitParameter[10] = {
+//    {1,0,0,0},
+//    {0.6667, 0.3333, 0,0}, {0.6667, 0, 0.3333,0},
+//    {0.3333, 0.6667, 0,0}, {0.3333, 0.3333, 0.3333,0}, {0.3333, 0, 0.6667,0},
+//    {0, 1, 0,0}, {0, 0.6667, 0.3333,0}, {0, 0.3333, 0.6667,0}, {0, 0, 1,0}
+//};
+//const uvec4 splitIndex[9] = {
+//    {0, 1, 2,0},
+//    {1, 3 ,4,0}, {1, 4, 2,0}, {2, 4, 5,0},
+//    {3, 6, 7,0}, {3, 7, 4,0}, {4, 7, 8,0}, {4, 8, 5,0}, {5, 8, 9,0}
+//};
 
 
 const vec3 sampleParameter[37] = {
@@ -181,6 +173,29 @@ const vec3 sampleParameter[37] = {
 };
 
 
+const uint splitParameterEdgeInfoAux[5] = {-1,2,0,-2,1};
+
+const uint splitParameterChangeAux[3][3] =
+{{1,0,2},
+ {0,2,1},
+ {2,1,0}};
+/**
+   v,u,w
+   u,w,v
+   w,v,u
+   splitParameterChangeAux[i][j]
+   i表示当前三角形的边编号
+   j表示邻接三角形的边编号
+   splitParameterChangeAux[i][j]表示从当前三角形的parameter转到邻接三角形,不变的那个分量,另外两个分量交换值
+**/
+
+const uint splitParameterEdgeInfo[10] = {
+6,
+4,2,
+4,0,2,
+5,1,1,3};
+
+
 
 // 生成PN-Triangle
 void genPNTriangle();
@@ -197,11 +212,15 @@ vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_);
 // 根据 parameter 获得PNTriangle中的位置
 vec4 getPosition(vec3 parameter);
 
+uint getEdgeInfo(vec3 parameter);
+
+vec3 changeParameter(vec3 parameter);
+
 // 根据在整个bspline体中的参数求该采样点的相关信息
 SamplePointInfo getBSplineInfo(vec4 parameter);
 
 // 根据三角形形状，取得splite pattern
-void getSplitePattern(out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber);
+void getSplitePattern(out uint indexOffset, out uint triangleNumber);
 
 // 生成切割后的子三角形
 SplitedTriangle genSubSplitedTriangle();
@@ -218,9 +237,9 @@ void main() {
 
     // 初始化全局变量
     // get current original tirangle index
-    original_index_0 = originalIndex[triangleIndex * 3];
-    original_index_1 = originalIndex[triangleIndex * 3 + 1];
-    original_index_2 = originalIndex[triangleIndex * 3 + 2];
+    original_index[0] = originalIndex[triangleIndex * 3];
+    original_index[1] = originalIndex[triangleIndex * 3 + 1];
+    original_index[2] = originalIndex[triangleIndex * 3 + 2];
 
     for (int i = 0; i < 3; ++i) {
         if (adjacencyBuffer[triangleIndex * 3 + i] == -1) {
@@ -232,17 +251,18 @@ void main() {
         }
     }
 
-    point0 = vec3(originalVertex[original_index_0]);
-    point1 = vec3(originalVertex[original_index_1]);
-    point2 = vec3(originalVertex[original_index_2]);
+    point[0] = vec3(originalVertex[original_index[0]]);
+    point[1] = vec3(originalVertex[original_index[1]]);
+    point[2] = vec3(originalVertex[original_index[2]]);
 
-    normal0 = vec3(originalNormal[original_index_0]);
-    normal1 = vec3(originalNormal[original_index_1]);
-    normal2 = vec3(originalNormal[original_index_2]);
+    normal[0] = vec3(originalNormal[original_index[0]]);
+    normal[1] = vec3(originalNormal[original_index[1]]);
+    normal[2] = vec3(originalNormal[original_index[2]]);
 
-    normal0 = normalize(normal0);
-    normal1 = normalize(normal1);
-    normal2 = normalize(normal2);
+    normal[0] = normalize(normal[0]);
+    normal[1] = normalize(normal[1]);
+    normal[2] = normalize(normal[2]);
+
 
     // 生成pn-triangle
     genPNTriangle();
@@ -252,56 +272,66 @@ void main() {
     memoryBarrierBuffer();
 
     // 获取pattern
-    uint splitParameterOffset;
+//    uint splitParameterOffset;
+//    uint splitIndexOffset;
+//    uint subTriangleNumber;
+//    uint pointNumber;
+//    getSplitePattern(splitIndexOffset, subTriangleNumber);
+
     uint splitIndexOffset;
     uint subTriangleNumber;
-    uint pointNumber;
-    getSplitePattern(splitParameterOffset, splitIndexOffset, subTriangleNumber, pointNumber);
+    getSplitePattern(splitIndexOffset, subTriangleNumber);
 
 
-    vec4 new_position[100];
-    vec4 new_normal_adj[100];
-    vec4 new_normal_org[100];
-    vec3 new_parameter[100];
-    uint new_edgeInfo[100];
-    // 生成顶点数据
-    for (int i = 0; i < pointNumber; ++i) {
-        new_parameter[i] = splitParameter[splitParameterOffset + i];
-        new_position[i] = getPosition(new_parameter[i]);
-        new_normal_adj[i] = getNormalAdj(new_parameter[i]);
-        new_normal_org[i] = getNormalOrg(new_parameter[i]);
-        new_edgeInfo[i] = splitParameterEdgeInfo[splitParameterOffset + i];
-    }
+//    vec4 new_position[100];
+//    vec4 new_normal_adj[100];
+//    vec4 new_normal_org[100];
+//    vec3 new_parameter[100];
+//    uint new_edgeInfo[100];
+//    // 生成顶点数据
+//    for (int i = 0; i < pointNumber; ++i) {
+//        new_parameter[i] = splitParameter[splitParameterOffset + i];
+//        new_position[i] = getPosition(new_parameter[i]);
+//        new_normal_adj[i] = getNormalAdj(new_parameter[i]);
+//        new_normal_org[i] = getNormalOrg(new_parameter[i]);
+//        new_edgeInfo[i] = splitParameterEdgeInfo[splitParameterOffset + i];
+//    }
 
     //生成分割三角形
     uint aux1[6] = {5,0,1,2,3,4};
     uint aux2[6] = {2,0,0,1,1,2};
-    for (int i = 0; i < subTriangleNumber; ++i) {
-        uvec3 index = splitIndex[splitIndexOffset + i];
-        SplitedTriangle st;
-
-        st.original_normal[0] = new_normal_org[index.x];
-        st.original_normal[1] = new_normal_org[index.y];
-        st.original_normal[2] = new_normal_org[index.z];
-
-        st.original_position[0] = new_position[index.x];
-        st.original_position[1] = new_position[index.y];
-        st.original_position[2] = new_position[index.z];
-
-        st.normal_adj[0] = new_normal_adj[index.x];
-        st.normal_adj[1] = new_normal_adj[index.y];
-        st.normal_adj[2] = new_normal_adj[index.z];
+    for (uint i = splitIndexOffset; i < splitIndexOffset + subTriangleNumber; ++i) {
+        uvec4 index = splitIndex[i];
 
         vec3 parameter[3];
-        parameter[0] = new_parameter[index.x];
-        parameter[1] = new_parameter[index.y];
-        parameter[2] = new_parameter[index.z];
+        parameter[0] = changeParameter(splitParameter[index.x].xyz);
+        parameter[1] = changeParameter(splitParameter[index.y].xyz);
+        parameter[2] = changeParameter(splitParameter[index.z].xyz);
 
+        SplitedTriangle st;
+
+        st.original_normal[0] = getNormalOrg(parameter[0]);
+        st.original_normal[1] = getNormalOrg(parameter[1]);
+        st.original_normal[2] = getNormalOrg(parameter[2]);
+
+        st.original_position[0] = getPosition(parameter[0]);
+        st.original_position[1] = getPosition(parameter[1]);
+        st.original_position[2] = getPosition(parameter[2]);
+
+//        for (int j = 0; j < 3; ++j) {
+//            myOutputBuffer[3 + 9 * (i - splitIndexOffset) + j * 3] =     st.original_position[j].x;
+//            myOutputBuffer[3 + 9 * (i - splitIndexOffset) + j * 3 + 1] = st.original_position[j].y;
+//            myOutputBuffer[3 + 9 * (i - splitIndexOffset) + j * 3 + 2] = st.original_position[j].z;
+//        }
+
+        st.normal_adj[0] = getNormalAdj(parameter[0]);
+        st.normal_adj[1] = getNormalAdj(parameter[1]);
+        st.normal_adj[2] = getNormalAdj(parameter[2]);
 
         uint edgeInfo[3];
-        edgeInfo[0] = new_edgeInfo[index.x];
-        edgeInfo[1] = new_edgeInfo[index.y];
-        edgeInfo[2] = new_edgeInfo[index.z];
+        edgeInfo[0] = getEdgeInfo(parameter[0]);
+        edgeInfo[1] = getEdgeInfo(parameter[1]);
+        edgeInfo[2] = getEdgeInfo(parameter[2]);
 
         uint adjacency_triangle_index_edge[3];
         adjacency_triangle_index_edge[0] = splitParameterEdgeInfoAux[edgeInfo[2] & edgeInfo[0]];
@@ -326,14 +356,20 @@ void main() {
 
         for (int j = 0; j < 37; ++j) {
             vec3 uvw = sampleParameter[j];
-            vec4 position = new_position[index.x] * uvw.x + new_position[index.y] * uvw.y + new_position[index.z] * uvw.z;
-            vec4 normal = new_normal_org[index.x] * uvw.x + new_normal_org[index.y] * uvw.y + new_normal_org[index.z] * uvw.z;
+            vec4 position = st.original_position[0] * uvw.x + st.original_position[1] * uvw.y + st.original_position[2] * uvw.z;
+            vec4 normal = st.original_normal[0] * uvw.x + st.original_normal[1] * uvw.y + st.original_normal[2] * uvw.z;
             st.samplePoint[j] = getBSplineInfo(position);
             st.samplePoint[j].original_normal = normal;
         }
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
+//    for (int i = 0; i < 25344; ++i) {
+//        myOutputBuffer[i*4] = splitParameter[i].x;
+//        myOutputBuffer[i*4 + 1] = splitParameter[i].y;
+//        myOutputBuffer[i*4 + 2] = splitParameter[i].z;
+//        myOutputBuffer[i*4 + 3] = splitParameter[i].w;
+//    }
 }
 
 float factorial(int n) {
@@ -370,7 +406,7 @@ vec4 getNormalAdj(vec3 parameter) {
 }
 
 vec4 getNormalOrg(vec3 parameter) {
-    vec3 result = normal0 * parameter.x + normal1 * parameter.y + normal2 * parameter.z;
+    vec3 result = normal[0] * parameter.x + normal[1] * parameter.y + normal[2] * parameter.z;
     return vec4(normalize(result), 0);
 }
 
@@ -406,28 +442,75 @@ vec4 getPosition(vec3 parameter) {
     return vec4(result, 1);
 }
 
-void getSplitePattern(out uint parameterOffset, out uint indexOffset, out uint triangleNumber, out uint pointNumber) {
-    parameterOffset = 0;
-    indexOffset = 0;
-    triangleNumber = 9;
-    pointNumber = 10;
+
+uint get_offset(int i, int j, int k){
+    if (j - i <= max_splite_factor - 2 * i){
+        return look_up_table_for_i[i - 1] + (j - i) * i + k - j;
+    } else {
+        int h = min(i, max_splite_factor - i);
+        int gl = h - (max_splite_factor - j);
+        int qianmian = max((max_splite_factor - 2 * i) * i, 0);
+        int zhebian = (h + (h - gl + 1)) * gl / 2;
+        return look_up_table_for_i[i - 1] + qianmian + zhebian + k - j;
+    }
 }
 
-//vec3 getAdjacencyNormalForSubTriangle(int triangleIndex, vec3 point, vec3 normal) {
-//    if (triangleIndex == -1) {
-//        return normal;
-//    }
-//    uint index0 = originalIndex[triangleIndex];
-//    uint index1 = originalIndex[triangleIndex + 1];
-//    uint index2 = originalIndex[triangleIndex + 2];
-//    if (all(lessThan(abs(vec3(originalVertex[index0]) - point), ZERO3))) {
-//        return vec3(originalNormal[index0]);
-//    } else if (all(lessThan(abs(vec3(originalVertex[index1]) - point), ZERO3))) {
-//        return vec3(originalNormal[index1]);
-//    } else {
-//        return vec3(originalNormal[index2]);
-//    }
-//}
+void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
+    float l01 = distance(point[0], point[1]);
+    float l12 = distance(point[1], point[2]);
+    float l20 = distance(point[2], point[0]);
+
+    if (l01 < l12 && l01 < l20){
+        if (l12 < l20){
+            parameterSwitch.x = 0;
+            parameterSwitch.y = 1;
+            parameterSwitch.z = 2;
+        } else {
+            parameterSwitch.x = 1;
+            parameterSwitch.y = 0;
+            parameterSwitch.z = 2;
+        }
+    } else if (l12 < l20){
+        if (l01 < l20) {
+            parameterSwitch.x = 2;
+            parameterSwitch.y = 1;
+            parameterSwitch.z = 0;
+        } else {
+            parameterSwitch.x = 2;
+            parameterSwitch.y = 0;
+            parameterSwitch.z = 1;
+        }
+    } else {
+        if (l12 < l01) {
+            parameterSwitch.x = 0;
+            parameterSwitch.y = 2;
+            parameterSwitch.z = 1;
+        } else {
+            parameterSwitch.x = 1;
+            parameterSwitch.y = 2;
+            parameterSwitch.z = 0;
+        }
+    }
+
+    float i, j, k;
+    i = min(l01, min(l12, l20));
+    k = max(l01, max(l12, l20));
+    j = (l01 + l12 + l20) - i - k;
+    i /= splite_factor;
+    j /= splite_factor;
+    k /= splite_factor;
+    int i_i, j_i, k_i;
+    j_i = int(round(j));
+    k_i = int(round(k));
+    i_i = int(max(k + 1 - j, round(i)));
+
+    uint offset = get_offset(i_i, j_i, k_i);
+    indexOffset = offset_number[offset * 2];
+    triangleNumber = offset_number[offset * 2 + 1];
+    myOutputBuffer[gl_GlobalInvocationID.x * 3 + 0] = float(offset);
+    myOutputBuffer[gl_GlobalInvocationID.x * 3 + 1] = float(indexOffset);
+    myOutputBuffer[gl_GlobalInvocationID.x * 3 + 2] = float(triangleNumber);
+}
 
 vec3 getAdjacencyNormal(uint adjacency_index, bool isFirst, vec3 normal) {
     uint triangleIndex = adjacency_triangle_index[adjacency_index];
@@ -466,45 +549,45 @@ vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
 
 void genPNTriangle(){
     // 三个顶点对应的控制顶点
-    PNTriangleP[0] = point0;
-    PNTriangleP[6] = point1;
-    PNTriangleP[9] = point2;
+    PNTriangleP[0] = point[0];
+    PNTriangleP[6] = point[1];
+    PNTriangleP[9] = point[2];
 
     //邻接三角形的六个法向nij,i表示近顶点编号,j远顶点编号
     vec3 n02, n01, n10, n12, n21, n20;
-    n02 = getAdjacencyNormal(0, true, normal0);
-    n01 = getAdjacencyNormal(1, false, normal0);
+    n02 = getAdjacencyNormal(0, true, normal[0]);
+    n01 = getAdjacencyNormal(1, false, normal[0]);
 
-    n10 = getAdjacencyNormal(1, true, normal1);
-    n12 = getAdjacencyNormal(2, false, normal1);
+    n10 = getAdjacencyNormal(1, true, normal[1]);
+    n12 = getAdjacencyNormal(2, false, normal[1]);
 
-    n21 = getAdjacencyNormal(2, true, normal2);
-    n20 = getAdjacencyNormal(0, false, normal2);
+    n21 = getAdjacencyNormal(2, true, normal[2]);
+    n20 = getAdjacencyNormal(0, false, normal[2]);
 
     //two control point near p0
-    PNTriangleP[2] = genPNControlPoint(point0, point2, normal0, n02);
-    PNTriangleP[1] = genPNControlPoint(point0, point1, normal0, n01);
+    PNTriangleP[2] = genPNControlPoint(point[0], point[2], normal[0], n02);
+    PNTriangleP[1] = genPNControlPoint(point[0], point[1], normal[0], n01);
     //two control point near p1
-    PNTriangleP[3] = genPNControlPoint(point1, point0, normal1, n10);
-    PNTriangleP[7] = genPNControlPoint(point1, point2, normal1, n12);
+    PNTriangleP[3] = genPNControlPoint(point[1], point[0], normal[1], n10);
+    PNTriangleP[7] = genPNControlPoint(point[1], point[2], normal[1], n12);
     //two control point near p2
-    PNTriangleP[8] = genPNControlPoint(point2, point1, normal2, n21);
-    PNTriangleP[5] = genPNControlPoint(point2, point0, normal2, n20);
+    PNTriangleP[8] = genPNControlPoint(point[2], point[1], normal[2], n21);
+    PNTriangleP[5] = genPNControlPoint(point[2], point[0], normal[2], n20);
 
     vec3 E = (PNTriangleP[1] + PNTriangleP[2] + PNTriangleP[3]
     + PNTriangleP[5] + PNTriangleP[7] + PNTriangleP[8]) / 6;
-    vec3 V = (point0 + point1 + point2) / 3;
+    vec3 V = (point[0] + point[1] + point[2]) / 3;
 
     PNTriangleP[4] = E + (E - V) / 2;
 
     // 生成法向PN-triangle
-    PNTriangleN[0] = normal0;
-    PNTriangleN[3] = normal1;
-    PNTriangleN[5] = normal2;
+    PNTriangleN[0] = normal[0];
+    PNTriangleN[3] = normal[1];
+    PNTriangleN[5] = normal[2];
 
-    PNTriangleN[1] = genPNControlNormal(point0, point1, normal0, normal1);
-    PNTriangleN[4] = genPNControlNormal(point1, point2, normal1, normal2);
-    PNTriangleN[2] = genPNControlNormal(point2, point0, normal2, normal0);
+    PNTriangleN[1] = genPNControlNormal(point[0], point[1], normal[0], normal[1]);
+    PNTriangleN[4] = genPNControlNormal(point[1], point[2], normal[1], normal[2]);
+    PNTriangleN[2] = genPNControlNormal(point[2], point[0], normal[2], normal[0]);
 
 }
 
@@ -581,5 +664,41 @@ vec3 translate_parameter(vec3 parameter, uint edgeNo) {
         return parameter.zyx;
     } else {
         return parameter.yxz;
+    }
+}
+
+uint getEdgeInfo(vec3 parameter) {
+    uint result = 0;
+    if (parameter.x < ZERO) {
+        result += 1;
+    }
+    if (parameter.y < ZERO) {
+        result += 2;
+    }
+    if (parameter.z < ZERO) {
+        result += 4;
+    }
+    return result;
+}
+
+vec3 changeParameter(vec3 parameter) {
+    if (parameterSwitch.x == 0) {
+        if (parameterSwitch.y == 1) {
+            return parameter.xyz;
+        } else {
+            return parameter.xzy;
+        }
+    } else if (parameterSwitch.x == 1){
+        if (parameterSwitch.y == 2) {
+            return parameter.yzx;
+        } else {
+            return parameter.yxz;
+        }
+    } else {
+        if (parameterSwitch.y == 0) {
+            return parameter.zxy;
+        } else {
+            return parameter.zyx;
+        }
     }
 }

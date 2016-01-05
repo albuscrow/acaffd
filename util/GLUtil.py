@@ -5,9 +5,15 @@ import numpy as np
 def bind_ssbo(vbo, binding_point, data, size, dtype, usage):
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, vbo)
     if data:
-        glBufferData(GL_SHADER_STORAGE_BUFFER, int(size),
-                     np.array(data, dtype=dtype),
-                     usage=usage)
+        if dtype:
+            glBufferData(GL_SHADER_STORAGE_BUFFER, int(size),
+                         np.array(data, dtype=dtype),
+                         usage=usage)
+        else:
+            glBufferData(GL_SHADER_STORAGE_BUFFER, int(size),
+                         data,
+                         usage=usage)
+
     else:
         glBufferData(GL_SHADER_STORAGE_BUFFER, int(size),
                      None,

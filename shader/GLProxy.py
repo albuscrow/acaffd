@@ -8,6 +8,7 @@ from util.GLUtil import *
 from Constant import *
 from shader.ShaderWrapper import PrevComputeProgramWrap, DeformComputeProgramWrap, DrawProgramWrap
 
+
 class GLProxy:
     def __init__(self, model):
         self.model = model
@@ -85,7 +86,7 @@ class GLProxy:
             glBindBuffer(GL_ARRAY_BUFFER, self.control_point_vertex_vbo)
             vertices = self.b_spline_body.ctrlPoints
             glBufferData(GL_ARRAY_BUFFER, vertices.size * vertices.itemsize, vertices,
-                        usage=GL_STATIC_DRAW)
+                         usage=GL_STATIC_DRAW)
             vl = glGetAttribLocation(self.b_spline_body_renderer_shader.get_program(), 'vertice')
             glEnableVertexAttribArray(vl)
             glVertexAttribPointer(vl, 3, GL_FLOAT, False, 0, None)
@@ -331,9 +332,28 @@ class GLProxy:
         # run previous compute shader
         if self.previous_compute_shader is None:
             self.previous_compute_shader = PrevComputeProgramWrap('previous_compute_shader_oo.glsl')
+            splite_info_buffer, self.debug = glGenBuffers(2)
+            # data_bytes = self.previous_compute_shader.get_split_data_bytes()
+            # bind_ssbo(splite_info_buffer, 9, data_bytes, len(data_bytes), None, GL_DYNAMIC_DRAW)
+            indexes, indexes_size = self.previous_compute_shader.indexes
+            parameter, parameter_size = self.previous_compute_shader.parameter
+            offset_number, offset_number_size = self.previous_compute_shader.offset_number
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, splite_info_buffer)
+            glBufferData(GL_SHADER_STORAGE_BUFFER, offset_number_size + indexes_size + parameter_size,
+                         None,
+                         usage=GL_DYNAMIC_DRAW)
+            # glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, offset_number_size, offset_number)
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, indexes_size, indexes)
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, indexes_size, parameter_size, parameter)
+            glBufferSubData(GL_SHADER_STORAGE_BUFFER, indexes_size + parameter_size, offset_number_size, offset_number)
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, splite_info_buffer)
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
+
+            # bind_ssbo(self.debug, 14, None, 960 * 4, None, GL_DYNAMIC_READ)
         glUseProgram(self.previous_compute_shader.get_program())
         # prev computer
         glDispatchCompute(int(self.model.original_triangle_number / 512 + 1), 1, 1)
+        # print_vbo(self.debug, (320, 3), data_type=ctypes.c_float)
         self.splited_triangle_number = get_atomic_value(self.counter)
 
     def set_select_region(self, x1, y1, x2, y2):

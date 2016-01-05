@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 from OpenGL.GL.shaders import *
 from PyQt5.QtGui import QOpenGLShaderProgram, QOpenGLShader
+import numpy as np
 
 __author__ = 'ac'
 
@@ -49,7 +50,73 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
     def __init__(self, file_name):
         super().__init__()
         self.file_name_prefix = 'shader/compute/'
+        self._max_splited = 20
+        self._split_factor = 0.2
         super().add_shader(GL_COMPUTE_SHADER, file_name)
+
+        with open('splite_pattern/%d.txt' % self._max_splited) as file:
+            factor, offset_l, indexes_l, parameter_l = file
+        self._factor = int(factor)
+        self._offset_number = np.asarray([int(x) for x in offset_l.strip().split(" ")], dtype=np.uint32)
+        self._indexes = np.asarray([int(x) for x in indexes_l.strip().split(" ")], dtype=np.uint32)
+        self._parameter = np.asarray([abs(float(x)) for x in parameter_l.strip().split(" ")], dtype=np.float32)
+        self._pattern = self.get_pattern()
+        # print(self._pattern)
+        # print(self._offset_number)
+        # print(self._indexes)
+        # print(self._parameter)
+
+    @property
+    def offset_number(self):
+        return self._offset_number, self._offset_number.size * 4
+
+    @property
+    def indexes(self):
+        return self._indexes, self._indexes.size * 4
+
+    @property
+    def parameter(self):
+        return self._parameter, self._parameter.size * 4
+
+    @property
+    def split_factor(self):
+        return self._split_factor
+
+    @split_factor.setter
+    def split_factor(self, split_factor):
+        self._split_factor = split_factor
+
+    # def get_split_data_size(self):
+    #     return (self._offset_number + self._indexes + self._parameter) * 4
+
+    def get_pattern(self):
+        return "layout(std430, binding=9) buffer SplitedData{\n\
+            uvec4 splitIndex[%d];\n\
+            vec4 splitParameter[%d];\n\
+            uint offset_number[%d];\n\
+        };\n\
+        const float splite_factor = acacac;\n\
+        const int max_splite_factor = %d;\n\
+        const uint look_up_table_for_i[%d] = %s;\n" % (
+            self._indexes.size / 4, self._parameter.size / 4, self._offset_number.size, self._max_splited, self._max_splited,
+            self.get_offset_for_i())
+
+    def get_offset_for_i(self):
+        look_up_table_for_i = [0]
+        for i in range(1, self._max_splited):
+            ii = min(self._max_splited - i, i)
+            look_up_table_for_i.append(
+                    int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, i * (self._max_splited - 2 * i))))
+        res = '{'
+        for x in look_up_table_for_i:
+            res += (str(x) + ',')
+        return res[:-1] + '}'
+
+    def prev_compile_source_code(self, shader_type, source_code):
+        return source_code.replace('!?include1', self.get_include1_content())
+
+    def get_include1_content(self):
+        return self._pattern.replace('acacac', str(self._split_factor))
 
 
 class DrawProgramWrap(ShaderProgramWrap):
@@ -196,53 +263,6 @@ def get_compute_shader_file_path(file_name):
     return 'shader/compute/' + file_name
 
 
-class TessellationParameters:
-    def __init__(self):
-        self.tessellated_triangle_number_pre_splited_triangle = 0
-        self.tessellated_point_number_pre_splited_triangle = 0
-        self.tessellation_index = []
-        self.tessellation_parameter = []
-
-    def init_tessllation_level(self, level):
-        self.tessellation_parameter = []
-        u = level
-        for i in range(level + 1):
-            v = level - u
-            for j in range(i + 1):
-                self.tessellation_parameter.append([u / level, v / level, (level - u - v) / level])
-                v -= 1
-            u -= 1
-
-        self.tessellation_index = []
-        for i in range(level):
-            start = int((i + 1) * (i + 2) / 2)
-            prev = [start, start + 1, start - 1 - i]
-            self.tessellation_index.append(prev)
-            for j in range(i * 2):
-                next_index = [prev[2], prev[2] + 1, prev[1]]
-                if j % 2 == 0:
-                    self.tessellation_index.append([next_index[1], next_index[0], next_index[2]])
-                else:
-                    self.tessellation_index.append(next_index)
-                prev = next_index
-
-        self.tessellated_triangle_number_pre_splited_triangle = len(self.tessellation_index)
-        self.tessellated_point_number_pre_splited_triangle = len(self.tessellation_parameter)
-
-    def get_for_shader(self):
-        return 'const vec3 tessellatedParameter[{0}] = {1}; \
-                    const uvec3 tessellateIndex[{2}] = {3};' \
-            .format(*[len(self.tessellation_parameter),
-                      '{' + ','.join(['{' + ','.join([str(y) for y in x]) + '}\n' for x in
-                                      self.tessellation_parameter]) + '}',
-                      len(self.tessellation_index),
-                      '{' + ','.join(['{' + ','.join([str(y) for y in x]) + '}\n' for x in
-                                      self.tessellation_index]) + '}'])
-
-
-shader_parameter = TessellationParameters()
-shader_parameter.init_tessllation_level(3)
-
+# test code
 if __name__ == '__main__':
-    shader_parameter.init_tessllation_level(4)
-    print(shader_parameter.get_for_shader())
+    t = PrevComputeProgramWrap(None)
