@@ -98,15 +98,24 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
         const float splite_factor = acacac;\n\
         const int max_splite_factor = %d;\n\
         const uint look_up_table_for_i[%d] = %s;\n" % (
-            self._indexes.size / 4, self._parameter.size / 4, self._offset_number.size, self._max_splited, self._max_splited,
+            self._indexes.size / 4, self._parameter.size / 4, self._offset_number.size, self._max_splited,
+            self._max_splited,
             self.get_offset_for_i())
 
+    ##[0, 37, 88, 150, 220, 295, 372, 448, 520, 585, 640, 685, 721, 749, 770, 785, 795, 801, 804, 805]
     def get_offset_for_i(self):
+
         look_up_table_for_i = [0]
         for i in range(1, self._max_splited):
             ii = min(self._max_splited - i, i)
             look_up_table_for_i.append(
-                    int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, i * (self._max_splited - 2 * i))))
+                    int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, (i + 1) * (self._max_splited - 2 * i))))
+
+        # look_up_table_for_i = [0]
+        # for i in range(1, self._max_splited):
+        #     ii = min(self._max_splited - i, i)
+        #     look_up_table_for_i.append(
+        #             int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, i * (self._max_splited - 2 * i))))
         res = '{'
         for x in look_up_table_for_i:
             res += (str(x) + ',')

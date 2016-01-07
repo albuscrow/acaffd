@@ -444,14 +444,19 @@ vec4 getPosition(vec3 parameter) {
 
 
 uint get_offset(int i, int j, int k){
-    if (j - i <= max_splite_factor - 2 * i){
-        return look_up_table_for_i[i - 1] + (j - i) * i + k - j;
+    if (j - i + 1 <= max_splite_factor - 2 * i){
+        return look_up_table_for_i[i - 1] + (j - i) * (i + 1) + k - j;
     } else {
-        int h = min(i, max_splite_factor - i);
-        int gl = h - (max_splite_factor - j);
-        int qianmian = max((max_splite_factor - 2 * i) * i, 0);
-        int zhebian = (h + (h - gl + 1)) * gl / 2;
-        return look_up_table_for_i[i - 1] + qianmian + zhebian + k - j;
+
+        int qianmianbudongpaishu = max((max_splite_factor - 2 * i), 0);
+        int shouxiang = min(i, max_splite_factor - i);
+        int xiangshu = j - i - qianmianbudongpaishu;
+        return look_up_table_for_i[i - 1] + (i + 1) * qianmianbudongpaishu + xiangshu * (shouxiang + (shouxiang + 1 - xiangshu)) / 2 + k - j;
+//        int h = min(i, max_splite_factor - i);
+//        int gl = h - (max_splite_factor - j);
+//        int qianmian = max((max_splite_factor - 2 * i) * i, 0);
+//        int zhebian = (h + (h - gl + 1)) * gl / 2;
+//        return look_up_table_for_i[i - 1] + qianmian + zhebian + k - j;
     }
 }
 
@@ -500,9 +505,9 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
     j /= splite_factor;
     k /= splite_factor;
     int i_i, j_i, k_i;
-    j_i = int(round(j));
-    k_i = int(round(k));
-    i_i = int(max(k + 1 - j, round(i)));
+    i_i = int(ceil(i));
+    j_i = int(ceil(j));
+    k_i = int(ceil(k));
 
     uint offset = get_offset(i_i, j_i, k_i);
     indexOffset = offset_number[offset * 2];
