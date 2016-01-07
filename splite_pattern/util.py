@@ -34,7 +34,9 @@ def get_offset(i, j, k):
         qianmian = max((factor - 2 * i) * i, 0)
         zhebian = (h + (h - gl + 1)) * gl / 2
         return look_up_table_for_i[i - 1] + qianmian + zhebian + k - j
-print(get_offset(10,10,14))
+
+
+print(get_offset(10, 10, 14))
 
 
 def gen_point(m):
@@ -55,58 +57,58 @@ def gen_triangle():
 
 
 def redrawAll(canvas):
-    t = gen_triangle()
-    l01 = point_distance(t[0], t[1])
-    l12 = point_distance(t[1], t[2])
-    l20 = point_distance(t[2], t[0])
-    if l01 < l12 and l01 < l20:
-        if l12 < l20:
-            p0 = t[0]
-            p1 = t[1]
-            p2 = t[2]
-        else:
-            p0 = t[1]
-            p1 = t[0]
-            p2 = t[2]
-    elif l12 < l20:
-        if l01 < l20:
-            p0 = t[2]
-            p1 = t[1]
-            p2 = t[0]
-        else:
-            p0 = t[1]
-            p1 = t[2]
-            p2 = t[0]
-    else:
-        if l12 < l01:
-            p0 = t[0]
-            p1 = t[2]
-            p2 = t[1]
-        else:
-            p0 = t[2]
-            p1 = t[0]
-            p2 = t[1]
-
-    i = min(l01, l12, l20)
-    k = max(l01, l12, l20)
-    j = l01 + l12 + l20 - i - k
-    i = round(i)
-    j = round(j)
-    k = round(k)
-
-    offset = offset_number[get_offset(i, j, k)]
-    print(i, j, k)
-    print(offset)
-
-    canvas.delete(ALL)
-    for i in range(offset[0], offset[0] + offset[1]):
-        sp0 = parameter[indexes[i][0]]
-        sp1 = parameter[indexes[i][1]]
-        sp2 = parameter[indexes[i][2]]
-        spp0 = sample(p0, p1, p2, sp0)
-        spp1 = sample(p0, p1, p2, sp1)
-        spp2 = sample(p0, p1, p2, sp2)
-        canvas.create_polygon(*spp0, *spp1, *spp2, fill='', outline="blue", width=2)
+    # t = gen_triangle()
+    # l01 = point_distance(t[0], t[1])
+    # l12 = point_distance(t[1], t[2])
+    # l20 = point_distance(t[2], t[0])
+    # if l01 < l12 and l01 < l20:
+    #     if l12 < l20:
+    #         p0 = t[0]
+    #         p1 = t[1]
+    #         p2 = t[2]
+    #     else:
+    #         p0 = t[1]
+    #         p1 = t[0]
+    #         p2 = t[2]
+    # elif l12 < l20:
+    #     if l01 < l20:
+    #         p0 = t[2]
+    #         p1 = t[1]
+    #         p2 = t[0]
+    #     else:
+    #         p0 = t[1]
+    #         p1 = t[2]
+    #         p2 = t[0]
+    # else:
+    #     if l12 < l01:
+    #         p0 = t[0]
+    #         p1 = t[2]
+    #         p2 = t[1]
+    #     else:
+    #         p0 = t[2]
+    #         p1 = t[0]
+    #         p2 = t[1]
+    #
+    # i = min(l01, l12, l20)
+    # k = max(l01, l12, l20)
+    # j = l01 + l12 + l20 - i - k
+    # i = round(i)
+    # j = round(j)
+    # k = round(k)
+    #
+    # offset = offset_number[get_offset(i, j, k)]
+    # print(i, j, k)
+    # print(offset)
+    #
+    # canvas.delete(ALL)
+    # for i in range(offset[0], offset[0] + offset[1]):
+    #     sp0 = parameter[indexes[i][0]]
+    #     sp1 = parameter[indexes[i][1]]
+    #     sp2 = parameter[indexes[i][2]]
+    #     spp0 = sample(p0, p1, p2, sp0)
+    #     spp1 = sample(p0, p1, p2, sp1)
+    #     spp2 = sample(p0, p1, p2, sp2)
+    #     canvas.create_polygon(*spp0, *spp1, *spp2, fill='', outline="blue", width=2)
     # draw a red rectangle on the left half
     # canvas.create_rectangle(0, 0, 250, 600, fill="red")
     # draw semi-transparent rectangles in the middle
@@ -115,6 +117,17 @@ def redrawAll(canvas):
     # canvas.create_rectangle(200, 275, 300, 325, fill="blue", stipple="gray50")
     # canvas.create_rectangle(200, 375, 300, 425, fill="blue", stipple="gray25")
     # canvas.create_rectangle(200, 475, 300, 525, fill="blue", stipple="gray12")
+    i, j, k = [x * 100 for x in [2.4, 3.4, 5.6]]
+    s = (i + j + k) / 2
+    a = (s * (s - i) * (s - j) * (s - k)) ** 0.5
+    y = 2 * a / i
+    x = (k ** 2 - y ** 2) ** 0.5
+    canvas.create_polygon(0, 0, i, 0, x, y,  fill='', outline="blue", width=2)
+    # canvas.create_polygon(0, 0, i, 0, x/ 2, y / 2,  fill='', outline="blue", width=2)
+    for j in range(1, 6):
+        i_ = x * (j / 6)
+        y_i_ = y * (j / 6)
+        canvas.create_polygon(0, 0, i, 0, i_, y_i_, fill='', outline="blue", width=2)
 
 
 def sample(p1, p2, p3, sp):

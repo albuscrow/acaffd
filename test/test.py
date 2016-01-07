@@ -513,65 +513,70 @@ a = 1
 
 import numpy as np
 
-with open('20.txt') as file:
-    offset_number_l, indexes_l, parameter_l = file
+# with open('20.txt') as file:
+#     offset_number_l, indexes_l, parameter_l = file
+#
+# offset_number = np.asarray([int(x) for x in offset_number_l.strip().split(" ")], dtype=np.int)
+# offset_number.shape = (-1, 2)
+#
+# indexes = np.asarray([int(x) for x in indexes_l.strip().split(" ")], dtype=np.int)
+# indexes.shape = (-1, 3)
+# parameter = np.asarray([float(x) for x in parameter_l.strip().split(" ")], dtype=np.float32)
+# parameter.shape = (-1, 3)
 
-offset_number = np.asarray([int(x) for x in offset_number_l.strip().split(" ")], dtype=np.int)
-offset_number.shape = (-1, 2)
 
-indexes = np.asarray([int(x) for x in indexes_l.strip().split(" ")], dtype=np.int)
-indexes.shape = (-1, 3)
-parameter = np.asarray([float(x) for x in parameter_l.strip().split(" ")], dtype=np.float32)
-parameter.shape = (-1, 3)
-
-pass
-
-n = 15
+n = 19
 look_up_table_for_i = [0]
-for i in range(1, 15):
-    ii = min(n - i, i)
-    look_up_table_for_i.append(int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, i * (n - 2 * i))))
+for i in range(1, n + 1):
+    ii = min(n + 1 - i, i)
+    look_up_table_for_i.append(int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, (i + 1) * (n + 1 - 2 * i))))
 
 print(look_up_table_for_i)
 
 
 def getOffset(i, j, k):
-    if j - i <= factor - 2 * i:
-        return look_up_table_for_i[i-1] + (j - i) * i + k - j
+    if j - i + 1 <= factor - 2 * i:
+        return look_up_table_for_i[i - 1] + (j - i) * (i + 1) + k - j
     else:
-        # print(compute_n + (j - i) * (factor - 2 * i))
-        h = min(i, n - i)
-        gl = h - (n - j)
-        qianmian = max((n - 2 * i) * i, 0)
-        zhebian = (h + (h - gl + 1)) * gl / 2
-        return look_up_table_for_i[i-1] + qianmian + zhebian + k - j
+        qianmianbudongpaishu = max((factor - 2 * i), 0)
+        shouxiang = min(i, factor - i)
+        xiangshu = j - i - qianmianbudongpaishu
+        return look_up_table_for_i[i - 1] + (i + 1) * qianmianbudongpaishu + xiangshu * (shouxiang + (shouxiang + 1 - xiangshu)) / 2 + k - j
+
+    # if j - i <= factor - 2 * i:
+    #     return look_up_table_for_i[i-1] + (j - i) * i + k - j
+    # else:
+    #     # print(compute_n + (j - i) * (factor - 2 * i))
+    #     h = min(i, n - i)
+    #     gl = h - (n - j)
+    #     qianmian = max((n - 2 * i) * i, 0)
+    #     zhebian = (h + (h - gl + 1)) * gl / 2
+    #     return look_up_table_for_i[i-1] + qianmian + zhebian + k - j
 
 
 real_n = 0
 compute_n = 0
-factor = 25
+factor = 20
 for i in range(1, factor):
+    # print(real_n, look_up_table_for_i[i - 1])
     for j in range(i, factor):
         for k in range(j, factor):
-            if i + j > k > abs(i - j):
-                # print((i, j, k), end=" ")
-                if j - i <= factor - 2 * i:
-                    print(compute_n + (j - i) * i + k - j, real_n, getOffset(i, j, k), end=" ")
+            if i + j >= k:
+                print((i, j, k), end=" ")
+                if j - i + 1 <= factor - 2 * i:
+                    print(real_n, getOffset(i, j, k), end=" ")
+                    pass
                 else:
-                    # print(compute_n + (j - i) * (factor - 2 * i))
-                    h = min(i, factor - i)
-                    gl = h - (factor - j)
-                    qianmian = max((factor - 2 * i) * i, 0)
-                    zhebian = (h + (h - gl + 1)) * gl / 2
-                    print(compute_n + qianmian + zhebian + k - j, real_n, getOffset(i, j, k),
-                          end=" ")
+                    qianmianbudongpaishu = max((factor - 2 * i), 0)
+                    shouxiang = min(i, factor - i)
+                    xiangshu = j - i - qianmianbudongpaishu
+                    print(getOffset(i, j, k), real_n, end=' ')
                 real_n += 1
 
         print()
 
-    ii = min(factor - i, i)
-    compute_n += (1 + ii) * ii / 2 + max(0, i * (factor - 2 * i))
-    # print(real_n)
-    # print(compute_n)
+    # ii = min(factor - i, i)
+    # compute_n += (1 + ii) * ii / 2 + max(0, i * (factor - 2 * i))
+    # print(look_up_table_for_i[i + 1])
     print()
     print()
