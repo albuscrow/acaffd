@@ -84,10 +84,10 @@ ApplicationWindow {
                 Layout.fillWidth: true
 
                 GridLayout {
-                    columns: 4
+                    columns: 2
                     anchors.fill: parent
                     Label {
-                        text: "切割参数"
+                        text: "细分参数"
                     }
 
                     SpinBox {
@@ -97,13 +97,13 @@ ApplicationWindow {
                         }
                     }
 
-                    Label {
-                        text: "细分参数"
-                    }
-
-                    SpinBox {
-                        id: tessellation_param_spin_box
-                    }
+                    //Label {
+                    //    text: "切割参数"
+                    //}
+                    //
+                    //SpinBox {
+                    //    id: tessellation_param_spin_box
+                    //}
 
                     Label {
                         text: "cp_u"
@@ -117,12 +117,12 @@ ApplicationWindow {
                         }
                     }
 
-                    Label {
-                        text: "order_u"
-                    }
-
-                    SpinBox {
-                    }
+                   //Label {
+                   //    text: "order_u"
+                   //}
+                   //
+                   //SpinBox {
+                   //}
 
                     Label {
                         text: "cp_v"
@@ -136,12 +136,12 @@ ApplicationWindow {
                         }
                     }
 
-                    Label {
-                        text: "order_v"
-                    }
-
-                    SpinBox {
-                    }
+                    //Label {
+                    //    text: "order_v"
+                    //}
+                    //
+                    //SpinBox {
+                    //}
 
                     Label {
                         text: "cp_w"
@@ -155,12 +155,12 @@ ApplicationWindow {
                         }
                     }
 
-                    Label {
-                        text: "order_w"
-                    }
-
-                    SpinBox {
-                    }
+                    //Label {
+                    //    text: "order_w"
+                    //}
+                    //
+                    //SpinBox {
+                    //}
                 }
             }
 
