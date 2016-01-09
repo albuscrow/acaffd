@@ -6,6 +6,12 @@ class ModelFileFormatType(Enum):
     obj = 1
 
 
+def normalize(n):
+    l = (n[0] ** 2 + n[1] ** 2 + n[2] ** 2) ** 0.5
+    return [x / l for x in n]
+    pass
+
+
 class OBJ:
     def __init__(self, file_path, format_type):
         self.vertex = []
@@ -46,7 +52,8 @@ class OBJ:
 
                     elif first_token == 'vn':
                         temp_normals.append(list(map(float, tokens)))
-                        temp_normals[-1].append(1)
+                        temp_normals[-1] = normalize(temp_normals[-1])
+                        temp_normals[-1].append(0)
                     elif first_token == 'vt':
                         temp_tex_coords.append(list(map(float, tokens)))
                     elif first_token == 'f':

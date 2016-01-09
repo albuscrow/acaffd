@@ -27,7 +27,7 @@ class Renderer(QObject):
 
         self.perspective_matrix = None
 
-        self.translation_matrix = create_from_translation(numpy.array([0, 0, -8]), dtype='float32')
+        self.translation_matrix = create_from_translation(numpy.array([0, 0, -12]), dtype='float32')
 
         self.model_view_matrix = self.translation_matrix
 

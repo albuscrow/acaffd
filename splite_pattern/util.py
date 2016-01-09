@@ -56,11 +56,11 @@ def gen_triangle():
 
 
 def redrawAll(canvas):
-    t = gen_triangle()
-    # t = []
-    # triangle = [ x / 20 for x in [345.53371177619937, 250.5715168203804, 3.3285418502572717, 79.94544232648916, 58.94528240988505, 164.44261259559195]]
-    # for i in range(3):
-    #     t.append([triangle[i * 2], triangle[i * 2 + 1]])
+    # t = gen_triangle()
+    t = []
+    triangle = [ x for x in [0,0, 0, 2, 2, 2]]
+    for i in range(3):
+        t.append([triangle[i * 2], triangle[i * 2 + 1]])
     l01 = point_distance(t[0], t[1])
     l12 = point_distance(t[1], t[2])
     l20 = point_distance(t[2], t[0])

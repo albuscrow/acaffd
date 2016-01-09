@@ -51,7 +51,7 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
         super().__init__()
         self.file_name_prefix = 'shader/compute/'
         self._max_splited = 20
-        self._split_factor = 0.2
+        self._split_factor = 0.3
         super().add_shader(GL_COMPUTE_SHADER, file_name)
 
         with open('splite_pattern/%d.txt' % self._max_splited) as file:

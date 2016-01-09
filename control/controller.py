@@ -76,6 +76,7 @@ class Controller(QObject):
         # todo test code
         # raw_obj = OBJ("data/767.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/ttest.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("data/cube.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/test2.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/bishop.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/test_same_normal.obj", ModelFileFormatType.obj)

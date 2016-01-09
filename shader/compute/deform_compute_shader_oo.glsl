@@ -94,24 +94,24 @@ void main() {
         }
     }
 
-    vec3 position[3];
-    position[0] = sample_points[0];
-    position[1] = sample_points[21];
-    position[2] = sample_points[27];
+//    vec3 position[3];
+//    position[0] = sample_points[0];
+//    position[1] = sample_points[21];
+//    position[2] = sample_points[27];
 
     uint normal_aux[3] = {0,21,27};
-    for (int i = 0; i < 3; ++i) {
-        SamplePointInfo current_normal_spi = currentTriangle.samplePoint[normal_aux[i]];
-        current_normal_spi.original_normal = currentTriangle.normal_adj[i];
-        currentTriangle.normal_adj[i].xyz = sample_bspline_normal_fast(current_normal_spi);
-    }
+//    for (int i = 0; i < 3; ++i) {
+//        SamplePointInfo current_normal_spi = currentTriangle.samplePoint[normal_aux[i]];
+//        current_normal_spi.original_normal = currentTriangle.normal_adj[i];
+//        currentTriangle.normal_adj[i].xyz = sample_bspline_normal_fast(current_normal_spi);
+//    }
 
     uint oppo_point_index[6] =    {2,1,0,2,1,0};
     uint move_control_point[6] =  {2,1,3,7,8,5};
     vec3 delta = vec3(0);
     for (int i = 0; i < 6; ++i) {
         vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
-        vec3 current_point = position[i/2].xyz;
+        vec3 current_point = currentTriangle.original_position[i/2].xyz;
         vec3 p = bezierPositionControlPoint[move_control_point[i]];
         vec3 result;
         if (currentTriangle.need_adj[i]) {

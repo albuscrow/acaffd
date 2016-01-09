@@ -200,8 +200,8 @@ class GLProxy:
         glDrawElements(GL_TRIANGLES, int(
                 self.splited_triangle_number *
                 self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * 3),
-                       GL_UNSIGNED_INT, None)
-        # glDrawElements(GL_TRIANGLES, int(renderer_model_task.triangle_number * 1 * 3), GL_UNSIGNED_INT, None)
+        GL_UNSIGNED_INT, None)
+        # glDrawElements(GL_TRIANGLES, int(self.splited_triangle_number * 1 * 3), GL_UNSIGNED_INT, None)
         glUseProgram(0)
         glBindVertexArray(0)
 
@@ -349,11 +349,18 @@ class GLProxy:
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, splite_info_buffer)
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
 
-            # bind_ssbo(self.debug, 14, None, 960 * 4, None, GL_DYNAMIC_READ)
+            # bind_ssbo(self.debug, 14, None, 12 * 12 * 16, None, GL_DYNAMIC_READ)
         glUseProgram(self.previous_compute_shader.get_program())
         # prev computer
         glDispatchCompute(int(self.model.original_triangle_number / 512 + 1), 1, 1)
-        # print_vbo(self.debug, (320, 3), data_type=ctypes.c_float)
+        # test_data = print_vbo(self.debug, (12 * 12, 4), data_type=ctypes.c_float)
+        # with open('/home/ac/splite_cube.obj', mode='w') as f:
+        #     for i in range(int(len(test_data) / 2)):
+        #         f.write('v %f %f %f\n' % (test_data[i * 2][0], test_data[i * 2][1], test_data[i * 2][2]))
+        #         f.write('vn %f %f %f\n' % (test_data[i * 2 + 1][0], test_data[i * 2 + 1][1], test_data[i * 2 + 1][2]))
+        #     for i in range(24):
+        #         f.write('f %d//%d %d//%d %d//%d\n' % (i * 3 + 1, i * 3 + 1, i * 3 + 2, i * 3 + 2, i * 3 + 3, i * 3 + 3))
+
         self.splited_triangle_number = get_atomic_value(self.counter)
 
     def set_select_region(self, x1, y1, x2, y2):

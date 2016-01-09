@@ -18,8 +18,6 @@ ApplicationWindow {
         }
     }
 
-
-
     menuBar: MenuBar {
         Menu {
             title: qsTr("File")
