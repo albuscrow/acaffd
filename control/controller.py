@@ -82,6 +82,7 @@ class Controller(QObject):
         # raw_obj = OBJ("data/star.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/legoDog.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("data/test_2_triangle.obj", ModelFileFormatType.obj)
-        raw_obj = OBJ("data/Mobile.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("data/Mobile.obj", ModelFileFormatType.obj)
+        raw_obj = OBJ("data/biship_cym_area_average_normal.obj", ModelFileFormatType.obj)
         self.renderer.handle_new_obj(raw_obj)
         self.renderer.show_aux(True)

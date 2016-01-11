@@ -29,6 +29,7 @@ class OBJ:
             # point 到 由该point构成的三角形index map, 这里的三角形index由该三角形的第一个顶点的self.index中的位置决定。
             aux_point_map = {}
             with open(file_path, 'r') as file:
+                temp = []
                 for l in file:
                     if l is None or len(l) == 0 or l.startswith('#'):
                         continue
@@ -48,17 +49,18 @@ class OBJ:
                     elif first_token == 'vt':
                         temp_tex_coords.append(list(map(float, tokens)))
                     elif first_token == 'f':
-                        if len(tokens) in (3, 4):
-                            self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
-                                            tokens[:3])
-                            if len(tokens) == 4:
-                                self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords,
-                                                temp_vertices,
-                                                [tokens[0], tokens[2], tokens[3]])
-                        else:
-                            logging.error("this feature(face vertices = " + str(
-                                len(tokens)) + ") in wavefront .obj is not implement")
-                            raise Exception()
+                        temp.append(tokens)
+                        # if len(tokens) in (3, 4):
+                        #     self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
+                        #                     tokens[:3])
+                        #     if len(tokens) == 4:
+                        #         self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords,
+                        #                         temp_vertices,
+                        #                         [tokens[0], tokens[2], tokens[3]])
+                        # else:
+                        #     logging.error("this feature(face vertices = " + str(
+                        #         len(tokens)) + ") in wavefront .obj is not implement")
+                        #     raise Exception()
                     elif first_token == 'vp':
                         logging.warning("this feature(vp) in wavefront .obj is not implement, ignore")
                         # raise Exception()
@@ -70,6 +72,19 @@ class OBJ:
                         logging.warning("this feature(mtllib) in wavefront .obj is not implement, ignore")
                         # raise Exception()
                         # self.mtl = self.Material(tokens[0])
+                for tokens in temp:
+                    if len(tokens) in (3, 4):
+                        self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
+                                        tokens[:3])
+                        if len(tokens) == 4:
+                            self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords,
+                                            temp_vertices,
+                                            [tokens[0], tokens[2], tokens[3]])
+                    else:
+                        logging.error("this feature(face vertices = " + str(
+                            len(tokens)) + ") in wavefront .obj is not implement")
+                        raise Exception()
+
         else:
             logging.error('only support obj file')
             raise Exception()
