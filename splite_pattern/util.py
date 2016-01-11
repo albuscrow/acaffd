@@ -39,7 +39,7 @@ def get_offset(i, j, k):
 
 
 def gen_point(m):
-    return [random.random() * m, random.random() * m]
+    return [random.random() * m + 10, random.random() * m + 10]
 
 
 def point_distance(p1, p2):
@@ -48,19 +48,21 @@ def point_distance(p1, p2):
 
 def gen_triangle():
     while True:
-        p1 = gen_point(15)
-        p2 = gen_point(15)
-        p3 = gen_point(15)
-        if point_distance(p1, p2) < factor and point_distance(p2, p3) < factor and point_distance(p3, p1) < factor:
+        # p1 = gen_point(15)
+        p1 = [10, 10]
+        # p2 = gen_point(15)
+        p2 = gen_point(300)
+        p3 = gen_point(300)
+        if point_distance(p1, p2) < factor - 1 and point_distance(p2, p3) < factor -1 and point_distance(p3, p1) < factor - 1:
             return [p1, p2, p3]
 
 
 def redrawAll(canvas):
-    # t = gen_triangle()
-    t = []
-    triangle = [ x for x in [0,0, 0, 2, 2, 2]]
-    for i in range(3):
-        t.append([triangle[i * 2], triangle[i * 2 + 1]])
+    t = gen_triangle()
+    # t = []
+    # triangle = [ x for x in [0,0, 0, 2, 2, 2]]
+    # for i in range(3):
+    #     t.append([triangle[i * 2], triangle[i * 2 + 1]])
     l01 = point_distance(t[0], t[1])
     l12 = point_distance(t[1], t[2])
     l20 = point_distance(t[2], t[0])
@@ -105,9 +107,9 @@ def redrawAll(canvas):
 
     canvas.delete(ALL)
     temp = t[0] + t[1] + t[2]
-    temp = [x * 20 for x in temp]
+    # temp = [x * 20 for x in temp]
     print("triangle", temp)
-    canvas.create_polygon(*temp, fill='', outline="red", width=2)
+    # canvas.create_polygon(*temp, fill='', outline="red", width=2)
     for i in range(offset[0], offset[0] + offset[1]):
         sp0 = parameter[indexes[i][0]]
         sp1 = parameter[indexes[i][1]]
@@ -143,7 +145,7 @@ def init(canvas):
 def run():
     # create the root and the canvas
     root = Tk()
-    canvas = Canvas(root, width=500, height=600)
+    canvas = Canvas(root, width=950, height=1080)
     canvas.pack()
     # Store canvas in root and in canvas itself for callbacks
     root.canvas = canvas.canvas = canvas
@@ -156,6 +158,5 @@ def run():
     # timerFired(canvas)
     # and launch the app
     root.mainloop()  # This call BLOCKS (so your program waits until you close the window!)
-
 
 run()
