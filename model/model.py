@@ -1,9 +1,15 @@
 import logging
 from enum import Enum
-import numpy as np
+
 
 class ModelFileFormatType(Enum):
     obj = 1
+
+
+def normalize(n):
+    l = (n[0] ** 2 + n[1] ** 2 + n[2] ** 2) ** 0.5
+    return [x / l for x in n]
+    pass
 
 
 class OBJ:
@@ -28,9 +34,11 @@ class OBJ:
             aux_vertex_map = {}
             # point 到 由该point构成的三角形index map, 这里的三角形index由该三角形的第一个顶点的self.index中的位置决定。
             aux_point_map = {}
+
+            f_store = []
             with open(file_path, 'r') as file:
-                temp = []
                 for l in file:
+                    l = l.strip()
                     if l is None or len(l) == 0 or l.startswith('#'):
                         continue
 
@@ -45,22 +53,12 @@ class OBJ:
 
                     elif first_token == 'vn':
                         temp_normals.append(list(map(float, tokens)))
-                        temp_normals[-1].append(1)
+                        temp_normals[-1] = normalize(temp_normals[-1])
+                        temp_normals[-1].append(0)
                     elif first_token == 'vt':
                         temp_tex_coords.append(list(map(float, tokens)))
                     elif first_token == 'f':
-                        temp.append(tokens)
-                        # if len(tokens) in (3, 4):
-                        #     self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
-                        #                     tokens[:3])
-                        #     if len(tokens) == 4:
-                        #         self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords,
-                        #                         temp_vertices,
-                        #                         [tokens[0], tokens[2], tokens[3]])
-                        # else:
-                        #     logging.error("this feature(face vertices = " + str(
-                        #         len(tokens)) + ") in wavefront .obj is not implement")
-                        #     raise Exception()
+                        f_store.append(tokens)
                     elif first_token == 'vp':
                         logging.warning("this feature(vp) in wavefront .obj is not implement, ignore")
                         # raise Exception()
@@ -72,7 +70,7 @@ class OBJ:
                         logging.warning("this feature(mtllib) in wavefront .obj is not implement, ignore")
                         # raise Exception()
                         # self.mtl = self.Material(tokens[0])
-                for tokens in temp:
+                for tokens in f_store:
                     if len(tokens) in (3, 4):
                         self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
                                         tokens[:3])
@@ -84,7 +82,6 @@ class OBJ:
                         logging.error("this feature(face vertices = " + str(
                             len(tokens)) + ") in wavefront .obj is not implement")
                         raise Exception()
-
         else:
             logging.error('only support obj file')
             raise Exception()
