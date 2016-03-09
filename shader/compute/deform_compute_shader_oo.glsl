@@ -2,7 +2,7 @@
 
 struct SamplePointInfo {
     vec4 parameter;
-    vec4 original_normal;
+    vec4 sample_point_original_normal;
     uvec4 knot_left_index;
 };
 struct SplitedTriangle {
@@ -94,29 +94,29 @@ void main() {
         }
     }
 
-//    vec3 position[3];
-//    position[0] = sample_points[0];
-//    position[1] = sample_points[21];
-//    position[2] = sample_points[27];
+    vec3 position[3];
+    position[0] = sample_points[0];
+    position[1] = sample_points[21];
+    position[2] = sample_points[27];
 
     uint normal_aux[3] = {0,21,27};
-//    for (int i = 0; i < 3; ++i) {
-//        SamplePointInfo current_normal_spi = currentTriangle.samplePoint[normal_aux[i]];
-//        current_normal_spi.original_normal = currentTriangle.normal_adj[i];
-//        currentTriangle.normal_adj[i].xyz = sample_bspline_normal_fast(current_normal_spi);
-//    }
+    for (int i = 0; i < 3; ++i) {
+        SamplePointInfo current_normal_spi = currentTriangle.samplePoint[normal_aux[i]];
+        current_normal_spi.sample_point_original_normal = currentTriangle.normal_adj[i];
+        currentTriangle.normal_adj[i].xyz = sample_bspline_normal_fast(current_normal_spi);
+    }
 
     uint oppo_point_index[6] =    {2,1,0,2,1,0};
     uint move_control_point[6] =  {2,1,3,7,8,5};
     vec3 delta = vec3(0);
     for (int i = 0; i < 6; ++i) {
         vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
-        vec3 current_point = currentTriangle.original_position[i/2].xyz;
+        vec3 current_point = position[i/2].xyz;
         vec3 p = bezierPositionControlPoint[move_control_point[i]];
         vec3 result;
         if (currentTriangle.need_adj[i]) {
             SamplePointInfo spi = currentTriangle.samplePoint[normal_aux[i/2]];
-            spi.original_normal = currentTriangle.adjacency_normal[i];
+            spi.sample_point_original_normal = currentTriangle.adjacency_normal[i];
             vec3 adj_normal = sample_bspline_normal_fast(spi);
             vec3 n_ave = cross(current_normal, adj_normal);
             n_ave = normalize(n_ave);
@@ -130,14 +130,14 @@ void main() {
 
     bezierPositionControlPoint[4] += delta * 1.5 / 6;
 
-//    // 输出分割三角形
-//    // 生成顶点数据
+    // 输出分割三角形
+    // 生成顶点数据
 //    uint point_index[100];
 //    for (int i = 0; i < 3; ++i) {
 //        vec3 pointParameter = tessellatedParameter[i];
 //        uint point_offset = triangleIndex * 3 + i;
-//        tessellatedVertex[point_offset] = vec4(currentTriangle.original_position[i]);
-//        tessellatedNormal[point_offset] = vec4(currentTriangle.original_normal[i]);
+//        tessellatedVertex[point_offset] = vec4(sample_points[normal_aux[i]], 1);
+//        tessellatedNormal[point_offset] = vec4(sample_normals[normal_aux[i]], 0);
 //        point_index[i] = point_offset;
 //    }
 //    // 生成index数据
@@ -194,7 +194,9 @@ vec4 getNormal(vec3 parameter) {
             result += bezierNormalControlPoint[ctrlPointIndex ++] * n;
         }
     }
-    return vec4(result, 0);
+    //todo mark
+    return vec4(normalize(result), 0);
+//    return vec4(result, 0);
 }
 
 vec4 getPosition(vec3 parameter) {
@@ -283,7 +285,7 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     wn[0] = 1;
     wn[1] = w;
     wn[2] = w * w;
-    wn[3] = w * wn[3];
+    wn[3] = w * wn[2];
 
     float wn_[4];
     wn_[0] = 0;
@@ -296,7 +298,7 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     vec3 fw = sample_helper(spi, un, vn, wn_);
 
 
-    vec4 n = spi.original_normal;
+    vec4 n = spi.sample_point_original_normal;
 
     //todo should modify when spline body modify
     vec3 result = vec3(1);
@@ -318,7 +320,9 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
     result.z = n.x * J_bar_star_T_0 * x_stride + n.y * J_bar_star_T_1 * y_stride + n.z * J_bar_star_T_2 * z_stride;
 
+//todo mark
     return normalize(result);
+//    return result;
 
 }
 vec3 sample_bspline_position_fast(SamplePointInfo spi) {
@@ -343,7 +347,7 @@ vec3 sample_bspline_position_fast(SamplePointInfo spi) {
     wn[0] = 1;
     wn[1] = w;
     wn[2] = w * w;
-    wn[3] = w * wn[3];
+    wn[3] = w * wn[2];
 
     return sample_helper(spi, un, vn, wn);
 }

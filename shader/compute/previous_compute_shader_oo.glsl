@@ -44,7 +44,7 @@ layout(std430, binding=4) buffer PNTriangleNShareBuffer{
 
 struct SamplePointInfo {
     vec4 parameter;
-    vec4 original_normal;
+    vec4 sample_point_original_normal;
     uvec4 knot_left_index;
 };
 
@@ -217,7 +217,7 @@ uint getEdgeInfo(vec3 parameter);
 vec3 changeParameter(vec3 parameter);
 
 // 根据在整个bspline体中的参数求该采样点的相关信息
-SamplePointInfo getBSplineInfo(vec4 parameter);
+SamplePointInfo getBSplineInfo(SplitedTriangle st, int index);
 
 // 根据三角形形状，取得splite pattern
 void getSplitePattern(out uint indexOffset, out uint triangleNumber);
@@ -359,11 +359,7 @@ void main() {
         }
 
         for (int j = 0; j < 37; ++j) {
-            vec3 uvw = sampleParameter[j];
-            vec4 position = st.original_position[0] * uvw.x + st.original_position[1] * uvw.y + st.original_position[2] * uvw.z;
-            vec4 normal = st.original_normal[0] * uvw.x + st.original_normal[1] * uvw.y + st.original_normal[2] * uvw.z;
-            st.samplePoint[j] = getBSplineInfo(position);
-            st.samplePoint[j].original_normal = normal;
+            st.samplePoint[j] = getBSplineInfo(st, j);
         }
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
@@ -411,7 +407,9 @@ vec4 getNormalAdj(vec3 parameter) {
 
 vec4 getNormalOrg(vec3 parameter) {
     vec3 result = normal[0] * parameter.x + normal[1] * parameter.y + normal[2] * parameter.z;
+    //todo mark
     return vec4(normalize(result), 0);
+//    return vec4(result, 0);
 }
 
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
@@ -664,7 +662,14 @@ float getBSplineInfoW(float t, out uint leftIndex){
     return t;
 }
 
-SamplePointInfo getBSplineInfo(vec4 parameter) {
+SamplePointInfo getBSplineInfo(SplitedTriangle st, int index) {
+
+            vec3 uvw = sampleParameter[index];
+            vec4 parameter = st.original_position[0] * uvw.x + st.original_position[1] * uvw.y + st.original_position[2] * uvw.z;
+//            vec4 normal = st.original_normal[0] * uvw.x + st.original_normal[1] * uvw.y + st.original_normal[2] * uvw.z;
+
+//            st.samplePoint[j].original_normal = st.original_normal[0] * uvw.x + st.original_normal[1] * uvw.y + st.original_normal[2] * uvw.z;
+
     SamplePointInfo result;
 
     uint knot_left_index_u, knot_left_index_v, knot_left_index_w;
@@ -674,6 +679,7 @@ SamplePointInfo getBSplineInfo(vec4 parameter) {
 
     result.parameter = vec4(u, v, w, 0);
     result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
+    result.sample_point_original_normal = st.original_normal[0] * uvw.x + st.original_normal[1] * uvw.y + st.original_normal[2] * uvw.z;
 
     return result;
 }

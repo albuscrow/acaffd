@@ -38,6 +38,7 @@ class OBJ:
             f_store = []
             with open(file_path, 'r') as file:
                 for l in file:
+                    l = l.strip()
                     if l is None or len(l) == 0 or l.startswith('#'):
                         continue
 

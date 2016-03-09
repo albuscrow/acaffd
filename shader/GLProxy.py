@@ -200,7 +200,7 @@ class GLProxy:
         glDrawElements(GL_TRIANGLES, int(
                 self.splited_triangle_number *
                 self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * 3),
-        GL_UNSIGNED_INT, None)
+                       GL_UNSIGNED_INT, None)
         # glDrawElements(GL_TRIANGLES, int(self.splited_triangle_number * 1 * 3), GL_UNSIGNED_INT, None)
         glUseProgram(0)
         glBindVertexArray(0)
