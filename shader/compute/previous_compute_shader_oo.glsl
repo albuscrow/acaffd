@@ -256,15 +256,9 @@ void main() {
     point[1] = vec3(originalVertex[original_index[1]]);
     point[2] = vec3(originalVertex[original_index[2]]);
 
-
     normal[0] = vec3(originalNormal[original_index[0]]);
     normal[1] = vec3(originalNormal[original_index[1]]);
     normal[2] = vec3(originalNormal[original_index[2]]);
-
-//    normal[0] = normalize(normal[0]);
-//    normal[1] = normalize(normal[1]);
-//    normal[2] = normalize(normal[2]);
-
 
     // 生成pn-triangle
     genPNTriangle();
@@ -324,10 +318,6 @@ void main() {
         st.original_position[1] = getPosition(parameter[1]);
         st.original_position[2] = getPosition(parameter[2]);
 
-//        for (int j = 0; j < 3; ++j) {
-//            myOutputBuffer[12 * triangleIndex + (i - splitIndexOffset) * 6 + j * 2] = st.original_position[j];
-//            myOutputBuffer[12 * triangleIndex + (i - splitIndexOffset) * 6 + j * 2 + 1] = st.original_normal[j];
-//        }
         st.normal_adj[0] = getNormalAdj(parameter[0]);
         st.normal_adj[1] = getNormalAdj(parameter[1]);
         st.normal_adj[2] = getNormalAdj(parameter[2]);
@@ -409,7 +399,6 @@ vec4 getNormalOrg(vec3 parameter) {
     vec3 result = normal[0] * parameter.x + normal[1] * parameter.y + normal[2] * parameter.z;
     //todo mark
     return vec4(normalize(result), 0);
-//    return vec4(result, 0);
 }
 
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
@@ -454,11 +443,6 @@ uint get_offset(int i, int j, int k){
         int shouxiang = min(i, max_splite_factor - i);
         int xiangshu = j - i - qianmianbudongpaishu;
         return look_up_table_for_i[i - 1] + (i + 1) * qianmianbudongpaishu + xiangshu * (shouxiang + (shouxiang + 1 - xiangshu)) / 2 + k - j;
-//        int h = min(i, max_splite_factor - i);
-//        int gl = h - (max_splite_factor - j);
-//        int qianmian = max((max_splite_factor - 2 * i) * i, 0);
-//        int zhebian = (h + (h - gl + 1)) * gl / 2;
-//        return look_up_table_for_i[i - 1] + qianmian + zhebian + k - j;
     }
 }
 
@@ -514,9 +498,6 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
     uint offset = get_offset(i_i, j_i, k_i);
     indexOffset = offset_number[offset * 2];
     triangleNumber = offset_number[offset * 2 + 1];
-//    myOutputBuffer[gl_GlobalInvocationID.x * 3 + 0] = float(offset);
-//    myOutputBuffer[gl_GlobalInvocationID.x * 3 + 1] = float(indexOffset);
-//    myOutputBuffer[gl_GlobalInvocationID.x * 3 + 2] = float(triangleNumber);
 }
 
 vec3 getAdjacencyNormal(uint adjacency_index, bool isFirst, vec3 normal) {
@@ -564,24 +545,10 @@ void genPNTriangle(){
     vec3 n02, n01, n10, n12, n21, n20;
     n02 = getAdjacencyNormal(0, true, normal[0]);
     n01 = getAdjacencyNormal(1, false, normal[0]);
-
     n10 = getAdjacencyNormal(1, true, normal[1]);
     n12 = getAdjacencyNormal(2, false, normal[1]);
-
     n21 = getAdjacencyNormal(2, true, normal[2]);
     n20 = getAdjacencyNormal(0, false, normal[2]);
-
-//    myOutputBuffer[triangleIndex * 9].xyz = normal[0];
-//    myOutputBuffer[triangleIndex * 9 + 1].xyz = n02;
-//    myOutputBuffer[triangleIndex * 9 + 2].xyz = n01;
-//
-//    myOutputBuffer[triangleIndex * 9 + 3].xyz = normal[1];
-//    myOutputBuffer[triangleIndex * 9 + 4].xyz = n10;
-//    myOutputBuffer[triangleIndex * 9 + 5].xyz = n12;
-//
-//    myOutputBuffer[triangleIndex * 9 + 6].xyz = normal[2];
-//    myOutputBuffer[triangleIndex * 9 + 7].xyz = n21;
-//    myOutputBuffer[triangleIndex * 9 + 8].xyz = n20;
 
 
     //two control point near p0
