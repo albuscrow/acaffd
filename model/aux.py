@@ -85,19 +85,21 @@ class BSplineBody:
             raise Exception('control point number can not less than order')
 
     def move(self, x, y, z):
-        for i, is_hit in enumerate(self.is_hit):
-            if is_hit:
-                u = i // (self.control_point_number_v * self.control_point_number_w)
-                v = i % (self.control_point_number_v * self.control_point_number_w) // self.control_point_number_w
-                w = i % self.control_point_number_w
-                self.ctrlPoints[u, v, w] += [d / 10 for d in [x, y, z]]
+        self.ctrlPoints = self.control_points_backup
+        self.move_dffd([1, 0.5, 0.5], [0.5, 0.5, 0.5])
+        # for i, is_hit in enumerate(self.is_hit):
+        #     if is_hit:
+        #         u = i // (self.control_point_number_v * self.control_point_number_w)
+        #         v = i % (self.control_point_number_v * self.control_point_number_w) // self.control_point_number_w
+        #         w = i % self.control_point_number_w
+        #         self.ctrlPoints[u, v, w] += [d / 10 for d in [x, y, z]]
 
     def get_info(self):
         return np.array(
-                [self.order_u, self.order_v, self.order_w,
-                 self.control_point_number_u, self.control_point_number_v, self.control_point_number_w,
-                 self.lu, self.lv, self.lw,
-                 -self.lu / 2, -self.lv / 2, -self.lw / 2], dtype='float32')
+            [self.order_u, self.order_v, self.order_w,
+             self.control_point_number_u, self.control_point_number_v, self.control_point_number_w,
+             self.lu, self.lv, self.lw,
+             -self.lu / 2, -self.lv / 2, -self.lw / 2], dtype='float32')
 
     def get_control_point_for_sample(self):
         # uvw三个方向的区间数
@@ -164,6 +166,69 @@ class BSplineBody:
         self.control_point_number_w = w
         self.init_data()
 
+    def move_dffd(self, parameter, displacement):
+        displacement = np.asarray(displacement, dtype=np.float32)
+        Rs = np.zeros((self.control_point_number_u,
+                       self.control_point_number_v,
+                       self.control_point_number_w), dtype=np.float32)
+
+        aux = 0
+        for i, j, k in product(
+                range(self.control_point_number_u),
+                range(self.control_point_number_v),
+                range(self.control_point_number_w)):
+            Rs[i, j, k] = self.R(parameter, i, j, k)
+            aux += Rs[i, j, k] ** 2
+
+        for i, j, k in product(
+                range(self.control_point_number_u),
+                range(self.control_point_number_v),
+                range(self.control_point_number_w)):
+            k_aux = displacement * Rs[i, j, k] / aux
+            self.ctrlPoints[i, j, k] += k_aux
+
+    def R(self, parameter, i, j, k):
+        return self.B(self.get_knots(self.lu, self.order_u, self.control_point_number_u), self.order_u, i, parameter[0]) \
+               * self.B(self.get_knots(self.lv, self.order_v, self.control_point_number_v), self.order_v, j, parameter[1]) \
+               * self.B(self.get_knots(self.lw, self.order_w, self.control_point_number_w), self.order_w, k, parameter[2])
+
+    def B(self, knots, order, i, t):
+        temp = [0] * order
+        # k = 1
+        for index in range(i, i + order):
+            if knots[index] <= t < knots[index + 1]:
+                temp[index - i] = 1
+            elif t == knots[index + 1] == 1:
+                temp[index - i] = 1
+            else:
+                temp[index - i] = 0
+        # k = [2, k]
+        for k in range(2, order + 1):
+            for index in range(i, i + order - k + 1):
+                if knots[index + k - 1] - knots[index] == 0:
+                    first = 0
+                else:
+                    first = (t - knots[index]) / (knots[index + k - 1] - knots[index]) * temp[index - i]
+
+                if knots[index + k] - knots[index + 1] == 0:
+                    second = 0
+                else:
+                    second = (knots[index + k] - t) / (knots[index + k] - knots[index + 1]) * temp[index - i + 1]
+                temp[index - i] = first + second
+        return temp[0]
+
+    def get_knots(self, length, order, control_point_number):
+        res = [- length / 2] * order
+        internal_number = control_point_number - order + 1
+        step = length / internal_number
+        for i in range(1, internal_number):
+            res.append(res[-1] + step)
+        res += [length / 2] * order
+        return res
+
+
+
+
 
 def aux_multiply(value, v, result):
     result[0] += value * v[0]
@@ -171,8 +236,32 @@ def aux_multiply(value, v, result):
     result[2] += value * v[2]
 
 
+from matplotlib.pylab import plot, show
+
 if __name__ == '__main__':
-    print(BSplineBody.get_control_point_aux_list(1, 5, 3))
-    print(BSplineBody.get_control_point_aux_list(1, 6, 2))
-    print(BSplineBody.get_control_point_aux_list(1, 6, 6))
-    print(BSplineBody.get_control_point_aux_list(1, 6, 7))
+    # print(BSplineBody.get_control_point_aux_list(1, 5, 3))
+    # print(BSplineBody.get_control_point_aux_list(1, 6, 2))
+    # print(BSplineBody.get_control_point_aux_list(1, 6, 6))
+    # print(BSplineBody.get_control_point_aux_list(1, 6, 7))
+    # knots = [0, 0, 0, 0, 1 / 3, 2 / 3, 1, 1, 1, 1]
+    body = BSplineBody(2, 2, 2)
+    body.move_dffd([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    # print(body.get_knots(1, 3, 5))
+    # x = np.linspace(0, 1, 100)
+    # y1 = [body.B(knots, 4, 0, i) for i in x]
+    # y2 = [body.B(knots, 4, 1, i) for i in x]
+    # y3 = [body.B(knots, 4, 2, i) for i in x]
+    # y4 = [body.B(knots, 4, 3, i) for i in x]
+    # y5 = [body.B(knots, 4, 4, i) for i in x]
+    # y6 = [body.B(knots, 4, 5, i) for i in x]
+    # plot(x, y1)
+    # plot(x, y2)
+    # plot(x, y3)
+    # plot(x, y4)
+    # plot(x, y5)
+    # plot(x, y6)
+    # show()
+    # body.B(knots, 3, 2, 1 / 3)
+    # print(body.B(knots, 3, 1, 0.5), body.B(knots, 3, 3, 0.5))
+    # print(body.B(knots, 3, 1, 1 / 3), body.B(knots, 3, 2, 1 / 3))
+    # print(body.B(knots, 3, 2, 2 / 3), body.B(knots, 3, 3, 2 / 3))
