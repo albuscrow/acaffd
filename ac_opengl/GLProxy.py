@@ -63,8 +63,41 @@ class GLProxy:
     def init_gl(self):
         # init code for openGL
 
-        # create vbo
-        self.load_model_to_gpu_and_init_some_fix_buffer_in_gpu()
+        # create ssbo
+        # 原始顶点数据,也是顶点在b样条体中的参数;要满足这一条件必须使控制顶点和节点向量满足一定条件。
+        # original_vertex_ssbo original_normal_ssbo original_index_ssbo
+        # 原始面片邻接关系, 共享的原始面片pn triangle
+        # adjacency_ssbo share_adjacency_pn_triangle_ssbo
+        # 经过分割以后的数据。
+        # splited_triangle_ssbo
+        # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
+        original_vertex_ssbo = ACSSBO(0, self.model.vertex, GL_STATIC_DRAW)
+        original_vertex_ssbo.gl_sync()
+
+        # copy original normal to gpu, and bind original_normal_vbo to bind point 1
+        original_normal_ssbo = ACSSBO(1, self.model.normal, GL_STATIC_DRAW)
+        original_normal_ssbo.gl_sync()
+
+        # copy original index to gpu, and bind original_index_vbo to bind point 2
+        original_index_ssbo = ACSSBO(2, self.model.index, GL_STATIC_DRAW)
+        original_index_ssbo.gl_sync()
+
+        # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
+        adjacency_info_ssbo = ACSSBO(3, self.model.adjacency, GL_STATIC_DRAW)
+        adjacency_info_ssbo.gl_sync()
+
+        # 用于储存原始三角面片的PN-triangle
+        share_adjacency_pn_triangle_ssbo = ACSSBO(4, None, GL_STATIC_DRAW)
+        share_adjacency_pn_triangle_ssbo.capacity = self.model.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
+        share_adjacency_pn_triangle_ssbo.gl_sync()
+
+        # alloc memory in gpu for splited vertex, and
+        splited_triangle_ssbo = ACSSBO(5, None, GL_STATIC_DRAW)
+        splited_triangle_ssbo.capacity = self.model.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE * SPLITED_TRIANGLE_SIZE
+        splited_triangle_ssbo.gl_sync()
+
+
+
         # copy BSpline body info to gpu
         self.load_b_spline_body_to_gpu()
         # prev compute and get number of splited triangle
@@ -200,8 +233,8 @@ class GLProxy:
         glUniformMatrix4fv(ml, 1, GL_FALSE, model_view_matrix)
         glEnable(GL_DEPTH_TEST)
         glDrawElements(GL_TRIANGLES, int(
-                self.splited_triangle_number *
-                self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * 3),
+            self.splited_triangle_number *
+            self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * 3),
                        GL_UNSIGNED_INT, None)
         # glDrawElements(GL_TRIANGLES, int(self.splited_triangle_number * 1 * 3), GL_UNSIGNED_INT, None)
         glUseProgram(0)
@@ -283,48 +316,6 @@ class GLProxy:
         bspline_body_info = self.b_spline_body.get_info()
         bind_ubo(self.b_spline_body_ubo, 0, bspline_body_info,
                  bspline_body_info.size * bspline_body_info.itemsize)
-
-    def load_model_to_gpu_and_init_some_fix_buffer_in_gpu(self):
-        buffers = glGenBuffers(6)
-
-        # 原始顶点数据,也是顶点在b样条体中的参数;要满足这一条件必须使控制顶点和节点向量满足一定条件。
-        # original_vertex_vbo original_normal_vbo original_index_vbo
-        # 原始面片邻接关系, 共享的原始面片pn triangle
-        # adjacency_vbo share_adjacency_pn_triangle_vbo
-        # 经过分割以后的数据。
-        # splited_triangle_vbo
-        original_vertex_vbo, original_normal_vbo, original_index_vbo, adjacency_vbo, share_adjacency_pn_triangle_vbo, \
-        splited_triangle_vbo = buffers
-
-        # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
-        # print("len", self.model.original_vertex_number * VERTEX_SIZE)
-        # bind_ssbo(original_vertex_vbo, 0, self.model._vertex, self.model.original_vertex_number * VERTEX_SIZE,
-        #           np.float32,
-        #           GL_STATIC_DRAW)
-        original_vertex_ssbo = ACSSBO(0, self.model.vertex, GL_STATIC_DRAW)
-        original_vertex_ssbo.sync()
-
-        # copy original normal to gpu, and bind original_normal_vbo to bind point 1
-        bind_ssbo(original_normal_vbo, 1, self.model.normal, self.model.original_normal_number * NORMAL_SIZE,
-                  np.float32,
-                  GL_STATIC_DRAW)
-        # copy original index to gpu, and bind original_index_vbo to bind point 2
-        bind_ssbo(original_index_vbo, 2, self.model.index,
-                  self.model.original_triangle_number * PER_TRIANGLE_INDEX_SIZE,
-                  np.uint32, GL_STATIC_DRAW)
-        # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
-        bind_ssbo(adjacency_vbo, 3, self.model.adjacency,
-                  self.model.original_triangle_number * PER_TRIANGLE_ADJACENCY_INDEX_SIZE, np.int32, GL_STATIC_DRAW)
-        # 用于储存原始三角面片的PN-triangle
-        bind_ssbo(share_adjacency_pn_triangle_vbo, 4, None,
-                  self.model.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE, np.float32,
-                  GL_DYNAMIC_DRAW)
-
-        # alloc memory in gpu for splited vertex, and
-        bind_ssbo(splited_triangle_vbo, 5, None,
-                  self.model.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE *
-                  SPLITED_TRIANGLE_SIZE,
-                  np.float32, GL_DYNAMIC_DRAW)
 
     def prev_computer(self):
         # 用于同步

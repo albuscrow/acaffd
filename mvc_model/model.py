@@ -16,10 +16,10 @@ def normalize(n):
 class OBJ:
     def __init__(self, file_path, format_type):
         self._vertex = []
-        self.normal = []
+        self._normal = []
         self.tex_coord = []
-        self.index = []
-        self.adjacency = []
+        self._index = []
+        self._adjacency = []
 
         if format_type == ModelFileFormatType.obj:
             temp_vertices = [[]]
@@ -121,10 +121,10 @@ class OBJ:
         self.d_z /= d
 
         logging.info('load obj finish, has vertices:' + str(len(self._vertex)))
-        self.original_index_number = len(self.index)
+        self.original_index_number = len(self._index)
         self.original_triangle_number = self.original_index_number / 3
         self.original_vertex_number = len(self._vertex)
-        self.original_normal_number = len(self.normal)
+        self.original_normal_number = len(self._normal)
 
     def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
         # 纪录该三角形的三个顶点
@@ -143,14 +143,14 @@ class OBJ:
                 else:
                     if index[1]:
                         self.tex_coord.append(temp_tex_coords[int(index[1])])
-                    self.normal.append(temp_normals[int(index[2])])
+                    self._normal.append(temp_normals[int(index[2])])
 
                 aux_vertex_map[v] = len(aux_vertex_map)
 
-            self.index.append(aux_vertex_map[v])
-        self.adjacency.append([-1, -1, -1])
+            self._index.append(aux_vertex_map[v])
+        self._adjacency.append([-1, -1, -1])
 
-        current_triangle_index = int((len(self.index) - 3) / 3)
+        current_triangle_index = int((len(self._index) - 3) / 3)
         # 建立邻接关系
         for i in range(len(point_indexes)):
             current_vertex_index = point_indexes[i]
@@ -163,9 +163,9 @@ class OBJ:
                 triangle_index = triangle_index_set.pop()
                 temp = temp_vertices[prev_vertex_index]
                 for j in range(3):
-                    if self._vertex[self.index[triangle_index * 3 + j]] == temp:
-                        self.adjacency[triangle_index][j] = current_triangle_index * 4 + i
-                        self.adjacency[-1][i] = triangle_index * 4 + j
+                    if self._vertex[self._index[triangle_index * 3 + j]] == temp:
+                        self._adjacency[triangle_index][j] = current_triangle_index * 4 + i
+                        self._adjacency[-1][i] = triangle_index * 4 + j
                         break
             elif common_triangle_number >= 2:
                 raise Exception('3 or more triangle adjacency with the same edge')
@@ -187,3 +187,15 @@ class OBJ:
     @property
     def vertex(self):
         return np.array(self._vertex, dtype=np.float32)
+
+    @property
+    def normal(self):
+        return np.array(self._normal, dtype=np.float32)
+
+    @property
+    def index(self):
+        return np.array(self._index, dtype=np.uint32)
+
+    @property
+    def adjacency(self):
+        return np.array(self._adjacency, dtype=np.int32)
