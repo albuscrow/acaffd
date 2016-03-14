@@ -1,7 +1,6 @@
-from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtCore import pyqtSlot, Qt, pyqtProperty
 from PyQt5.QtQuick import QQuickItem
 
-from mvc_control.Renderer import Renderer
 from mvc_control.controller import Controller
 
 __author__ = 'ac'
@@ -26,13 +25,13 @@ class FFDScene(QQuickItem):
     def sync(self):
         r = self.window().devicePixelRatio()
         p = self.parentItem()
-        self.controller.renderer.gl_on_view_port_change(p.x() * r, p.y() * r, p.width() * r, p.height() * r)
+        self.controller.gl_on_view_port_change(p.x() * r, p.y() * r, p.width() * r, p.height() * r)
 
     @pyqtSlot(object)
     def handle_window_changed(self, window):
         if window:
             window.beforeSynchronizing.connect(self.sync, type=Qt.DirectConnection)
-            window.afterRendering.connect(self.controller.renderer.paint, type=Qt.DirectConnection)
+            window.afterRendering.connect(self.controller.paint, type=Qt.DirectConnection)
             window.setClearBeforeRendering(False)
-            self.controller.renderer.updateScene.connect(window.update)
+            self.controller.updateScene.connect(window.update)
             # self.renderer.resetOpenGLStatus.connect(window.resetOpenGLStatus)
