@@ -1,4 +1,3 @@
-from mvc_control.Renderer import Renderer
 from mvc_model.model import OBJ, ModelFileFormatType
 from math import *
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
@@ -26,8 +25,7 @@ class Controller(QObject):
         # default show b spline control points
         self.show_aux(True)
 
-        self.need_update_control_point = False
-
+        # for renderer
         # window size for glSetViewPort
         self._window_size = ACRect()  # type: ACRect
 
@@ -39,9 +37,6 @@ class Controller(QObject):
         self._perspective_matrix = None  # type: np.array
         self._model_matrix = create_from_translation(np.array([0, 0, -8]), dtype='float32')  # type: np.array
         self._model_view_matrix = self._model_matrix  # type: np.array
-
-        self.b_spline_body = None
-        self.need_deform = False
 
         self.inited = False  # type: bool
 

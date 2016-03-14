@@ -1,6 +1,8 @@
 import threading
 
 import numpy
+
+from mvc_model.GLObject import ACSSBO
 from mvc_model.aux import BSplineBody
 from pyrr.matrix44 import *
 from OpenGL.GLU import *
@@ -295,9 +297,13 @@ class GLProxy:
         splited_triangle_vbo = buffers
 
         # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
-        bind_ssbo(original_vertex_vbo, 0, self.model.vertex, self.model.original_vertex_number * VERTEX_SIZE,
-                  np.float32,
-                  GL_STATIC_DRAW)
+        # print("len", self.model.original_vertex_number * VERTEX_SIZE)
+        # bind_ssbo(original_vertex_vbo, 0, self.model._vertex, self.model.original_vertex_number * VERTEX_SIZE,
+        #           np.float32,
+        #           GL_STATIC_DRAW)
+        original_vertex_ssbo = ACSSBO(0, self.model.vertex, GL_STATIC_DRAW)
+        original_vertex_ssbo.sync()
+
         # copy original normal to gpu, and bind original_normal_vbo to bind point 1
         bind_ssbo(original_normal_vbo, 1, self.model.normal, self.model.original_normal_number * NORMAL_SIZE,
                   np.float32,

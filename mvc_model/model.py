@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+import numpy as np
 
 
 class ModelFileFormatType(Enum):
@@ -14,7 +15,7 @@ def normalize(n):
 
 class OBJ:
     def __init__(self, file_path, format_type):
-        self.vertex = []
+        self._vertex = []
         self.normal = []
         self.tex_coord = []
         self.index = []
@@ -119,10 +120,10 @@ class OBJ:
         self.d_y /= d
         self.d_z /= d
 
-        logging.info('load obj finish, has vertices:' + str(len(self.vertex)))
+        logging.info('load obj finish, has vertices:' + str(len(self._vertex)))
         self.original_index_number = len(self.index)
         self.original_triangle_number = self.original_index_number / 3
-        self.original_vertex_number = len(self.vertex)
+        self.original_vertex_number = len(self._vertex)
         self.original_normal_number = len(self.normal)
 
     def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
@@ -135,7 +136,7 @@ class OBJ:
 
             if v not in aux_vertex_map:
                 # 当前点还没有纪录的话先纪录当前点
-                self.vertex.append(temp_vertices[vertex_index])
+                self._vertex.append(temp_vertices[vertex_index])
 
                 if len(index) == 2:
                     self.tex_coord.append(temp_tex_coords[int(index[1])])
@@ -162,7 +163,7 @@ class OBJ:
                 triangle_index = triangle_index_set.pop()
                 temp = temp_vertices[prev_vertex_index]
                 for j in range(3):
-                    if self.vertex[self.index[triangle_index * 3 + j]] == temp:
+                    if self._vertex[self.index[triangle_index * 3 + j]] == temp:
                         self.adjacency[triangle_index][j] = current_triangle_index * 4 + i
                         self.adjacency[-1][i] = triangle_index * 4 + j
                         break
@@ -182,3 +183,7 @@ class OBJ:
 
     def get_length_xyz(self):
         return self.d_x, self.d_y, self.d_z
+
+    @property
+    def vertex(self):
+        return np.array(self._vertex, dtype=np.float32)

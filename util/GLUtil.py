@@ -26,6 +26,7 @@ def bind_ubo(bspline_body_buffer, binding_point, data, size):
     glBindBuffer(GL_UNIFORM_BUFFER, bspline_body_buffer)
     glBufferData(GL_UNIFORM_BUFFER, size, data, usage=GL_STATIC_DRAW)
     glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, bspline_body_buffer)
+    glBindBuffer(GL_UNIFORM_BUFFER, 0)
 
 
 def set_atomic_value(atomic_buffer, binding_point, data=None, size=4):
