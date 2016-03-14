@@ -1,12 +1,12 @@
 import threading
 
 import numpy
-from model.aux import BSplineBody
+from mvc_model.aux import BSplineBody
 from pyrr.matrix44 import *
 from OpenGL.GLU import *
 from util.GLUtil import *
 from Constant import *
-from shader.ShaderWrapper import PrevComputeProgramWrap, DeformComputeProgramWrap, DrawProgramWrap
+from ac_opengl.shader.ShaderWrapper import PrevComputeProgramWrap, DeformComputeProgramWrap, DrawProgramWrap
 
 
 class GLProxy:

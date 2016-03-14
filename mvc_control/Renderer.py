@@ -5,7 +5,9 @@ from OpenGL.GL import *
 from pyrr.matrix44 import *
 from pyrr.euler import *
 from queue import Queue
-from shader.GLProxy import GLProxy
+
+from ac_opengl.GLProxy import GLProxy
+from util.util import static_var
 
 
 class Renderer(QObject):
@@ -46,8 +48,10 @@ class Renderer(QObject):
                                                                                    1, 4, 100,
                                                                                    dtype='float32')
 
-    @pyqtSlot()
-    def paint(self):
+    def init_gl(self) -> None:
+        pass
+
+    def on_frame_draw(self) -> None:
         if not self.gl_task.empty():
             task = self.gl_task.get()
             task()
@@ -63,6 +67,13 @@ class Renderer(QObject):
             self.model.draw(self.model_view_matrix, self.perspective_matrix)
 
         glDisable(GL_SCISSOR_TEST)
+
+    @pyqtSlot()
+    @static_var(is_first=True)
+    def paint(self):
+        if self.paint.is_first:
+            self.init_gl()
+        self.on_frame_draw()
 
     def handle_new_obj(self, obj):
         self.model = obj
@@ -95,4 +106,3 @@ class Renderer(QObject):
     def change_control_point(self, u, v, w):
         self.model.change_control_point(u, v, w)
         self.updateScene.emit()
-

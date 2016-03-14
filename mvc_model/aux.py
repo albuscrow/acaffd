@@ -1,6 +1,8 @@
-import numpy as np
 from itertools import product
-from aux_matrix.sample_aux_matrix import get_aux_matrix_offset, sample_aux_matrix
+
+import numpy as np
+
+from pre_computer_data.aux_matrix.sample_aux_matrix import get_aux_matrix_offset
 
 
 class BSplineBody:
@@ -85,14 +87,14 @@ class BSplineBody:
             raise Exception('control point number can not less than order')
 
     def move(self, x, y, z):
-        self.ctrlPoints = self.control_points_backup
-        self.move_dffd([1, 0.5, 0.5], [0.5, 0.5, 0.5])
-        # for i, is_hit in enumerate(self.is_hit):
-        #     if is_hit:
-        #         u = i // (self.control_point_number_v * self.control_point_number_w)
-        #         v = i % (self.control_point_number_v * self.control_point_number_w) // self.control_point_number_w
-        #         w = i % self.control_point_number_w
-        #         self.ctrlPoints[u, v, w] += [d / 10 for d in [x, y, z]]
+        # self.ctrlPoints = self.control_points_backup
+        # self.move_dffd([1, 0.5, 0.5], [0.5, 0.5, 0.5])
+        for i, is_hit in enumerate(self.is_hit):
+            if is_hit:
+                u = i // (self.control_point_number_v * self.control_point_number_w)
+                v = i % (self.control_point_number_v * self.control_point_number_w) // self.control_point_number_w
+                w = i % self.control_point_number_w
+                self.ctrlPoints[u, v, w] += [d / 10 for d in [x, y, z]]
 
     def get_info(self):
         return np.array(
@@ -226,10 +228,6 @@ class BSplineBody:
         res += [length / 2] * order
         return res
 
-
-
-
-
 def aux_multiply(value, v, result):
     result[0] += value * v[0]
     result[1] += value * v[1]
@@ -243,24 +241,24 @@ if __name__ == '__main__':
     # print(BSplineBody.get_control_point_aux_list(1, 6, 2))
     # print(BSplineBody.get_control_point_aux_list(1, 6, 6))
     # print(BSplineBody.get_control_point_aux_list(1, 6, 7))
-    # knots = [0, 0, 0, 0, 1 / 3, 2 / 3, 1, 1, 1, 1]
+    knots = [0, 0, 0, 0, 1 / 3, 2 / 3, 1, 1, 1, 1]
     body = BSplineBody(2, 2, 2)
-    body.move_dffd([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    # body.move_dffd([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     # print(body.get_knots(1, 3, 5))
-    # x = np.linspace(0, 1, 100)
-    # y1 = [body.B(knots, 4, 0, i) for i in x]
-    # y2 = [body.B(knots, 4, 1, i) for i in x]
-    # y3 = [body.B(knots, 4, 2, i) for i in x]
-    # y4 = [body.B(knots, 4, 3, i) for i in x]
-    # y5 = [body.B(knots, 4, 4, i) for i in x]
-    # y6 = [body.B(knots, 4, 5, i) for i in x]
-    # plot(x, y1)
-    # plot(x, y2)
-    # plot(x, y3)
-    # plot(x, y4)
-    # plot(x, y5)
-    # plot(x, y6)
-    # show()
+    x = np.linspace(0, 1, 100)
+    y1 = [body.B(knots, 4, 0, i) for i in x]
+    y2 = [body.B(knots, 4, 1, i) for i in x]
+    y3 = [body.B(knots, 4, 2, i) for i in x]
+    y4 = [body.B(knots, 4, 3, i) for i in x]
+    y5 = [body.B(knots, 4, 4, i) for i in x]
+    y6 = [body.B(knots, 4, 5, i) for i in x]
+    plot(x, y1)
+    plot(x, y2)
+    plot(x, y3)
+    plot(x, y4)
+    plot(x, y5)
+    plot(x, y6)
+    show()
     # body.B(knots, 3, 2, 1 / 3)
     # print(body.B(knots, 3, 1, 0.5), body.B(knots, 3, 3, 0.5))
     # print(body.B(knots, 3, 1, 1 / 3), body.B(knots, 3, 2, 1 / 3))

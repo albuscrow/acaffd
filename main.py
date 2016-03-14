@@ -6,8 +6,8 @@ from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtCore import QUrl
 from PyQt5.QtQml import qmlRegisterType, QQmlComponent, QQmlEngine, QQmlListProperty
 import sys
-from ui.FFDScene import FFDScene
-from control.controller import Controller
+from mvc_view.FFDScene import FFDScene
+from mvc_control.controller import Controller
 
 __author__ = 'ac'
 # logging.basicConfig(level=logging.DEBUG)
@@ -15,13 +15,14 @@ __author__ = 'ac'
 app = QGuiApplication(sys.argv)
 
 qmlRegisterType(FFDScene, 'FFD', 1, 0, "FFDScene")
-controller = Controller()
+# controller = Controller()
 
 engine = QQmlApplicationEngine()
-engine.rootContext().setContextProperty('controller', controller)
-engine.load(QUrl('qml/main.qml'))
-
+engine.load(QUrl('res/ui/main.qml'))
 scene = engine.rootObjects()[0].findChild(FFDScene, 'scene')
+
+controller = scene.controller
+engine.rootContext().setContextProperty('controller', controller)
 controller.connect_with_renderer(scene.renderer)
 
 app.exec()

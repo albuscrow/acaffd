@@ -49,12 +49,12 @@ class ShaderProgramWrap:
 class PrevComputeProgramWrap(ShaderProgramWrap):
     def __init__(self, file_name):
         super().__init__()
-        self.file_name_prefix = 'shader/compute/'
+        self.file_name_prefix = 'ac_opengl/shader/compute/'
         self._max_splited = 20
         self._split_factor = 0.1
         super().add_shader(GL_COMPUTE_SHADER, file_name)
 
-        with open('splite_pattern/%d.txt' % self._max_splited) as file:
+        with open('pre_computer_data/split_pattern/%d.txt' % self._max_splited) as file:
             factor, offset_l, indexes_l, parameter_l = file
         self._factor = int(factor)
         self._offset_number = np.asarray([int(x) for x in offset_l.strip().split(" ")], dtype=np.uint32)
@@ -130,7 +130,7 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
 class DrawProgramWrap(ShaderProgramWrap):
     def __init__(self, vertex_shader_file_name, fragment_shader_file_name):
         super().__init__()
-        self.file_name_prefix = 'shader/renderer/'
+        self.file_name_prefix = 'ac_opengl/shader/renderer/'
         super().add_shader(GL_VERTEX_SHADER, vertex_shader_file_name)
         super().add_shader(GL_FRAGMENT_SHADER, fragment_shader_file_name)
 
@@ -142,7 +142,7 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
         self._tessellation_factor = tessellation_factor
         self.tessellated_point_number_pre_splited_triangle = (tessellation_factor + 1) * (tessellation_factor + 2) / 2
         self.tessellated_triangle_number_pre_splited_triangle = tessellation_factor * tessellation_factor
-        self.file_name_prefix = 'shader/compute/'
+        self.file_name_prefix = 'ac_opengl/shader/compute/'
         self.file_name = file_name
         self.splited_triangle_number = splited_triangle_number
         super().add_shader(GL_COMPUTE_SHADER, self.file_name)

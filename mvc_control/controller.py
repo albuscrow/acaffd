@@ -1,6 +1,6 @@
 import logging
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot
-from model.model import OBJ, ModelFileFormatType
+from mvc_model.model import OBJ, ModelFileFormatType
 
 __author__ = 'ac'
 
@@ -74,23 +74,23 @@ class Controller(QObject):
         self.renderer = renderer
 
         # todo test code
-        # raw_obj = OBJ("data/767.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/ttest.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/cube.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/test2.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/bishop.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/test_same_normal.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/star.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/legoDog.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/test_2_triangle.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/Mobile.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/biship_cym_area_average_normal.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/test_2_triangle.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/biship_cym_area_average_normal.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/biship_cym_direct_average_normal.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/vase_cym.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/sphere.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("data/wheel.obj", ModelFileFormatType.obj)
-        raw_obj = OBJ("data/Mobile.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/767.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/ttest.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/cube.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/test2.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/bishop.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/test_same_normal.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/star.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/legoDog.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/test_2_triangle.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/Mobile.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/biship_cym_area_average_normal.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/test_2_triangle.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/biship_cym_area_average_normal.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/biship_cym_direct_average_normal.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/vase_cym.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/sphere.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/wheel.obj", ModelFileFormatType.obj)
+        raw_obj = OBJ("res/3d_model/Mobile.obj", ModelFileFormatType.obj)
         self.renderer.handle_new_obj(raw_obj)
         self.renderer.show_aux(True)
