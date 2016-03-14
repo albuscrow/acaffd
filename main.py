@@ -23,6 +23,5 @@ scene = engine.rootObjects()[0].findChild(FFDScene, 'scene')
 
 controller = scene.controller
 engine.rootContext().setContextProperty('controller', controller)
-controller.connect_with_renderer(scene.renderer)
 
 app.exec()

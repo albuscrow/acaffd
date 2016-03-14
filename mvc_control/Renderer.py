@@ -4,10 +4,9 @@ from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from OpenGL.GL import *
 from pyrr.matrix44 import *
 from pyrr.euler import *
-from queue import Queue
 
 from ac_opengl.GLProxy import GLProxy
-from util.util import static_var
+from mvc_model.plain_class import ACRect
 
 
 class Renderer(QObject):
@@ -16,13 +15,7 @@ class Renderer(QObject):
     def __init__(self):
         super().__init__()
         self.need_update_control_point = False
-        self.x = 0
-        self.y = 0
-        self.w = 0
-        self.h = 0
-        self.gl_task = Queue()
-        self.model = None
-        self.renderer_aux_task = None
+        self._window_size = ACRect()  # type: ACRect
 
         self.rotate_x = 0
         self.rotate_y = 0
@@ -37,31 +30,30 @@ class Renderer(QObject):
         self.b_spline_body = None
         self.need_deform = False
 
-    def set_view_port(self, x, y, w, h):
-        self.x = int(x)
-        self.y = int(y)
-        self.w = int(w)
-        self.h = int(h)
+        self.inited = False  # type: bool
 
-        aspect = self.w / self.h
-        self.perspective_matrix = create_perspective_projection_matrix_from_bounds(-aspect, aspect, -1,
-                                                                                   1, 4, 100,
-                                                                                   dtype='float32')
+    @property
+    def window_size(self):
+        return self._window_size
 
-    def init_gl(self) -> None:
-        pass
+    def gl_on_view_port_change(self, *xywh):
+        if self.window_size != xywh:
+            self.window_size.update(xywh)
+            aspect = self.window_size.aspect
+            self.perspective_matrix = create_perspective_projection_matrix_from_bounds(-aspect, aspect, -1,
+                                                                                       1, 4, 100,
+                                                                                       dtype='float32')
 
-    def on_frame_draw(self) -> None:
-        if not self.gl_task.empty():
-            task = self.gl_task.get()
-            task()
-            self.gl_task.task_done()
-
-        glViewport(self.x, self.y, self.w, self.h)
-        glEnable(GL_SCISSOR_TEST)
-        glScissor(self.x, self.y, self.w, self.h)
+    def gl_init(self) -> None:
         glClearColor(1, 1, 1, 1)
+
+    def gl_on_frame_draw(self) -> None:
+        glEnable(GL_SCISSOR_TEST)
+        glScissor(*self.window_size.xywh)
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        # todo 这句理论上应该在gl_on_view_port_change调用，但是会有问题
+        glViewport(*self.window_size.xywh)
 
         if self.model:
             self.model.draw(self.model_view_matrix, self.perspective_matrix)
@@ -69,14 +61,13 @@ class Renderer(QObject):
         glDisable(GL_SCISSOR_TEST)
 
     @pyqtSlot()
-    @static_var(is_first=True)
     def paint(self):
-        if self.paint.is_first:
-            self.init_gl()
-        self.on_frame_draw()
+        if not self.inited:
+            self.gl_init()
+            self.inited = True
+        self.gl_on_frame_draw()
 
     def handle_new_obj(self, obj):
-        self.model = obj
         self.model = GLProxy(obj)
 
     def change_rotate(self, x, y):
@@ -92,7 +83,7 @@ class Renderer(QObject):
         self.model._show_control_point = is_show
 
     def select(self, x, y, x2, y2):
-        self.model.set_select_region(x, self.h - y2, x2, self.h - y)
+        self.model.set_select_region(x, self.window_size.h - y2, x2, self.window_size.h - y)
         self.updateScene.emit()
 
     def move_control_points(self, x, y, z):
