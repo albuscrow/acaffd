@@ -99,36 +99,17 @@ const vec3 ZERO3 = vec3(0.000001);
 const float ZERO = 0.000001;
 const vec4 ZERO4 = vec4(0.000001);
 
-!?include1
+//以下几个参数都是要经过预编译来初始化的
+layout(std430, binding=9) buffer SplitedData{
+    uvec4 splitIndex[];
+    vec4 splitParameter[];
+    uint offset_number[];
+};
+const int max_splite_factor = 0;
+const uint look_up_table_for_i[0] = {0};
+////////////////////////////////////////////////
 
-//layout(std430, binding=10) buffer SplitedData{
-//            uvec4 splitIndex[73605];
-//            vec4 splitParameter[25344];
-//            uint offset_number[1430];
-//        };
-//        const float splite_factor = 0.2;
-//        const int max_splite_factor = 20;
-//        const uint look_up_table_for_i[20] = {0,19,54,102,160,225,294,364,432,495,550,595,631,659,680,695,705,711,714,715};
-
-//const float splite_factor = 0.2;
-//const int max_splite_factor = 20;
-//const uint look_up_table_for_i[20] =
-//{0, 19, 54, 102, 160, 225, 294, 364, 432, 495, 550, 595, 631, 659, 680, 695, 705, 711, 714, 715};
-//
-//
-////以下两个定义切割pattern
-//const vec4 splitParameter[10] = {
-//    {1,0,0,0},
-//    {0.6667, 0.3333, 0,0}, {0.6667, 0, 0.3333,0},
-//    {0.3333, 0.6667, 0,0}, {0.3333, 0.3333, 0.3333,0}, {0.3333, 0, 0.6667,0},
-//    {0, 1, 0,0}, {0, 0.6667, 0.3333,0}, {0, 0.3333, 0.6667,0}, {0, 0, 1,0}
-//};
-//const uvec4 splitIndex[9] = {
-//    {0, 1, 2,0},
-//    {1, 3 ,4,0}, {1, 4, 2,0}, {2, 4, 5,0},
-//    {3, 6, 7,0}, {3, 7, 4,0}, {4, 7, 8,0}, {4, 8, 5,0}, {5, 8, 9,0}
-//};
-
+const float splite_factor = 0.3f;
 
 const vec3 sampleParameter[37] = {
     {1.000000, 0.000000, 0.000000},

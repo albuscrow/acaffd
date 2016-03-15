@@ -48,9 +48,16 @@ class GLProxy:
         self.task = []
         self.lock = threading.Lock()
 
+        self.original_vertex_ssbo = None
+        self.original_normal_ssbo = None
+        self.original_index_ssbo = None
+        self.adjacency_info_ssbo = None
+        self.share_adjacency_pn_triangle_ssbo = None
+        self.splited_triangle_ssbo = None
+
     def draw(self, model_view_matrix, perspective_matrix):
         if not self.is_inited:
-            self.init_gl()
+            self.gl_init_global()
 
         with self.lock:
             for t in self.task:
@@ -60,9 +67,8 @@ class GLProxy:
         self.deform_and_draw_model(model_view_matrix, perspective_matrix)
         self.draw_b_spline(model_view_matrix, perspective_matrix)
 
-    def init_gl(self):
+    def gl_init_global(self):
         # init code for openGL
-
         # create ssbo
         # 原始顶点数据,也是顶点在b样条体中的参数;要满足这一条件必须使控制顶点和节点向量满足一定条件。
         # original_vertex_ssbo original_normal_ssbo original_index_ssbo
@@ -70,44 +76,56 @@ class GLProxy:
         # adjacency_ssbo share_adjacency_pn_triangle_ssbo
         # 经过分割以后的数据。
         # splited_triangle_ssbo
-        # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
-        original_vertex_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 0, self.model.vertex, GL_STATIC_DRAW)
-        original_vertex_ssbo.gl_sync()
+        # B spline body 的信息。
+        # b_spline_body_ubo
+        self.original_vertex_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 0, None, GL_STATIC_DRAW)
+        self.original_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 1, self.model.normal, GL_STATIC_DRAW)
+        self.original_index_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 2, None, GL_STATIC_DRAW)
+        self.adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_STATIC_DRAW)
+        self.share_adjacency_pn_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_STATIC_DRAW)
+        self.splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
+        self.b_spline_body_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)
 
-        # copy original normal to gpu, and bind original_normal_vbo to bind point 1
-        original_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 1, self.model.normal, GL_STATIC_DRAW)
-        original_normal_ssbo.gl_sync()
+        # 分割后三角形的计数器
+        self.splited_triangle_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 0, None, GL_DYNAMIC_DRAW)
 
-        # copy original index to gpu, and bind original_index_vbo to bind point 2
-        original_index_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 2, self.model.index, GL_STATIC_DRAW)
-        original_index_ssbo.gl_sync()
+        # 分割三角形的Pattern, 由于这些数据是是不变的，所以在程序初始化的时候传入即可
 
-        # copy adjacency table to gpu, and bind adjacency_vbo to bind point 2
-        adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, self.model.adjacency, GL_STATIC_DRAW)
-        adjacency_info_ssbo.gl_sync()
+        self.gl_init_for_model()
 
-        # 用于储存原始三角面片的PN-triangle
-        share_adjacency_pn_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_STATIC_DRAW)
-        share_adjacency_pn_triangle_ssbo.capacity = self.model.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
-        share_adjacency_pn_triangle_ssbo.gl_sync()
+        # run previous compute shader
+        self.previous_compute_shader = PrevComputeProgramWrap('previous_compute_shader_oo.glsl')
 
-        # alloc memory in gpu for splited vertex, and
-        splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
-        splited_triangle_ssbo.capacity = self.model.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE * SPLITED_TRIANGLE_SIZE
-        splited_triangle_ssbo.gl_sync()
-
-        # init b_spline_body_ubo copy BSpline body info to gpu
-        bspline_body_info = self.b_spline_body.get_info()
-        self.b_spline_body_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, bspline_body_info, GL_STATIC_DRAW)
-        self.b_spline_body_ubo.gl_sync()
-
-        # prev compute and get number of splited triangle
         self.prev_computer()
+
         self.init_renderer_model_buffer()
 
         self.init_renderer_b_spline_buffer()
 
         self.is_inited = True
+
+    def gl_init_for_model(self):
+        # alloc memory in gpu for splited vertex
+        self.original_vertex_ssbo.async_update(self.model.vertex)
+        self.original_vertex_ssbo.gl_sync()
+        # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
+        self.original_normal_ssbo.async_update(self.model.normal)
+        self.original_normal_ssbo.gl_sync()
+        # copy original normal to gpu, and bind original_normal_vbo to bind point 1
+        self.original_index_ssbo.async_update(self.model.index)
+        self.original_index_ssbo.gl_sync()
+        # copy original index to gpu, and bind original_index_vbo to bind point 2
+        self.adjacency_info_ssbo.async_update(self.model.adjacency)
+        self.adjacency_info_ssbo.gl_sync()
+        # copy adjacency table to gpu, and bind adjacency_vbo to bind point 3
+        self.share_adjacency_pn_triangle_ssbo.capacity = self.model.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
+        self.share_adjacency_pn_triangle_ssbo.gl_sync()
+        # 用于储存原始三角面片的PN-triangle
+        self.splited_triangle_ssbo.capacity = self.model.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE * SPLITED_TRIANGLE_SIZE
+        self.splited_triangle_ssbo.gl_sync()
+        # init b_spline_body_ubo copy BSpline body info to gpu
+        self.b_spline_body_ubo.async_update(self.b_spline_body.get_info())
+        self.b_spline_body_ubo.gl_sync()
 
     def init_renderer_b_spline_buffer(self):
         if self.b_spline_body_vao is None:
@@ -319,45 +337,12 @@ class GLProxy:
     def prev_computer(self):
         # 用于同步
         # init atom buffer for count splited triangle number
-        if self.splited_triangle_counter_acbo is None:
-            self.splited_triangle_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 0, np.array([0], dtype=np.uint32), GL_DYNAMIC_DRAW)
-            self.splited_triangle_counter_acbo.gl_sync()
-        else:
-            self.splited_triangle_counter_acbo.async_update(np.array([0], dtype=np.uint32))
-            self.splited_triangle_counter_acbo.gl_sync()
+        self.splited_triangle_counter_acbo.async_update(np.array([0], dtype=np.uint32))
+        self.splited_triangle_counter_acbo.gl_sync()
 
-        # run previous compute shader
-        if self.previous_compute_shader is None:
-            self.previous_compute_shader = PrevComputeProgramWrap('previous_compute_shader_oo.glsl')
-            split_info_buffer, self.debug = glGenBuffers(2)
-            # data_bytes = self.previous_compute_shader.get_split_data_bytes()
-            # bind_ssbo(split_info_buffer, 9, data_bytes, len(data_bytes), None, GL_DYNAMIC_DRAW)
-            indexes, indexes_size = self.previous_compute_shader.indexes
-            parameter, parameter_size = self.previous_compute_shader.parameter
-            offset_number, offset_number_size = self.previous_compute_shader.offset_number
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, split_info_buffer)
-            glBufferData(GL_SHADER_STORAGE_BUFFER, offset_number_size + indexes_size + parameter_size,
-                         None,
-                         usage=GL_DYNAMIC_DRAW)
-            # glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, offset_number_size, offset_number)
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, indexes_size, indexes)
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, indexes_size, parameter_size, parameter)
-            glBufferSubData(GL_SHADER_STORAGE_BUFFER, indexes_size + parameter_size, offset_number_size, offset_number)
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, split_info_buffer)
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
-
-            # bind_ssbo(self.debug, 14, None, 12 * 12 * 16, None, GL_DYNAMIC_READ)
-        glUseProgram(self.previous_compute_shader.get_program())
         # prev computer
+        glUseProgram(self.previous_compute_shader.get_program())
         glDispatchCompute(int(self.model.original_triangle_number / 512 + 1), 1, 1)
-        # test_data = print_vbo(self.debug, (12 * 12, 4), data_type=ctypes.c_float)
-        # with open('/home/ac/splite_cube.obj', mode='w') as f:
-        #     for i in range(int(len(test_data) / 2)):
-        #         f.write('v %f %f %f\n' % (test_data[i * 2][0], test_data[i * 2][1], test_data[i * 2][2]))
-        #         f.write('vn %f %f %f\n' % (test_data[i * 2 + 1][0], test_data[i * 2 + 1][1], test_data[i * 2 + 1][2]))
-        #     for i in range(24):
-        #         f.write('f %d//%d %d//%d %d//%d\n' % (i * 3 + 1, i * 3 + 1, i * 3 + 2, i * 3 + 2, i * 3 + 3, i * 3 + 3))
-
         self.splited_triangle_number = self.splited_triangle_counter_acbo.get_value(ctypes.c_uint32)[0]
 
     def set_select_region(self, x1, y1, x2, y2):

@@ -24,9 +24,9 @@ class ShaderProgramWrap:
         shaders = []
         for t, f in self.shaders_info:
             shaders.append(
-                    compileShader(
-                            self.prev_compile_source_code(t, self.get_source_code(f)),
-                            t))
+                compileShader(
+                    self.prev_compile_source_code(self.get_source_code(f)),
+                    t))
 
         if self.program is None:
             self.program = compileProgram(*shaders)
@@ -36,7 +36,7 @@ class ShaderProgramWrap:
         with open(self.file_name_prefix + file_name) as file:
             return file.read()
 
-    def prev_compile_source_code(self, shader_type, source_code):
+    def prev_compile_source_code(self, source_code):
         return source_code
 
     def invalid_program(self):
@@ -60,7 +60,23 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
         self._offset_number = np.asarray([int(x) for x in offset_l.strip().split(" ")], dtype=np.uint32)
         self._indexes = np.asarray([int(x) for x in indexes_l.strip().split(" ")], dtype=np.uint32)
         self._parameter = np.asarray([abs(float(x)) for x in parameter_l.strip().split(" ")], dtype=np.float32)
-        self._pattern = self.get_pattern()
+        # self._pattern = self.get_pattern()
+        split_info_buffer = glGenBuffers(1)
+        # data_bytes = self.previous_compute_shader.get_split_data_bytes()
+        # bind_ssbo(split_info_buffer, 9, data_bytes, len(data_bytes), None, GL_DYNAMIC_DRAW)
+        indexes, indexes_size = self.indexes
+        parameter, parameter_size = self.parameter
+        offset_number, offset_number_size = self.offset_number
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, split_info_buffer)
+        glBufferData(GL_SHADER_STORAGE_BUFFER, offset_number_size + indexes_size + parameter_size,
+                     None,
+                     usage=GL_DYNAMIC_DRAW)
+        # glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, offset_number_size, offset_number)
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, indexes_size, indexes)
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, indexes_size, parameter_size, parameter)
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, indexes_size + parameter_size, offset_number_size, offset_number)
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, split_info_buffer)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
         # print(self._pattern)
         # print(self._offset_number)
         # print(self._indexes)
@@ -89,26 +105,13 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
     # def get_split_data_size(self):
     #     return (self._offset_number + self._indexes + self._parameter) * 4
 
-    def get_pattern(self):
-        return "layout(std430, binding=9) buffer SplitedData{\n\
-            uvec4 splitIndex[%d];\n\
-            vec4 splitParameter[%d];\n\
-            uint offset_number[%d];\n\
-        };\n\
-        const float splite_factor = acacac;\n\
-        const int max_splite_factor = %d;\n\
-        const uint look_up_table_for_i[%d] = %s;\n" % (
-            self._indexes.size / 4, self._parameter.size / 4, self._offset_number.size, self._max_splited,
-            self._max_splited,
-            self.get_offset_for_i())
-
     ##[0, 37, 88, 150, 220, 295, 372, 448, 520, 585, 640, 685, 721, 749, 770, 785, 795, 801, 804, 805]
-    def get_offset_for_i(self):
+    def get_offset_for_i(self) -> str:
         look_up_table_for_i = [0]
         for i in range(1, self._max_splited):
             ii = min(self._max_splited - i, i)
             look_up_table_for_i.append(
-                    int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, (i + 1) * (self._max_splited - 2 * i))))
+                int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, (i + 1) * (self._max_splited - 2 * i))))
 
         # look_up_table_for_i = [0]
         # for i in range(1, self._max_splited):
@@ -120,11 +123,15 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
             res += (str(x) + ',')
         return res[:-1] + '}'
 
-    def prev_compile_source_code(self, shader_type, source_code):
-        return source_code.replace('!?include1', self.get_include1_content())
-
-    def get_include1_content(self):
-        return self._pattern.replace('acacac', str(self._split_factor))
+    def prev_compile_source_code(self, source_code: str) -> str:
+        source_code = source_code.replace('uvec4 splitIndex[]',
+                                          'uvec4 splitIndex[%d]' % (self._indexes.size / 4)) \
+            .replace('vec4 splitParameter[]', 'vec4 splitParameter[%d]' % (self._parameter.size / 4)) \
+            .replace('uint offset_number[]', 'uint offset_number[%d]' % self._offset_number.size) \
+            .replace('const int max_splite_factor = 0', 'const int max_splite_factor = %d' % self._max_splited) \
+            .replace('const uint look_up_table_for_i[0] = {0}',
+                     'const uint look_up_table_for_i[%d] = {%s}' % (self._max_splited, self.get_offset_for_i()))
+        return source_code
 
 
 class DrawProgramWrap(ShaderProgramWrap):
@@ -147,7 +154,7 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
         self.splited_triangle_number = splited_triangle_number
         super().add_shader(GL_COMPUTE_SHADER, self.file_name)
 
-    def prev_compile_source_code(self, shader_type, source_code):
+    def prev_compile_source_code(self, source_code):
         return source_code.replace('!?include1', self.get_include1_content())
 
     def get_include1_content(self):
