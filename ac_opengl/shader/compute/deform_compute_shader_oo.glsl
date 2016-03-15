@@ -57,6 +57,10 @@ const float Mr[370] = {
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
 };
 
+layout(location=0) uniform uint triangleNumber;
+layout(location=1) uniform uint vw;
+layout(location=2) uniform uint w;
+layout(location=3) uniform vec3 stride;
 !?include1
 
 const vec3 ZERO3 = vec3(0.0001, 0.0001, 0.0001);
@@ -306,19 +310,19 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
     float J_bar_star_T_1 = fw.y * fu.z - fu.y * fw.z;
     float J_bar_star_T_2 = fu.y * fv.z - fv.y * fu.z;
-    result.x = n.x * J_bar_star_T_0 * x_stride + n.y * J_bar_star_T_1 * y_stride + n.z * J_bar_star_T_2 * z_stride;
+    result.x = n.x * J_bar_star_T_0 * stride[0] + n.y * J_bar_star_T_1 * stride[1] + n.z * J_bar_star_T_2 * stride[2];
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第二行三个元素
     J_bar_star_T_0 = fv.z * fw.x - fw.z * fv.x;
     J_bar_star_T_1 = fw.z * fu.x - fu.z * fw.x;
     J_bar_star_T_2 = fu.z * fv.x - fv.z * fu.x;
-    result.y = n.x * J_bar_star_T_0 * x_stride + n.y * J_bar_star_T_1 * y_stride + n.z * J_bar_star_T_2 * z_stride;
+    result.y = n.x * J_bar_star_T_0 * stride[0] + n.y * J_bar_star_T_1 * stride[1] + n.z * J_bar_star_T_2 * stride[2];
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第三行三个元素
     J_bar_star_T_0 = fv.x * fw.y - fw.x * fv.y;
     J_bar_star_T_1 = fw.x * fu.y - fu.x * fw.y;
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
-    result.z = n.x * J_bar_star_T_0 * x_stride + n.y * J_bar_star_T_1 * y_stride + n.z * J_bar_star_T_2 * z_stride;
+    result.z = n.x * J_bar_star_T_0 * stride[0] + n.y * J_bar_star_T_1 * stride[1] + n.z * J_bar_star_T_2 * stride[2];
 
 //todo mark
     return normalize(result);

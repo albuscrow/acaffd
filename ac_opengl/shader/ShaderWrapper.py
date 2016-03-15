@@ -11,7 +11,6 @@ class ShaderProgramWrap:
         self.program = None
         self.shaders_info = []
         self.file_name_prefix = ''
-        self.program = None
 
     def add_shader(self, shader_type, file_name):
         self.shaders_info.append((shader_type, file_name))
@@ -30,7 +29,11 @@ class ShaderProgramWrap:
 
         if self.program is None:
             self.program = compileProgram(*shaders)
+            self.init_uniform()
         return self.program
+
+    def init_uniform(self):
+        pass
 
     def get_source_code(self, file_name):
         with open(self.file_name_prefix + file_name) as file:
@@ -51,7 +54,7 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
         super().__init__()
         self.file_name_prefix = 'ac_opengl/shader/compute/'
         self._max_splited = 20
-        self._split_factor = 0.1
+        self._split_factor = 0.3
         super().add_shader(GL_COMPUTE_SHADER, file_name)
 
         with open('pre_computer_data/split_pattern/%d.txt' % self._max_splited) as file:
@@ -60,10 +63,7 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
         self._offset_number = np.asarray([int(x) for x in offset_l.strip().split(" ")], dtype=np.uint32)
         self._indexes = np.asarray([int(x) for x in indexes_l.strip().split(" ")], dtype=np.uint32)
         self._parameter = np.asarray([abs(float(x)) for x in parameter_l.strip().split(" ")], dtype=np.float32)
-        # self._pattern = self.get_pattern()
         split_info_buffer = glGenBuffers(1)
-        # data_bytes = self.previous_compute_shader.get_split_data_bytes()
-        # bind_ssbo(split_info_buffer, 9, data_bytes, len(data_bytes), None, GL_DYNAMIC_DRAW)
         indexes, indexes_size = self.indexes
         parameter, parameter_size = self.parameter
         offset_number, offset_number_size = self.offset_number
@@ -71,16 +71,14 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
         glBufferData(GL_SHADER_STORAGE_BUFFER, offset_number_size + indexes_size + parameter_size,
                      None,
                      usage=GL_DYNAMIC_DRAW)
-        # glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, offset_number_size, offset_number)
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, indexes_size, indexes)
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, indexes_size, parameter_size, parameter)
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, indexes_size + parameter_size, offset_number_size, offset_number)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, split_info_buffer)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
-        # print(self._pattern)
-        # print(self._offset_number)
-        # print(self._indexes)
-        # print(self._parameter)
+
+    def init_uniform(self):
+        glProgramUniform1f(self.program, 0, self._split_factor)
 
     @property
     def offset_number(self):
@@ -101,23 +99,14 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
     @split_factor.setter
     def split_factor(self, split_factor):
         self._split_factor = split_factor
+        glProgramUniform1f(self.program, 0, self._split_factor)
 
-    # def get_split_data_size(self):
-    #     return (self._offset_number + self._indexes + self._parameter) * 4
-
-    ##[0, 37, 88, 150, 220, 295, 372, 448, 520, 585, 640, 685, 721, 749, 770, 785, 795, 801, 804, 805]
     def get_offset_for_i(self) -> str:
         look_up_table_for_i = [0]
         for i in range(1, self._max_splited):
             ii = min(self._max_splited - i, i)
             look_up_table_for_i.append(
                 int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, (i + 1) * (self._max_splited - 2 * i))))
-
-        # look_up_table_for_i = [0]
-        # for i in range(1, self._max_splited):
-        #     ii = min(self._max_splited - i, i)
-        #     look_up_table_for_i.append(
-        #             int(look_up_table_for_i[-1] + (1 + ii) * ii / 2 + max(0, i * (self._max_splited - 2 * i))))
         res = '{'
         for x in look_up_table_for_i:
             res += (str(x) + ',')
@@ -152,6 +141,7 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
         self.file_name_prefix = 'ac_opengl/shader/compute/'
         self.file_name = file_name
         self.splited_triangle_number = splited_triangle_number
+        self._cage_size = None
         super().add_shader(GL_COMPUTE_SHADER, self.file_name)
 
     def prev_compile_source_code(self, source_code):
@@ -181,23 +171,16 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
                     tessellation_index.append(next_index)
                 prev = next_index
 
-        u, v, w = self._b_spline_body.get_cage_size()
+        self._cage_size = self._b_spline_body.get_cage_size()
 
-        return 'const uint triangleNumber = {4};\
-               const uint vw = {5}; \
-               const uint w = {6}; \
-               const float x_stride = {7};\
-               const float y_stride = {8};\
-               const float z_stride = {9};\
-               const vec3 tessellatedParameter[{0}] = {1}; \
+        return 'const vec3 tessellatedParameter[{0}] = {1}; \
                     const uvec3 tessellateIndex[{2}] = {3};' \
             .format(*[len(tessellation_parameter),
                       '{' + ','.join(['{' + ','.join([str(y) for y in x]) + '}\n' for x in
                                       tessellation_parameter]) + '}',
                       len(tessellation_index),
                       '{' + ','.join(['{' + ','.join([str(y) for y in x]) + '}\n' for x in
-                                      tessellation_index]) + '}', self.splited_triangle_number, v * w, w, 1 / u, 1 / v,
-                      1 / w])
+                                      tessellation_index]) + '}'])
 
     @property
     def tessellation_factor(self):
@@ -213,6 +196,13 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
     def invalid_program(self):
         super().invalid_program()
         super().add_shader(GL_COMPUTE_SHADER, self.file_name)
+
+    def init_uniform(self):
+        glProgramUniform1ui(self.get_program(), 0, int(self.splited_triangle_number))
+        glProgramUniform1ui(self.get_program(), 1, int(self._cage_size[1] * self._cage_size[2]))
+        glProgramUniform1ui(self.get_program(), 2, int(self._cage_size[1]))
+        glProgramUniform3f(self.get_program(), 3, 1 / self._cage_size[0], 1 / self._cage_size[1],
+                           1 / self._cage_size[2])
 
 
 def get_compute_shader_program(file_name):

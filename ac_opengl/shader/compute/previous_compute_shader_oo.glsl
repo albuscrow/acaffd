@@ -110,7 +110,7 @@ const uint look_up_table_for_i[0] = {0};
 ////////////////////////////////////////////////
 
 //todo 改成可以由程序输入的
-const float splite_factor = 0.3f;
+layout(location=0) uniform float splite_factor;
 
 const vec3 sampleParameter[37] = {
     {1.000000, 0.000000, 0.000000},

@@ -160,10 +160,6 @@ class GLProxy:
         self.is_inited = True
 
     def gl_init_for_model(self) -> None:
-        '''
-        必须在预计算之后调用
-        :return:
-        '''
         # alloc memory in gpu for splited vertex
         self.original_vertex_ssbo.async_update(self.model.vertex)
         self.original_vertex_ssbo.gl_sync()
@@ -347,14 +343,7 @@ class GLProxy:
         # normal_vbo
         # index_vbo
 
-        if self.model_vao is None:
-            self.model_vao = glGenVertexArrays(1)
-            glBindVertexArray(self.model_vao)
-            buffers = glGenBuffers(4)
-            self.control_point_for_sample_ubo, self.vertex_vbo, self.normal_vbo, self.index_vbo = buffers
-
-        else:
-            glBindVertexArray(self.model_vao)
+        glBindVertexArray(self.model_vao)
 
         self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
                                                               self.splited_triangle_number, self.b_spline_body)
