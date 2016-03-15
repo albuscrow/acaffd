@@ -1,7 +1,9 @@
 from OpenGL.GL import *
 from OpenGL.GL.shaders import *
-from PyQt5.QtGui import QOpenGLShaderProgram, QOpenGLShader
 import numpy as np
+from OpenGL.raw.GL.ARB.uniform_buffer_object import GL_UNIFORM_BUFFER
+
+from mvc_model.GLObject import ACVBO
 
 __author__ = 'ac'
 
@@ -153,7 +155,7 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
         for i in range(level + 1):
             v = level - u
             for j in range(i + 1):
-                self._tessellation_parameter.append([u / level, v / level, (level - u - v) / level])
+                self._tessellation_parameter.append([u / level, v / level, (level - u - v) / level, 0])
                 v -= 1
             u -= 1
 
@@ -168,6 +170,7 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
                 else:
                     self._tessellation_index.append(next_index)
                 prev = next_index
+        self._tessellation_index = [x + [0] for x in self._tessellation_index]
 
     def prev_compile_source_code(self, source_code):
         return source_code
@@ -195,22 +198,16 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
         glProgramUniform1ui(program, 2, int(self._cage_size[1]))
         glProgramUniform3f(program, 3, 1 / self._cage_size[0], 1 / self._cage_size[1],
                            1 / self._cage_size[2])
-        self.test()
+        glProgramUniform1ui(program, 4,
+                            int(self._tessellated_point_number_pre_splited_triangle))
 
-    def test(self):
-        program = self.get_program()
-        glUseProgram(program)
-        glUniform3fv(glGetUniformLocation(program, 'tessellatedParameter'),
-                     int(self._tessellated_point_number_pre_splited_triangle) * 3,
-                     np.array(self._tessellation_parameter, dtype=np.float32))
-        glUniform1ui(glGetUniformLocation(program, 'tessellatedParameterLength'),
-                     int(self._tessellated_point_number_pre_splited_triangle))
-        glUniform3uiv(glGetUniformLocation(program, 'tessellateIndex'),
-                      int(self._tessellated_triangle_number_pre_splited_triangle) * 3,
-                      np.array(self._tessellation_index, dtype=np.uint32))
-        glUniform1ui(glGetUniformLocation(program, 'tessellateIndexLength'),
-                     int(self._tessellated_triangle_number_pre_splited_triangle))
+        glProgramUniform1ui(program, 5,
+                            int(self._tessellated_triangle_number_pre_splited_triangle))
 
+        tp = ACVBO(GL_UNIFORM_BUFFER, 2, np.array(self._tessellation_parameter, dtype=np.float32), GL_STATIC_DRAW)
+        tp.gl_sync()
+        ti = ACVBO(GL_UNIFORM_BUFFER, 3, np.array(self._tessellation_index, dtype=np.uint32), GL_STATIC_DRAW)
+        ti.gl_sync()
 
 # test code
 if __name__ == '__main__':
