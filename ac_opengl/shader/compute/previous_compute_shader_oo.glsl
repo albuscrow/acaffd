@@ -109,6 +109,7 @@ const int max_splite_factor = 0;
 const uint look_up_table_for_i[0] = {0};
 ////////////////////////////////////////////////
 
+//todo 改成可以由程序输入的
 const float splite_factor = 0.3f;
 
 const vec3 sampleParameter[37] = {

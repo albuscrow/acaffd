@@ -13,6 +13,11 @@ from ac_opengl.shader.ShaderWrapper import PrevComputeProgramWrap, DeformCompute
 
 class GLProxy:
     def __init__(self, model):
+        self._tessellation_factor = 3
+        self._tessellated_point_number_pre_splited_triangle = (self._tessellation_factor + 1) * (
+            self._tessellation_factor + 2) / 2
+        self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_factor * self._tessellation_factor
+
         self.model = model
         self.b_spline_body = BSplineBody(*self.model.get_length_xyz())
 
@@ -22,8 +27,6 @@ class GLProxy:
         self.deform_compute_shader = None
         self.model_renderer_shader = None
         self.need_deform = False
-        self.splited_triangle_counter_acbo = None
-        self.control_point_for_sample_ubo = None
 
         self.b_spline_body_vao = None
         self.b_spline_body_renderer_shader = None
@@ -36,9 +39,9 @@ class GLProxy:
         self.tessellation_factor_is_change = False
         self._show_control_point = True
 
-        self.vertex_vbo = None
-        self.normal_vbo = None
-        self.index_vbo = None
+        self.vertex_vbo = None  # type: ACVBO
+        self.normal_vbo = None  # type: ACVBO
+        self.index_vbo = None  # type: ACVBO
 
         self.x1 = None
         self.y1 = None
@@ -54,6 +57,8 @@ class GLProxy:
         self.adjacency_info_ssbo = None
         self.share_adjacency_pn_triangle_ssbo = None
         self.splited_triangle_ssbo = None
+        self.splited_triangle_counter_acbo = None
+        self.control_point_for_sample_ubo = None
 
     def draw(self, model_view_matrix, perspective_matrix):
         if not self.is_inited:
@@ -89,22 +94,76 @@ class GLProxy:
         # 分割后三角形的计数器
         self.splited_triangle_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 0, None, GL_DYNAMIC_DRAW)
 
-        # 分割三角形的Pattern, 由于这些数据是是不变的，所以在程序初始化的时候传入即可
+        # 变形要用到的buffer
+        # 加速采样后的控制顶点
+        self.control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)
+
+        # 经过tessellate后最终用于绘制的数据。
+        # vertice_vbo
+        # normal_vbo
+        # index_vbo
+        self.vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)
+        self.normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)
+        self.index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)
+        self.model_vao = glGenVertexArrays(1)
+        glBindVertexArray(self.model_vao)
+        # set vertice attribute
+        self.vertex_vbo.as_array_buffer(0, 4, GL_FLOAT)
+        # set normal attribute
+        self.normal_vbo.as_array_buffer(1, 4, GL_FLOAT)
+        # specific index buffer
+        self.index_vbo.as_element_array_buffer()
+        # unbind program
+        glBindVertexArray(0)
+        # self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
+
+        # init previous compute shader
+        self.previous_compute_shader = PrevComputeProgramWrap('previous_compute_shader_oo.glsl')
 
         self.gl_init_for_model()
 
-        # run previous compute shader
-        self.previous_compute_shader = PrevComputeProgramWrap('previous_compute_shader_oo.glsl')
+        self.model_renderer_shader = DrawProgramWrap('vertex.glsl', 'fragment.glsl')
 
-        self.prev_computer()
+        self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
+                                                              self.splited_triangle_number, self.b_spline_body)
+        self.need_deform = True
 
-        self.init_renderer_model_buffer()
+        # buffer for b_spline
+        self.b_spline_body_vao = glGenVertexArrays(1)
+        glBindVertexArray(self.b_spline_body_vao)
 
-        self.init_renderer_b_spline_buffer()
+        self.b_spline_body_renderer_shader = DrawProgramWrap('aux.v.glsl', 'aux.f.glsl')
+        glUseProgram(self.b_spline_body_renderer_shader.get_program())
+
+        vbos = glGenBuffers(2)
+        self.control_point_vertex_vbo = vbos[0]
+        glBindBuffer(GL_ARRAY_BUFFER, self.control_point_vertex_vbo)
+        vertices = self.b_spline_body.ctrlPoints
+        glBufferData(GL_ARRAY_BUFFER, vertices.size * vertices.itemsize, vertices,
+                     usage=GL_STATIC_DRAW)
+        vl = glGetAttribLocation(self.b_spline_body_renderer_shader.get_program(), 'vertice')
+        glEnableVertexAttribArray(vl)
+        glVertexAttribPointer(vl, 3, GL_FLOAT, False, 0, None)
+
+        self.control_point_color_vbo = vbos[1]
+        glBindBuffer(GL_ARRAY_BUFFER, self.control_point_color_vbo)
+        hits = self.b_spline_body.is_hit
+        glBufferData(GL_ARRAY_BUFFER, len(hits) * 4, numpy.array(hits, dtype='float32'),
+                     usage=GL_DYNAMIC_DRAW)
+        hl = glGetAttribLocation(self.b_spline_body_renderer_shader.get_program(), 'isHit')
+        glEnableVertexAttribArray(hl)
+        glVertexAttribPointer(hl, 1, GL_FLOAT, False, 0, None)
+        glUseProgram(0)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        glBindVertexArray(0)
 
         self.is_inited = True
 
-    def gl_init_for_model(self):
+    def gl_init_for_model(self) -> None:
+        '''
+        必须在预计算之后调用
+        :return:
+        '''
         # alloc memory in gpu for splited vertex
         self.original_vertex_ssbo.async_update(self.model.vertex)
         self.original_vertex_ssbo.gl_sync()
@@ -123,9 +182,30 @@ class GLProxy:
         # 用于储存原始三角面片的PN-triangle
         self.splited_triangle_ssbo.capacity = self.model.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE * SPLITED_TRIANGLE_SIZE
         self.splited_triangle_ssbo.gl_sync()
+        # b_spline_body相关信息
+        self.gl_init_for_b_spline()
+
+        # 预计算（分割三角形） 初始化下列buffer的时候需要用到分割后的三角形，所以要先分割
+        self.prev_computer()
+
+        # alloc memory in gpu for tessellated vertex
+        self.vertex_vbo.capacity = self.splited_triangle_number * self._tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        self.vertex_vbo.gl_sync()
+        # alloc memory in gpu for tessellated normal
+        self.normal_vbo.capacity = self.splited_triangle_number * self._tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        self.normal_vbo.gl_sync()
+        # alloc memory in gpu for tessellated index
+        self.index_vbo.capacity = self.splited_triangle_number \
+                                  * self._tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
+        self.index_vbo.gl_sync()
+
+    def gl_init_for_b_spline(self):
         # init b_spline_body_ubo copy BSpline body info to gpu
         self.b_spline_body_ubo.async_update(self.b_spline_body.get_info())
         self.b_spline_body_ubo.gl_sync()
+        # init control_point_for_sample_ubo
+        self.control_point_for_sample_ubo.async_update(self.b_spline_body.get_control_point_for_sample())
+        self.control_point_for_sample_ubo.gl_sync()
 
     def init_renderer_b_spline_buffer(self):
         if self.b_spline_body_vao is None:
@@ -238,9 +318,8 @@ class GLProxy:
             if self.tessellation_factor_is_change:
                 self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
             glUseProgram(self.deform_compute_shader.get_program())
-            new_control_points = self.b_spline_body.get_control_point_for_sample()
-            bind_ubo(self.control_point_for_sample_ubo, 1, new_control_points,
-                     new_control_points.size * new_control_points.itemsize)
+            self.control_point_for_sample_ubo.async_update(self.b_spline_body.get_control_point_for_sample())
+            self.control_point_for_sample_ubo.gl_sync()
             glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
             self.need_deform = False
         glUseProgram(self.model_renderer_shader.get_program())
@@ -279,11 +358,10 @@ class GLProxy:
 
         self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
                                                               self.splited_triangle_number, self.b_spline_body)
-        self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
+        # self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
         # copy control point info to gpu
-        new_control_points = self.b_spline_body.get_control_point_for_sample()
-        bind_ubo(self.control_point_for_sample_ubo, 1, new_control_points,
-                 new_control_points.size * new_control_points.itemsize)
+        self.control_point_for_sample_ubo.async_update(self.b_spline_body.get_control_point_for_sample())
+        self.control_point_for_sample_ubo.gl_sync()
         # init compute shader before every frame
         glUseProgram(self.deform_compute_shader.get_program())
         glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
@@ -315,7 +393,7 @@ class GLProxy:
         # alloc memory in gpu for tessellated vertex
         bind_ssbo(vertex_vbo, 6, None,
                   self.splited_triangle_number *
-                  self.deform_compute_shader.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
+                  self._tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
                   np.float32, GL_DYNAMIC_DRAW)
         # alloc memory in gpu for tessellated normal
         bind_ssbo(normal_vbo, 7, None,

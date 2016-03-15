@@ -54,3 +54,12 @@ class ACVBO:
         if self._capacity <= 0:
             raise Exception("capacity error")
         return self._capacity
+
+    def as_array_buffer(self, location, size, type):
+        glBindBuffer(GL_ARRAY_BUFFER, self._buffer_name)
+        glEnableVertexAttribArray(location)
+        glVertexAttribPointer(location, size, type, False, 0, None)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+    def as_element_array_buffer(self):
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._buffer_name)
