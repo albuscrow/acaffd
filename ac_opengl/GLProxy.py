@@ -314,10 +314,14 @@ class GLProxy:
             if self.tessellation_factor_is_change:
                 self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
             glUseProgram(self.deform_compute_shader.get_program())
+            # self.deform_compute_shader.test()
             self.control_point_for_sample_ubo.async_update(self.b_spline_body.get_control_point_for_sample())
             self.control_point_for_sample_ubo.gl_sync()
             glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
             self.need_deform = False
+
+
+
         glUseProgram(self.model_renderer_shader.get_program())
         # common bind
         wvp_matrix = multiply(model_view_matrix, perspective_matrix)
@@ -328,7 +332,7 @@ class GLProxy:
         glEnable(GL_DEPTH_TEST)
         glDrawElements(GL_TRIANGLES, int(
             self.splited_triangle_number *
-            self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * 3),
+            self.deform_compute_shader._tessellated_triangle_number_pre_splited_triangle * 3),
                        GL_UNSIGNED_INT, None)
         # glDrawElements(GL_TRIANGLES, int(self.splited_triangle_number * 1 * 3), GL_UNSIGNED_INT, None)
         glUseProgram(0)
@@ -353,6 +357,7 @@ class GLProxy:
         self.control_point_for_sample_ubo.gl_sync()
         # init compute shader before every frame
         glUseProgram(self.deform_compute_shader.get_program())
+        # self.deform_compute_shader.test()
         glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
         # check compute result
         # self.print_vbo(normal_vbo, len(obj.normal) / 4)

@@ -68,7 +68,7 @@ class Controller(QObject):
         # raw_obj = OBJ("res/3d_model/test_same_normal.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("res/3d_model/star.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("res/3d_model/legoDog.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/test_2_triangle.obj", ModelFileFormatType.obj)
+        raw_obj = OBJ("res/3d_model/test_2_triangle.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("res/3d_model/Mobile.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("res/3d_model/biship_cym_area_average_normal.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("res/3d_model/test_2_triangle.obj", ModelFileFormatType.obj)
@@ -77,7 +77,7 @@ class Controller(QObject):
         # raw_obj = OBJ("res/3d_model/vase_cym.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("res/3d_model/sphere.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("res/3d_model/wheel.obj", ModelFileFormatType.obj)
-        raw_obj = OBJ("res/3d_model/Mobile.obj", ModelFileFormatType.obj)
+        # raw_obj = OBJ("res/3d_model/Mobile.obj", ModelFileFormatType.obj)
         self.model = GLProxy(raw_obj)
 
     @pyqtSlot(int, int)

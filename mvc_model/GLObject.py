@@ -46,8 +46,16 @@ class ACVBO:
         glBindBuffer(self._target, self._buffer_name)
         pointer_to_buffer = glMapBuffer(self._target, GL_READ_ONLY)
         vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(buffer_type))
-        vbo_array = np.ctypeslib.as_array(vbo_pointer, (1,))
-        glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER)
+        vbo_array = np.ctypeslib.as_array(vbo_pointer, (1, ))
+        glUnmapBuffer(self._target)
+        return vbo_array
+
+    def get_value2(self, buffer_type):
+        glBindBuffer(self._target, self._buffer_name)
+        pointer_to_buffer = glMapBuffer(self._target, GL_READ_ONLY)
+        vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(buffer_type))
+        vbo_array = np.ctypeslib.as_array(vbo_pointer, (100, 4))
+        glUnmapBuffer(self._target)
         return vbo_array
 
     def __len__(self) -> int:

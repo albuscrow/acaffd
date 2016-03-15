@@ -7,11 +7,9 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtQml import qmlRegisterType, QQmlComponent, QQmlEngine, QQmlListProperty
 import sys
 from mvc_view.FFDScene import FFDScene
-from mvc_control.controller import Controller
 
 __author__ = 'ac'
 # logging.basicConfig(level=logging.DEBUG)
-
 app = QGuiApplication(sys.argv)
 
 qmlRegisterType(FFDScene, 'FFD', 1, 0, "FFDScene")

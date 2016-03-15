@@ -42,6 +42,11 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
     uint[] tessellatedIndex;
 };
 
+//debug
+layout(std430, binding=14) buffer OutputDebugBuffer{
+    vec4[] myOutputBuffer;
+};
+
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 
 const float Mr[370] = {
@@ -61,7 +66,10 @@ layout(location=0) uniform uint triangleNumber;
 layout(location=1) uniform uint vw;
 layout(location=2) uniform uint w;
 layout(location=3) uniform vec3 stride;
-!?include1
+uniform vec3 tessellatedParameter[10];
+uniform uint tessellatedParameterLength;
+uniform uvec3 tessellateIndex[9];
+uniform uint tessellateIndexLength;
 
 const vec3 ZERO3 = vec3(0.0001, 0.0001, 0.0001);
 
@@ -154,20 +162,20 @@ void main() {
     // 细分
     // 生成顶点数据
     uint point_index[100];
-    for (int i = 0; i < tessellatedParameter.length(); ++i) {
+    for (int i = 0; i < tessellatedParameterLength; ++i) {
         vec3 pointParameter = tessellatedParameter[i];
-        uint point_offset = triangleIndex * tessellatedParameter.length() + i;
+        uint point_offset = triangleIndex * tessellatedParameterLength + i;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         point_index[i] = point_offset;
     }
     // 生成index数据
-    for (int i = 0; i < tessellateIndex.length(); ++i) {
+    for (int i = 0; i < tessellateIndexLength; ++i) {
         uvec3 index = tessellateIndex[i];
-        uint index_offset = triangleIndex * tessellateIndex.length() + i;
-        tessellatedIndex[index_offset * 3] = point_index[index.x];
-        tessellatedIndex[index_offset * 3 + 1] = point_index[index.y];
-        tessellatedIndex[index_offset * 3 + 2] = point_index[index.z];
+        uint index_offset = triangleIndex * tessellateIndexLength + i;
+        for (int j = 0; j < 3; ++j) {
+            tessellatedIndex[index_offset * 3 + j] = point_index[index[j]];
+        }
     }
 }
 
