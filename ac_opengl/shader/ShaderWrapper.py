@@ -144,7 +144,6 @@ class DrawProgramWrap(ShaderProgramWrap):
     def select_region(self, rect: ACRect):
         self._need_select = True
 
-
 class DeformComputeProgramWrap(ShaderProgramWrap):
     def __init__(self, file_name, splited_triangle_number, b_spline_body, tessellation_factor=3):
         super().__init__()
