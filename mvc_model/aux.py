@@ -31,29 +31,37 @@ class BSplineBody:
         self.lv = ly
         self.lw = lz
 
-        self.ctrlPoints = None
+        self._ctrlPoints = None
         self.control_points_backup = None
-        self.is_hit = None
+        self._is_hit = None
 
         self.init_data()
 
     def init_data(self):
-        self.ctrlPoints = np.zeros((self.control_point_number_u,
-                                    self.control_point_number_v,
-                                    self.control_point_number_w,
-                                    3), dtype=np.float32)
+        self._ctrlPoints = np.zeros((self.control_point_number_u,
+                                     self.control_point_number_v,
+                                     self.control_point_number_w,
+                                     3), dtype=np.float32)
         aux_x = self.get_control_point_aux_list(self.lu, self.control_point_number_u, self.order_u)
         aux_y = self.get_control_point_aux_list(self.lv, self.control_point_number_v, self.order_v)
         aux_z = self.get_control_point_aux_list(self.lw, self.control_point_number_w, self.order_w)
         for u, x in enumerate(aux_x):
             for v, y in enumerate(aux_y):
                 for w, z in enumerate(aux_z):
-                    self.ctrlPoints[u, v, w] = [x, y, z]
-        self.control_points_backup = self.ctrlPoints.copy()
+                    self._ctrlPoints[u, v, w] = [x, y, z]
+        self.control_points_backup = self._ctrlPoints.copy()
         self.reset_is_hit()
 
     def reset_is_hit(self):
-        self.is_hit = [False] * self.control_point_number_u * self.control_point_number_v * self.control_point_number_w
+        self._is_hit = [False] * self.control_point_number_u * self.control_point_number_v * self.control_point_number_w
+
+    @property
+    def is_hit(self):
+        return np.array(self._is_hit, dtype=np.float32)
+
+    @property
+    def control_points(self):
+        return np.array(self._ctrlPoints, dtype=np.float32)
 
     @staticmethod
     def get_control_point_aux_list(length, control_point_number, order):
@@ -89,12 +97,12 @@ class BSplineBody:
     def move(self, x, y, z):
         # self.ctrlPoints = self.control_points_backup
         # self.move_dffd([1, 0.5, 0.5], [0.5, 0.5, 0.5])
-        for i, is_hit in enumerate(self.is_hit):
+        for i, is_hit in enumerate(self._is_hit):
             if is_hit:
                 u = i // (self.control_point_number_v * self.control_point_number_w)
                 v = i % (self.control_point_number_v * self.control_point_number_w) // self.control_point_number_w
                 w = i % self.control_point_number_w
-                self.ctrlPoints[u, v, w] += [d / 10 for d in [x, y, z]]
+                self._ctrlPoints[u, v, w] += [d / 10 for d in [x, y, z]]
 
     def get_info(self):
         return np.array(
@@ -128,7 +136,7 @@ class BSplineBody:
 
             intermediate_results_1 = np.zeros((self.order_u, self.order_v, self.order_w, 3))
             for w in range(self.order_w):
-                control_points = self.ctrlPoints[control_point_base_u:control_point_base_u + self.order_u,
+                control_points = self._ctrlPoints[control_point_base_u:control_point_base_u + self.order_u,
                                  control_point_base_v:control_point_base_v + self.order_v,
                                  control_point_base_w + w]
                 intermediate_results_1[..., w, 0] = mu.dot(control_points[..., 0])
@@ -187,7 +195,7 @@ class BSplineBody:
                 range(self.control_point_number_v),
                 range(self.control_point_number_w)):
             k_aux = displacement * Rs[i, j, k] / aux
-            self.ctrlPoints[i, j, k] += k_aux
+            self._ctrlPoints[i, j, k] += k_aux
 
     def R(self, parameter, i, j, k):
         return self.B(self.get_knots(self.lu, self.order_u, self.control_point_number_u), self.order_u, i, parameter[0]) \

@@ -15,7 +15,10 @@ class ACVBO:
             self._capacity = -1  # type: int
         self._dirty = True  # type: bool
         self._usage_hint = usage_hint
-        self._is_bind = False
+        if target == GL_ARRAY_BUFFER:
+            self._is_bind = True
+        else:
+            self._is_bind = False
 
     @property
     def capacity(self):

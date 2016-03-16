@@ -59,6 +59,8 @@ class GLProxy:
         self.splited_triangle_ssbo = None
         self.splited_triangle_counter_acbo = None
         self.control_point_for_sample_ubo = None
+        self._control_point_vbo_position = None
+        self._control_point_vbo_color = None
 
     def draw(self, model_view_matrix, perspective_matrix):
         if not self.is_inited:
@@ -115,7 +117,20 @@ class GLProxy:
         self.index_vbo.as_element_array_buffer()
         # unbind program
         glBindVertexArray(0)
-        # self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
+
+        # buffer for b_spline
+        self._control_point_vbo_position = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)
+        self._control_point_vbo_color = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)
+        self.b_spline_body_vao = glGenVertexArrays(1)
+        glBindVertexArray(self.b_spline_body_vao)
+        self._control_point_vbo_position.as_array_buffer(0, 3, GL_FLOAT)
+        self._control_point_vbo_color.as_array_buffer(1, 1, GL_FLOAT)
+        glBindVertexArray(0)
+
+        self._control_point_vbo_position.async_update(self.b_spline_body.control_points)
+        self._control_point_vbo_position.gl_sync()
+        self._control_point_vbo_color.async_update(self.b_spline_body.is_hit)
+        self._control_point_vbo_color.gl_sync()
 
         # init previous compute shader
         self.previous_compute_shader = PrevComputeProgramWrap('previous_compute_shader_oo.glsl')
@@ -128,34 +143,7 @@ class GLProxy:
                                                               self.splited_triangle_number, self.b_spline_body)
         self.need_deform = True
 
-        # buffer for b_spline
-        self.b_spline_body_vao = glGenVertexArrays(1)
-        glBindVertexArray(self.b_spline_body_vao)
-
         self.b_spline_body_renderer_shader = DrawProgramWrap('aux.v.glsl', 'aux.f.glsl')
-        glUseProgram(self.b_spline_body_renderer_shader.get_program())
-
-        vbos = glGenBuffers(2)
-        self.control_point_vertex_vbo = vbos[0]
-        glBindBuffer(GL_ARRAY_BUFFER, self.control_point_vertex_vbo)
-        vertices = self.b_spline_body.ctrlPoints
-        glBufferData(GL_ARRAY_BUFFER, vertices.size * vertices.itemsize, vertices,
-                     usage=GL_STATIC_DRAW)
-        vl = glGetAttribLocation(self.b_spline_body_renderer_shader.get_program(), 'vertice')
-        glEnableVertexAttribArray(vl)
-        glVertexAttribPointer(vl, 3, GL_FLOAT, False, 0, None)
-
-        self.control_point_color_vbo = vbos[1]
-        glBindBuffer(GL_ARRAY_BUFFER, self.control_point_color_vbo)
-        hits = self.b_spline_body.is_hit
-        glBufferData(GL_ARRAY_BUFFER, len(hits) * 4, numpy.array(hits, dtype='float32'),
-                     usage=GL_DYNAMIC_DRAW)
-        hl = glGetAttribLocation(self.b_spline_body_renderer_shader.get_program(), 'isHit')
-        glEnableVertexAttribArray(hl)
-        glVertexAttribPointer(hl, 1, GL_FLOAT, False, 0, None)
-        glUseProgram(0)
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
-        glBindVertexArray(0)
 
         self.is_inited = True
 
@@ -214,7 +202,7 @@ class GLProxy:
             vbos = glGenBuffers(2)
             self.control_point_vertex_vbo = vbos[0]
             glBindBuffer(GL_ARRAY_BUFFER, self.control_point_vertex_vbo)
-            vertices = self.b_spline_body.ctrlPoints
+            vertices = self.b_spline_body._ctrlPoints
             glBufferData(GL_ARRAY_BUFFER, vertices.size * vertices.itemsize, vertices,
                          usage=GL_STATIC_DRAW)
             vl = glGetAttribLocation(self.b_spline_body_renderer_shader.get_program(), 'vertice')
@@ -223,7 +211,7 @@ class GLProxy:
 
             self.control_point_color_vbo = vbos[1]
             glBindBuffer(GL_ARRAY_BUFFER, self.control_point_color_vbo)
-            hits = self.b_spline_body.is_hit
+            hits = self.b_spline_body._is_hit
             glBufferData(GL_ARRAY_BUFFER, len(hits) * 4, numpy.array(hits, dtype='float32'),
                          usage=GL_DYNAMIC_DRAW)
             hl = glGetAttribLocation(self.b_spline_body_renderer_shader.get_program(), 'isHit')
@@ -236,12 +224,12 @@ class GLProxy:
             glBindVertexArray(self.b_spline_body_vao)
 
             glBindBuffer(GL_ARRAY_BUFFER, self.control_point_vertex_vbo)
-            vertices = self.b_spline_body.ctrlPoints
+            vertices = self.b_spline_body._ctrlPoints
             glBufferData(GL_ARRAY_BUFFER, vertices.size * vertices.itemsize, vertices,
                          usage=GL_STATIC_DRAW)
 
             glBindBuffer(GL_ARRAY_BUFFER, self.control_point_color_vbo)
-            hits = self.b_spline_body.is_hit
+            hits = self.b_spline_body._is_hit
             glBufferData(GL_ARRAY_BUFFER, len(hits) * 4, numpy.array(hits, dtype='float32'),
                          usage=GL_DYNAMIC_DRAW)
 
@@ -255,11 +243,8 @@ class GLProxy:
         if self.need_select:
             self.select_control_point(model_view_matrix, perspective_matrix)
         if self.need_update_control_point:
-            glBindBuffer(GL_ARRAY_BUFFER, self.control_point_vertex_vbo)
-            vertices = self.b_spline_body.ctrlPoints
-            glBufferData(GL_ARRAY_BUFFER, vertices.size * vertices.itemsize, vertices,
-                         usage=GL_STATIC_DRAW)
-            glBindBuffer(GL_ARRAY_BUFFER, 0)
+            self._control_point_vbo_position.async_update(self.b_spline_body.control_points)
+            self._control_point_vbo_position.gl_sync()
             self.need_update_control_point = False
 
         # common bind
@@ -301,10 +286,10 @@ class GLProxy:
         hit_info = glRenderMode(GL_RENDER)
         for r in hit_info:
             for select_name in r.names:
-                self.b_spline_body.is_hit[select_name] = True
-        glBindBuffer(GL_ARRAY_BUFFER, self.control_point_color_vbo)
-        glBufferSubData(GL_ARRAY_BUFFER, 0, len(self.b_spline_body.is_hit) * 4,
-                        numpy.array(self.b_spline_body.is_hit, dtype='float32'))
+                self.b_spline_body._is_hit[select_name] = True
+
+        self._control_point_vbo_color.async_update(self.b_spline_body.is_hit)
+        self._control_point_vbo_color.gl_sync()
         self.need_select = False
 
     def deform_and_draw_model(self, model_view_matrix, perspective_matrix):
@@ -319,8 +304,6 @@ class GLProxy:
             self.control_point_for_sample_ubo.gl_sync()
             glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
             self.need_deform = False
-
-
 
         glUseProgram(self.model_renderer_shader.get_program())
         # common bind
