@@ -30,8 +30,8 @@ class ShaderWrap:
 
 class ProgramWrap:
     def __init__(self):
-        self._gl_program_name = None
-        self._shaders = []
+        self._gl_program_name = -1  # type: int
+        self._shaders = []  # type: list
 
     @property
     def program(self):
@@ -42,11 +42,16 @@ class ProgramWrap:
         return self
 
     def link(self):
-        self._gl_program_name = compileProgram(*[s.shader for s in self._shaders])
+        self._gl_program_name = compileProgram(*[s.compile().shader for s in self._shaders])
         return self
 
     def init_data(self):
         pass
+
+    def use(self):
+        if self._gl_program_name == -1:
+            self.link()
+        glUseProgram(self._gl_program_name)
 
     def __del__(self):
         glDeleteProgram(self._gl_program_name)

@@ -50,9 +50,9 @@ class BSplineBody:
                 for w, z in enumerate(aux_z):
                     self._ctrlPoints[u, v, w] = [x, y, z]
         self.control_points_backup = self._ctrlPoints.copy()
-        self.reset_is_hit()
+        self.reset_hit_record()
 
-    def reset_is_hit(self):
+    def reset_hit_record(self):
         self._is_hit = [False] * self.control_point_number_u * self.control_point_number_v * self.control_point_number_w
 
     @property
@@ -94,15 +94,13 @@ class BSplineBody:
         else:
             raise Exception('control point number can not less than order')
 
-    def move(self, x, y, z):
-        # self.ctrlPoints = self.control_points_backup
-        # self.move_dffd([1, 0.5, 0.5], [0.5, 0.5, 0.5])
+    def move(self, xyz):
         for i, is_hit in enumerate(self._is_hit):
             if is_hit:
                 u = i // (self.control_point_number_v * self.control_point_number_w)
                 v = i % (self.control_point_number_v * self.control_point_number_w) // self.control_point_number_w
                 w = i % self.control_point_number_w
-                self._ctrlPoints[u, v, w] += [d / 10 for d in [x, y, z]]
+                self._ctrlPoints[u, v, w] += xyz
 
     def get_info(self):
         return np.array(
@@ -199,8 +197,10 @@ class BSplineBody:
 
     def R(self, parameter, i, j, k):
         return self.B(self.get_knots(self.lu, self.order_u, self.control_point_number_u), self.order_u, i, parameter[0]) \
-               * self.B(self.get_knots(self.lv, self.order_v, self.control_point_number_v), self.order_v, j, parameter[1]) \
-               * self.B(self.get_knots(self.lw, self.order_w, self.control_point_number_w), self.order_w, k, parameter[2])
+               * self.B(self.get_knots(self.lv, self.order_v, self.control_point_number_v), self.order_v, j,
+                        parameter[1]) \
+               * self.B(self.get_knots(self.lw, self.order_w, self.control_point_number_w), self.order_w, k,
+                        parameter[2])
 
     def B(self, knots, order, i, t):
         temp = [0] * order
