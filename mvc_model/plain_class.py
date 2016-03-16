@@ -33,6 +33,22 @@ class ACRect:
         return self._y
 
     @property
+    def x1(self):
+        return self._x
+
+    @property
+    def y1(self):
+        return self._y
+
+    @property
+    def x2(self):
+        return self._x + self._w
+
+    @property
+    def y2(self):
+        return self._y + self._h
+
+    @property
     def w(self):
         return self._w
 

@@ -19,7 +19,7 @@ class GLProxy:
         self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_factor * self._tessellation_factor
 
         self.model = model
-        self.b_spline_body = BSplineBody(*self.model.get_length_xyz())
+        self.b_spline_body = BSplineBody(*self.model.get_length_xyz())  # type: BSplineBody
 
         self.model_vao = None
         self.splited_triangle_number = 0
@@ -286,7 +286,7 @@ class GLProxy:
         hit_info = glRenderMode(GL_RENDER)
         for r in hit_info:
             for select_name in r.names:
-                self.b_spline_body._is_hit[select_name] = True
+                self.b_spline_body.hit_point(select_name)
 
         self._control_point_vbo_color.async_update(self.b_spline_body.is_hit)
         self._control_point_vbo_color.gl_sync()
@@ -300,6 +300,7 @@ class GLProxy:
                 self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
             glUseProgram(self.deform_compute_shader.get_program())
             # self.deform_compute_shader.test()
+            # todo
             self.control_point_for_sample_ubo.async_update(self.b_spline_body.get_control_point_for_sample())
             self.control_point_for_sample_ubo.gl_sync()
             glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)

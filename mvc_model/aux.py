@@ -236,6 +236,10 @@ class BSplineBody:
         res += [length / 2] * order
         return res
 
+    def hit_point(self, select_name):
+        self._is_hit[select_name] = True
+
+
 def aux_multiply(value, v, result):
     result[0] += value * v[0]
     result[1] += value * v[1]

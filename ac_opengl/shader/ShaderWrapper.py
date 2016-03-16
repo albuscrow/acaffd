@@ -1,16 +1,19 @@
 from OpenGL.GL import *
+from OpenGL.GLU import *
 from OpenGL.GL.shaders import *
 import numpy as np
 from OpenGL.raw.GL.ARB.uniform_buffer_object import GL_UNIFORM_BUFFER
 
 from mvc_model.GLObject import ACVBO
+from mvc_model.aux import BSplineBody
+from mvc_model.plain_class import ACRect
 
 __author__ = 'ac'
 
 
 class ShaderProgramWrap:
     def __init__(self):
-        self.program = None
+        self._program = None
         self.shaders_info = []
 
     def add_shader(self, shader_type, file_name):
@@ -28,10 +31,10 @@ class ShaderProgramWrap:
                     self.prev_compile_source_code(self.get_source_code(f)),
                     t))
 
-        if self.program is None:
-            self.program = compileProgram(*shaders)
+        if self._program is None:
+            self._program = compileProgram(*shaders)
             self.init_uniform()
-        return self.program
+        return self._program
 
     def init_uniform(self):
         pass
@@ -45,9 +48,9 @@ class ShaderProgramWrap:
         return source_code
 
     def invalid_program(self):
-        if self.program is not None:
-            glDeleteProgram(self.program)
-            self.program = None
+        if self._program is not None:
+            glDeleteProgram(self._program)
+            self._program = None
         self.shaders_info = []
 
 
@@ -80,7 +83,7 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
 
     def init_uniform(self):
-        glProgramUniform1f(self.program, 0, self._split_factor)
+        glProgramUniform1f(self._program, 0, self._split_factor)
 
     @property
     def offset_number(self):
@@ -101,7 +104,7 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
     @split_factor.setter
     def split_factor(self, split_factor):
         self._split_factor = split_factor
-        glProgramUniform1f(self.program, 0, self._split_factor)
+        glProgramUniform1f(self._program, 0, self._split_factor)
 
     def get_offset_for_i(self) -> str:
         look_up_table_for_i = [0]
@@ -126,11 +129,20 @@ class PrevComputeProgramWrap(ShaderProgramWrap):
 
 
 class DrawProgramWrap(ShaderProgramWrap):
-    def __init__(self, vertex_shader_file_name, fragment_shader_file_name):
+    def __init__(self, vertex_shader_file_name: str, fragment_shader_file_name: str):
         super().__init__()
         self._file_name_prefix = 'ac_opengl/shader/renderer/'
         super().add_shader(GL_VERTEX_SHADER, self._file_name_prefix + vertex_shader_file_name)
         super().add_shader(GL_FRAGMENT_SHADER, self._file_name_prefix + fragment_shader_file_name)
+        self._need_select = False  # type: bool
+
+    @property
+    def select_region(self):
+        return self._select_region
+
+    @select_region.setter
+    def select_region(self, rect: ACRect):
+        self._need_select = True
 
 
 class DeformComputeProgramWrap(ShaderProgramWrap):
@@ -208,6 +220,7 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
         tp.gl_sync()
         ti = ACVBO(GL_UNIFORM_BUFFER, 3, np.array(self._tessellation_index, dtype=np.uint32), GL_STATIC_DRAW)
         ti.gl_sync()
+
 
 # test code
 if __name__ == '__main__':
