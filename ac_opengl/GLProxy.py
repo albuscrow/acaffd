@@ -32,9 +32,7 @@ class GLProxy:
         self.model_renderer_shader = None
         self.need_deform = False
 
-        self.b_spline_body_vao = None
-        # self.b_spline_body_renderer_shader = None
-        self.b_spline_body_ubo = None
+        # self.b_spline_body_ubo = None
         self.control_point_vertex_vbo = None
         self.control_point_color_vbo = None
         self.is_inited = False
@@ -74,12 +72,13 @@ class GLProxy:
                 t()
             self.task.clear()
 
-        self._embed_body_controller.gl_draw(model_view_matrix, perspective_matrix)
         self.deform_and_draw_model(model_view_matrix, perspective_matrix)
+        self._embed_body_controller.gl_draw(model_view_matrix, perspective_matrix)
 
 
     def gl_init_global(self):
         self._embed_body_controller.gl_init()
+        self._embed_body_controller.gl_sync_buffer_for_previous_computer()
         # init code for openGL
         # create ssbo
         # 原始顶点数据,也是顶点在b样条体中的参数;要满足这一条件必须使控制顶点和节点向量满足一定条件。
@@ -96,7 +95,6 @@ class GLProxy:
         self.adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_STATIC_DRAW)
         self.share_adjacency_pn_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_STATIC_DRAW)
         self.splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
-        self.b_spline_body_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)
 
         # 分割后三角形的计数器
         self.splited_triangle_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 0, None, GL_DYNAMIC_DRAW)
@@ -155,8 +153,6 @@ class GLProxy:
         # 用于储存原始三角面片的PN-triangle
         self.splited_triangle_ssbo.capacity = self.model.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE * SPLITED_TRIANGLE_SIZE
         self.splited_triangle_ssbo.gl_sync()
-        # b_spline_body相关信息
-        self.gl_init_for_b_spline()
 
         # 预计算（分割三角形） 初始化下列buffer的时候需要用到分割后的三角形，所以要先分割
         self.prev_computer()
@@ -172,10 +168,9 @@ class GLProxy:
                                   * self._tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
         self.index_vbo.gl_sync()
 
-    def gl_init_for_b_spline(self):
+    # def gl_init_for_b_spline(self):
         # init b_spline_body_ubo copy BSpline body info to gpu
-        self.b_spline_body_ubo.async_update(self.b_spline_body.get_info())
-        self.b_spline_body_ubo.gl_sync()
+        # self.b_spline_body_ubo.gl_sync()
         # init control_point_for_sample_ubo
         # self.control_point_for_sample_ubo.async_update(self.b_spline_body.get_control_point_for_sample())
         # self.control_point_for_sample_ubo.gl_sync()
@@ -187,7 +182,7 @@ class GLProxy:
             if self.tessellation_factor_is_change:
                 self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
             glUseProgram(self.deform_compute_shader.get_program())
-            # self.control_point_for_sample_ubo.gl_sync()
+            self._embed_body_controller.gl_sync_buffer_for_deformation()
             glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
             self.need_deform = False
 
@@ -269,11 +264,11 @@ class GLProxy:
                   self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE,
                   np.uint32, GL_DYNAMIC_DRAW)
 
-    def load_b_spline_body_to_gpu(self):
+    # def load_b_spline_body_to_gpu(self):
         # 更新b样条体相关信息
         bspline_body_info = self.b_spline_body.get_info()
-        self.b_spline_body_ubo.async_update(bspline_body_info)
-        self.b_spline_body_ubo.gl_sync()
+        # self.b_spline_body_ubo.async_update(bspline_body_info)
+        # self.b_spline_body_ubo.gl_sync()
 
     def prev_computer(self):
         # 用于同步
@@ -292,7 +287,6 @@ class GLProxy:
 
     def move_control_points(self, x, y, z):
         self._embed_body_controller.move_selected_control_points([x, y, z])
-        # self.control_point_for_sample_ubo.async_update(self._embed_body_controller.get_control_point_for_sample())
         self.need_deform = True
 
     def change_tessellation_level(self, level):
@@ -304,7 +298,6 @@ class GLProxy:
         self.b_spline_body.change_control_point(u, v, w)
 
         with self.lock:
-            self.task.append(self.load_b_spline_body_to_gpu)
             self.task.append(self.prev_computer)
             self.task.append(self.init_renderer_model_buffer)
 

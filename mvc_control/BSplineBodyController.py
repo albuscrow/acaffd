@@ -28,7 +28,8 @@ class BSplineBodyController:
             .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_prefix('aux.f.glsl')))
         self._control_point_position_vbo = None  # type: ACVBO
         self._control_point_color_vbo = None  # type: ACVBO
-        self._control_point_for_sample_ubo = None
+        self._control_point_for_sample_ubo = None # type: ACVBO
+        self._b_spline_body_info_ubo = None  # type: ACVBO
         self._vao = -1  # type: int
         self._visibility = True  # type: bool
         self._pick_region = None  # type: ACRect
@@ -39,6 +40,7 @@ class BSplineBodyController:
         self._control_point_position_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)
         self._control_point_color_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)
         self._control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)
+        self._b_spline_body_info_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)
 
         # init vao
         self._vao = glGenVertexArrays(1)
@@ -54,10 +56,16 @@ class BSplineBodyController:
         self._control_point_position_vbo.async_update(self._b_spline_body.control_points)
         self._control_point_color_vbo.async_update(self._b_spline_body.is_hit)
         self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
+        self._b_spline_body_info_ubo.async_update(self._b_spline_body.get_info())
 
-    def gl_sync_buffer(self):
+    def gl_sync_buffer_for_self(self):
         self._control_point_position_vbo.gl_sync()
         self._control_point_color_vbo.gl_sync()
+
+    def gl_sync_buffer_for_previous_computer(self):
+        self._b_spline_body_info_ubo.gl_sync()
+
+    def gl_sync_buffer_for_deformation(self):
         self._control_point_for_sample_ubo.gl_sync()
 
     def gl_draw(self, model_view_matrix: np.array, perspective_matrix: np.array):
@@ -68,7 +76,7 @@ class BSplineBodyController:
         self._program.use()
         glBindVertexArray(self._vao)
         self.gl_pick_control_point(model_view_matrix, perspective_matrix)
-        self.gl_sync_buffer()
+        self.gl_sync_buffer_for_self()
         self.gl_draw_control_points(model_view_matrix, perspective_matrix)
         glBindVertexArray(0)
         glUseProgram(0)
@@ -121,3 +129,4 @@ class BSplineBodyController:
 
     def get_control_point_for_sample(self):
         return self._b_spline_body.get_control_point_for_sample()
+
