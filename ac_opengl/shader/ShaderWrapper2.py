@@ -26,6 +26,7 @@ class ShaderWrap:
 
     def __del__(self):
         glDeleteShader(self._gl_shader_name)
+        self._gl_shader_name = -1
 
 
 class ProgramWrap:
@@ -42,16 +43,17 @@ class ProgramWrap:
         return self
 
     def link(self):
-        self._gl_program_name = compileProgram(*[s.compile().shader for s in self._shaders])
+        if self._gl_program_name == -1:
+            self._gl_program_name = compileProgram(*[s.pre_compile().compile().shader for s in self._shaders])
         return self
 
     def init_data(self):
         pass
 
     def use(self):
-        if self._gl_program_name == -1:
-            self.link()
+        self.link()
         glUseProgram(self._gl_program_name)
 
     def __del__(self):
         glDeleteProgram(self._gl_program_name)
+        self._gl_program_name = -1

@@ -3,10 +3,10 @@ import threading
 import numpy
 
 from mvc_control.BSplineBodyController import BSplineBodyController
+from mvc_control.PreviousComputeController import PreviousComputeController
 from mvc_model.GLObject import ACVBO
 from mvc_model.aux import BSplineBody
 from pyrr.matrix44 import *
-from OpenGL.GLU import *
 
 from mvc_model.plain_class import ACRect
 from util.GLUtil import *
@@ -27,7 +27,7 @@ class GLProxy:
 
         self.model_vao = None
         self.splited_triangle_number = 0
-        self.previous_compute_shader = None
+        self.previous_compute_controller = None  # type: PreviousComputeController
         self.deform_compute_shader = None
         self.model_renderer_shader = None
         self.need_deform = False
@@ -75,7 +75,6 @@ class GLProxy:
         self.deform_and_draw_model(model_view_matrix, perspective_matrix)
         self._embed_body_controller.gl_draw(model_view_matrix, perspective_matrix)
 
-
     def gl_init_global(self):
         self._embed_body_controller.gl_init()
         self._embed_body_controller.gl_sync_buffer_for_previous_computer()
@@ -122,7 +121,8 @@ class GLProxy:
         glBindVertexArray(0)
 
         # init previous compute shader
-        self.previous_compute_shader = PrevComputeProgramWrap('previous_compute_shader_oo.glsl')
+        self.previous_compute_controller = PreviousComputeController(self.model)
+        self.previous_compute_controller.gl_init()
 
         self.gl_init_for_model()
 
@@ -168,7 +168,7 @@ class GLProxy:
                                   * self._tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
         self.index_vbo.gl_sync()
 
-    # def gl_init_for_b_spline(self):
+        # def gl_init_for_b_spline(self):
         # init b_spline_body_ubo copy BSpline body info to gpu
         # self.b_spline_body_ubo.gl_sync()
         # init control_point_for_sample_ubo
@@ -264,7 +264,7 @@ class GLProxy:
                   self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE,
                   np.uint32, GL_DYNAMIC_DRAW)
 
-    # def load_b_spline_body_to_gpu(self):
+        # def load_b_spline_body_to_gpu(self):
         # 更新b样条体相关信息
         bspline_body_info = self.b_spline_body.get_info()
         # self.b_spline_body_ubo.async_update(bspline_body_info)
@@ -277,7 +277,7 @@ class GLProxy:
         self.splited_triangle_counter_acbo.gl_sync()
 
         # prev computer
-        glUseProgram(self.previous_compute_shader.get_program())
+        self.previous_compute_controller._program.use()
         glDispatchCompute(int(self.model.original_triangle_number / 512 + 1), 1, 1)
         self.splited_triangle_number = self.splited_triangle_counter_acbo.get_value(ctypes.c_uint32)[0]
 
