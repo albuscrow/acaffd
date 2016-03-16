@@ -81,7 +81,7 @@ class Controller(QObject):
         self.model = GLProxy(raw_obj)
 
     @pyqtSlot(int, int)
-    def move(self, x, y):
+    def rotate(self, x, y):
         # record rotate_y and rotate_x
         self._rotate_y += x
         self._rotate_x += y

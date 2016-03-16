@@ -52,7 +52,7 @@ ApplicationWindow {
                 drag.axis: Drag.XAndYAxis
                 anchors.fill: parent
                 onRightMoveDelta: {
-                    controller.move(x, y)
+                    controller.rotate(x, y)
                 }
                 onLeftMoveInfo: {
                     controller.select(x, y, x2, y2)
