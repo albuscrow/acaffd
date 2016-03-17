@@ -144,10 +144,10 @@ class DrawProgramWrap(ShaderProgramWrap):
     def select_region(self, rect: ACRect):
         self._need_select = True
 
+
 class DeformComputeProgramWrap(ShaderProgramWrap):
-    def __init__(self, file_name, splited_triangle_number, b_spline_body, tessellation_factor=3):
+    def __init__(self, file_name, splited_triangle_number, cage_size, tessellation_factor=3):
         super().__init__()
-        self._b_spline_body = b_spline_body
         self._tessellation_factor = tessellation_factor
         self._tessellated_point_number_pre_splited_triangle = (tessellation_factor + 1) * (tessellation_factor + 2) / 2
         self._tessellated_triangle_number_pre_splited_triangle = tessellation_factor * tessellation_factor
@@ -156,7 +156,7 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
         self._splited_triangle_number = splited_triangle_number
         self._tessellation_parameter = []
         self._tessellation_index = []
-        self._cage_size = self._b_spline_body.get_cage_size()
+        self._cage_size = cage_size
         self.init_tessellation_data()
         super().add_shader(GL_COMPUTE_SHADER, self._file_name_prefix + self._file_name)
 

@@ -5,7 +5,6 @@ import numpy
 from mvc_control.BSplineBodyController import BSplineBodyController
 from mvc_control.PreviousComputeController import PreviousComputeController
 from mvc_model.GLObject import ACVBO
-from mvc_model.aux import BSplineBody
 from pyrr.matrix44 import *
 
 from mvc_model.plain_class import ACRect
@@ -22,7 +21,6 @@ class GLProxy:
         self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_factor * self._tessellation_factor
 
         self.model = model
-        self.b_spline_body = BSplineBody(*self.model.get_length_xyz())  # type: BSplineBody
         self._embed_body_controller = BSplineBodyController(self.model.get_length_xyz())  # type: BSplineBodyController
 
         self.model_vao = None
@@ -114,7 +112,7 @@ class GLProxy:
         self.model_renderer_shader = DrawProgramWrap('vertex.glsl', 'fragment.glsl')
 
         self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
-                                                              self.splited_triangle_number, self.b_spline_body)
+                                                              self.splited_triangle_number, self._embed_body_controller.get_cage_size())
         self.need_deform = True
 
         self.is_inited = True
@@ -158,7 +156,8 @@ class GLProxy:
         glBindVertexArray(self.model_vao)
 
         self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
-                                                              self.splited_triangle_number, self.b_spline_body)
+                                                              self.splited_triangle_number,
+                                                              self._embed_body_controller.get_cage_size())
         # init compute shader before every frame
         glUseProgram(self.deform_compute_shader.get_program())
         # self.deform_compute_shader.test()
@@ -218,10 +217,8 @@ class GLProxy:
         self.tessellation_factor_is_change = True
 
     def change_control_point(self, u, v, w):
-        self.b_spline_body.change_control_point(u, v, w)
-
+        self._embed_body_controller.change_control_point_number(u, v, w)
         with self.lock:
-            self.task.append(self.prev_computer)
             self.task.append(self.init_renderer_model_buffer)
 
 
