@@ -17,19 +17,23 @@ class DeformComputeShader(ProgramWrap):
     def __init__(self, controller):
         super().__init__()
         self._controller = controller  # type: DeformAndDrawController
+        self._tessellation_parameter = ACVBO(GL_UNIFORM_BUFFER, 2, None, GL_STATIC_DRAW)  # type: ACVBO
+        self._tessellation_indexes = ACVBO(GL_UNIFORM_BUFFER, 3, None, GL_STATIC_DRAW)  # type: ACVBO
 
     def init_uniform(self):
         glProgramUniform1ui(self._gl_program_name, 0, int(self._controller.splited_triangle_number))
         self.update_uniform_about_b_spline()
+        self.update_uniform_about_tessellation()
+
+    def update_uniform_about_tessellation(self):
         glProgramUniform1ui(self._gl_program_name, 4,
                             int(self._controller.tessellated_point_number_pre_splited_triangle))
         glProgramUniform1ui(self._gl_program_name, 5,
                             int(self._controller.tessellated_triangle_number_pre_splited_triangle))
-        tp = ACVBO(GL_UNIFORM_BUFFER, 2, np.array(self._controller.tessellation_parameter, dtype=np.float32),
-                   GL_STATIC_DRAW)
-        tp.gl_sync()
-        ti = ACVBO(GL_UNIFORM_BUFFER, 3, np.array(self._controller.tessellation_index, dtype=np.uint32), GL_STATIC_DRAW)
-        ti.gl_sync()
+        self._tessellation_parameter.async_update(self._controller.tessellation_parameter)
+        self._tessellation_parameter.gl_sync()
+        self._tessellation_indexes.async_update(self._controller.tessellation_index)
+        self._tessellation_indexes.gl_sync()
 
     def update_uniform_about_b_spline(self):
         glProgramUniform1ui(self._gl_program_name, 1,
@@ -50,6 +54,7 @@ class DeformAndDrawController:
         self._tessellated_triangle_number_pre_splited_triangle = -1  # type: int
         self._tessellation_parameter = None  # type: list
         self._tessellation_index = None  # type: list
+        self._tessellation_factor_changed = False  # type: bool
         self.init_tessellation_pattern_data(3)
 
         self._need_deform = True  # type: bool
@@ -83,11 +88,15 @@ class DeformAndDrawController:
         self.gl_async_update_buffer_for_self()
 
     def gl_async_update_buffer_for_self(self):
-        self._vertex_vbo.capacity = self.splited_triangle_number * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
-        # alloc memory in gpu for tessellated normal
-        self._normal_vbo.capacity = self.splited_triangle_number * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
-        # alloc memory in gpu for tessellated index
-        self._index_vbo.capacity = self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
+        if self._vertex_vbo is not None:
+            self._vertex_vbo.capacity = self.splited_triangle_number \
+                                        * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        if self._normal_vbo is not None:
+            self._normal_vbo.capacity = self.splited_triangle_number \
+                                        * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        if self._index_vbo is not None:
+            self._index_vbo.capacity = self.splited_triangle_number \
+                                       * self.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
 
     def gl_sync_buffer(self):
         self._vertex_vbo.gl_sync()
@@ -102,6 +111,9 @@ class DeformAndDrawController:
         if self._need_update_uniform_about_b_spline:
             self._deform_program.update_uniform_about_b_spline()
             self._need_update_uniform_about_b_spline = False
+        if self._tessellation_factor_changed:
+            self._deform_program.update_uniform_about_tessellation()
+            self._tessellation_factor_changed = False
         glDispatchCompute(*self.group_size)
         self._need_deform = False
         glUseProgram(0)
@@ -116,9 +128,9 @@ class DeformAndDrawController:
         glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
         glEnable(GL_DEPTH_TEST)
         glBindVertexArray(self._model_vao)
-        glDrawElements(GL_TRIANGLES, int(
-            self.splited_triangle_number *
-            self.tessellated_triangle_number_pre_splited_triangle * 3),
+        number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
+        print("index number", number)
+        glDrawElements(GL_TRIANGLES, number,
                        GL_UNSIGNED_INT, None)
         glBindVertexArray(0)
         glUseProgram(0)
@@ -158,6 +170,7 @@ class DeformAndDrawController:
                     self._tessellation_index.append(next_index)
                 prev = next_index
         self._tessellation_index = [x + [0] for x in self._tessellation_index]
+        self._tessellation_factor_changed = True
 
     @property
     def cage_size(self):
@@ -173,11 +186,11 @@ class DeformAndDrawController:
 
     @property
     def tessellation_parameter(self):
-        return self._tessellation_parameter
+        return np.array(self._tessellation_parameter, dtype=np.float32)
 
     @property
     def tessellation_index(self):
-        return self._tessellation_index
+        return np.array(self._tessellation_index, dtype=np.uint32)
 
     @property
     def need_deform(self):
@@ -191,3 +204,8 @@ class DeformAndDrawController:
     def cage_size(self, value):
         self._cage_size = value
         self._need_update_uniform_about_b_spline = True
+
+    def set_tessellation_factor(self, tessellation_factor):
+        self.init_tessellation_pattern_data(tessellation_factor)
+        self.gl_async_update_buffer_for_self()
+        self._need_deform = True

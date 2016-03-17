@@ -110,7 +110,7 @@ const uint look_up_table_for_i[0] = {0};
 ////////////////////////////////////////////////
 
 //todo 改成可以由程序输入的
-layout(location=0) uniform float splite_factor;
+layout(location=0) uniform float split_factor;
 
 const vec3 sampleParameter[37] = {
     {1.000000, 0.000000, 0.000000},
@@ -468,9 +468,9 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
     i = min(l01, min(l12, l20));
     k = max(l01, max(l12, l20));
     j = (l01 + l12 + l20) - i - k;
-    i /= splite_factor;
-    j /= splite_factor;
-    k /= splite_factor;
+    i /= split_factor;
+    j /= split_factor;
+    k /= split_factor;
     int i_i, j_i, k_i;
     i_i = int(ceil(i));
     j_i = int(ceil(j));

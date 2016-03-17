@@ -27,6 +27,7 @@ class ACVBO:
     @capacity.setter
     def capacity(self, capacity: int):
         self._capacity = int(capacity)
+        self._dirty = True
 
     def async_update(self, data):
         if data is None:

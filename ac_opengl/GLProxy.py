@@ -1,6 +1,5 @@
 import threading
 
-
 from mvc_control.BSplineBodyController import BSplineBodyController
 from mvc_control.PreviousComputeController import PreviousComputeController
 from mvc_control.DeformAndDrawController import DeformAndDrawController
@@ -15,8 +14,6 @@ class GLProxy:
         self._embed_body_controller = BSplineBodyController(model.get_length_xyz())  # type: BSplineBodyController
         self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
         self._deform_and_renderer_controller = None  # type: DeformAndDrawController
-
-        self.tessellation_factor_is_change = False
 
     def draw(self, model_view_matrix, perspective_matrix):
         self._previous_compute_controller.gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
@@ -47,9 +44,8 @@ class GLProxy:
         self._deform_and_renderer_controller.need_deform = True
 
     def change_tessellation_level(self, level):
-        self._deform_and_renderer_controller.tessellation_factor = level
+        self._deform_and_renderer_controller.set_tessellation_factor(level)  # type: DeformAndDrawController
         self._deform_and_renderer_controller.need_deform = True
-        self.tessellation_factor_is_change = True
 
     def change_control_point_number(self, u, v, w):
         self._embed_body_controller.change_control_point_number(u, v, w)
