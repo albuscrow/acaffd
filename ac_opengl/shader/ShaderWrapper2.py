@@ -45,6 +45,7 @@ class ProgramWrap:
     def link(self):
         if self._gl_program_name == -1:
             self._gl_program_name = compileProgram(*[s.pre_compile().compile().shader for s in self._shaders])
+            self.init_uniform()
         return self
 
     def init_data(self):
@@ -53,6 +54,9 @@ class ProgramWrap:
     def use(self):
         self.link()
         glUseProgram(self._gl_program_name)
+
+    def init_uniform(self):
+        pass
 
     def __del__(self):
         glDeleteProgram(self._gl_program_name)

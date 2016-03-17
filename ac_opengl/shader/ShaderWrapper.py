@@ -149,11 +149,11 @@ class DeformComputeProgramWrap(ShaderProgramWrap):
     def __init__(self, file_name, splited_triangle_number, cage_size, tessellation_factor=3):
         super().__init__()
         self._tessellation_factor = tessellation_factor
-        self._tessellated_point_number_pre_splited_triangle = (tessellation_factor + 1) * (tessellation_factor + 2) / 2
-        self._tessellated_triangle_number_pre_splited_triangle = tessellation_factor * tessellation_factor
         self._file_name_prefix = 'ac_opengl/shader/compute/'
         self._file_name = file_name
         self._splited_triangle_number = splited_triangle_number
+        self._tessellated_point_number_pre_splited_triangle = (tessellation_factor + 1) * (tessellation_factor + 2) / 2
+        self._tessellated_triangle_number_pre_splited_triangle = tessellation_factor * tessellation_factor
         self._tessellation_parameter = []
         self._tessellation_index = []
         self._cage_size = cage_size

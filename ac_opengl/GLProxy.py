@@ -4,6 +4,7 @@ import numpy
 
 from mvc_control.BSplineBodyController import BSplineBodyController
 from mvc_control.PreviousComputeController import PreviousComputeController
+from mvc_control.DeformAndDrawController import DeformAndDrawController
 from mvc_model.GLObject import ACVBO
 from pyrr.matrix44 import *
 
@@ -26,7 +27,7 @@ class GLProxy:
         self.model_vao = None
         self.splited_triangle_number = 0
         self.previous_compute_controller = PreviousComputeController(self.model)  # type: PreviousComputeController
-        self.deform_compute_shader = None
+        self.deform_and_renderer_controller = None  # type: DeformAndDrawController
         self.model_renderer_shader = None
         self.need_deform = False
 
@@ -67,14 +68,6 @@ class GLProxy:
     def gl_init_global(self):
         self._embed_body_controller.gl_init()
         self._embed_body_controller.gl_sync_buffer_for_previous_computer()
-        # init code for openGL
-        # create ssbo
-        # 原始面片邻接关系, 共享的原始面片pn triangle
-        # adjacency_ssbo share_adjacency_pn_triangle_ssbo
-        # 经过分割以后的数据。
-        # splited_triangle_ssbo
-        # B spline body 的信息。
-        # b_spline_body_ubo
 
         # 经过tessellate后最终用于绘制的数据。
         # vertice_vbo
@@ -111,8 +104,8 @@ class GLProxy:
 
         self.model_renderer_shader = DrawProgramWrap('vertex.glsl', 'fragment.glsl')
 
-        self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
-                                                              self.splited_triangle_number, self._embed_body_controller.get_cage_size())
+        self.deform_and_renderer_controller = DeformAndDrawController(self.splited_triangle_number,
+                                                                      self._embed_body_controller.get_cage_size())
         self.need_deform = True
 
         self.is_inited = True
@@ -123,9 +116,8 @@ class GLProxy:
         if self.need_deform:
             if self.tessellation_factor_is_change:
                 self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
-            glUseProgram(self.deform_compute_shader.get_program())
             self._embed_body_controller.gl_sync_buffer_for_deformation()
-            glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
+            self.deform_and_renderer_controller.gl_compute()
             self.need_deform = False
 
         glUseProgram(self.model_renderer_shader.get_program())
@@ -138,7 +130,7 @@ class GLProxy:
         glEnable(GL_DEPTH_TEST)
         glDrawElements(GL_TRIANGLES, int(
             self.splited_triangle_number *
-            self.deform_compute_shader._tessellated_triangle_number_pre_splited_triangle * 3),
+            self.deform_and_renderer_controller.tessellated_triangle_number_pre_splited_triangle * 3),
                        GL_UNSIGNED_INT, None)
         # glDrawElements(GL_TRIANGLES, int(self.splited_triangle_number * 1 * 3), GL_UNSIGNED_INT, None)
         glUseProgram(0)
@@ -155,13 +147,14 @@ class GLProxy:
 
         glBindVertexArray(self.model_vao)
 
-        self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
-                                                              self.splited_triangle_number,
-                                                              self._embed_body_controller.get_cage_size())
+        # self.deform_and_renderer_controller = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
+        #                                                                self.splited_triangle_number,
+        #                                                                self._embed_body_controller.get_cage_size())
         # init compute shader before every frame
-        glUseProgram(self.deform_compute_shader.get_program())
+        self.deform_and_renderer_controller.gl_compute()
+        # glUseProgram(self.deform_and_renderer_controller.get_program())
         # self.deform_compute_shader.test()
-        glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
+        # glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
         # check compute result
         # self.print_vbo(normal_vbo, len(obj.normal) / 4)
         # run renderer shader
@@ -195,12 +188,12 @@ class GLProxy:
         # alloc memory in gpu for tessellated normal
         bind_ssbo(normal_vbo, 7, None,
                   self.splited_triangle_number *
-                  self.deform_compute_shader.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
+                  self.deform_and_renderer_controller.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE,
                   np.float32, GL_DYNAMIC_DRAW)
         # alloc memory in gpu for tessellated index
         bind_ssbo(index_vbo, 8, None,
                   self.splited_triangle_number *
-                  self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE,
+                  self.deform_and_renderer_controller.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE,
                   np.uint32, GL_DYNAMIC_DRAW)
 
     def set_select_region(self, x1, y1, x2, y2):
@@ -212,7 +205,7 @@ class GLProxy:
         self.need_deform = True
 
     def change_tessellation_level(self, level):
-        self.deform_compute_shader.tessellation_factor = level
+        self.deform_and_renderer_controller.tessellation_factor = level
         self.need_deform = True
         self.tessellation_factor_is_change = True
 

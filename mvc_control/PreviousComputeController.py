@@ -1,7 +1,6 @@
 from Constant import *
 from mvc_model.model import OBJ
 from mvc_model.GLObject import ACVBO
-from mvc_model.aux import BSplineBody
 from ac_opengl.shader.ShaderWrapper2 import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -15,20 +14,20 @@ def add_prefix(file_name: str):
 
 
 class PreviousComputeShader(ShaderWrap):
-    def __init__(self, shader_type: int, file_name: str, out):
+    def __init__(self, shader_type: int, file_name: str, controller):
         super().__init__(shader_type, file_name)
-        self._out = out  # type : PreviousComputeController
+        self._controller = controller  # type : PreviousComputeController
 
     def pre_compile(self):
         self._source_code = self._source_code \
-            .replace('uvec4 splitIndex[]', 'uvec4 splitIndex[%d]' % (self._out.pattern_indexes.size / 4)) \
-            .replace('vec4 splitParameter[]', 'vec4 splitParameter[%d]' % (self._out.pattern_parameters.size / 4)) \
-            .replace('uint offset_number[]', 'uint offset_number[%d]' % self._out.pattern_offsets.size) \
+            .replace('uvec4 splitIndex[]', 'uvec4 splitIndex[%d]' % (self._controller.pattern_indexes.size / 4)) \
+            .replace('vec4 splitParameter[]', 'vec4 splitParameter[%d]' % (self._controller.pattern_parameters.size / 4)) \
+            .replace('uint offset_number[]', 'uint offset_number[%d]' % self._controller.pattern_offsets.size) \
             .replace('const int max_split_factor = 0',
-                     'const int max_split_factor = %d' % self._out.MAX_SEGMENTS) \
+                     'const int max_split_factor = %d' % self._controller.MAX_SEGMENTS) \
             .replace('const uint look_up_table_for_i[0] = {0}',
                      'const uint look_up_table_for_i[%d] = {%s}' % (
-                         self._out.MAX_SEGMENTS, self._out.get_offset_for_i()))
+                         self._controller.MAX_SEGMENTS, self._controller.get_offset_for_i()))
         return self
 
 
