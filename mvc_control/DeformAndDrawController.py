@@ -7,8 +7,12 @@ from OpenGL.GLU import *
 from pyrr.matrix44 import *
 
 
-def add_prefix(file_name: str):
+def add_compute_prefix(file_name: str):
     return 'ac_opengl/shader/compute/' + file_name
+
+
+def add_renderer_prefix(file_name: str):
+    return 'ac_opengl/shader/renderer/' + file_name
 
 
 class DeformComputeShader(ProgramWrap):
@@ -47,14 +51,36 @@ class DeformAndDrawController:
         self._tessellation_index = None  # type: list
         self.init_tessellation_pattern_data(3)
 
+        self._need_deform = True  # type: bool
+
         # program
-        self._program = DeformComputeShader(self).add_shader(
-            ShaderWrap(GL_COMPUTE_SHADER, add_prefix('deform_compute_shader_oo.glsl')))
+        self._deform_program = DeformComputeShader(self) \
+            .add_shader(ShaderWrap(GL_COMPUTE_SHADER, add_compute_prefix('deform_compute_shader_oo.glsl')))
+
+        self._renderer_program = ProgramWrap() \
+            .add_shader(ShaderWrap(GL_VERTEX_SHADER, add_renderer_prefix('vertex.glsl'))) \
+            .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_renderer_prefix('fragment.glsl')))  # type: ProgramWrap
 
     def gl_compute(self):
-        self._program.use()
-        glDispatchCompute(*self.group_size)
+        if self._need_deform:
+            self._deform_program.use()
+            glDispatchCompute(*self.group_size)
+            self._need_deform = False
+            glUseProgram(0)
         pass
+
+    def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array):
+        self._renderer_program.use()
+        # common bind
+        wvp_matrix = multiply(model_view_matrix, perspective_matrix)
+        glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
+        glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
+        glEnable(GL_DEPTH_TEST)
+        glDrawElements(GL_TRIANGLES, int(
+            self.splited_triangle_number *
+            self.tessellated_triangle_number_pre_splited_triangle * 3),
+                       GL_UNSIGNED_INT, None)
+        glUseProgram(0)
 
     @property
     def group_size(self):
@@ -111,3 +137,11 @@ class DeformAndDrawController:
     @property
     def tessellation_index(self):
         return self._tessellation_index
+
+    @property
+    def need_deform(self):
+        return self._need_deform
+
+    @need_deform.setter
+    def need_deform(self, value):
+        self._need_deform = value

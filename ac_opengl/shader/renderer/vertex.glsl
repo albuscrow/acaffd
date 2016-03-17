@@ -1,6 +1,6 @@
 #version 450
-uniform mat4 wvp_matrix;
-uniform mat4 wv_matrix;
+layout(location=0) uniform mat4 wvp_matrix;
+layout(location=1) uniform mat4 wv_matrix;
 
 layout(location=0) in vec4 vertice;
 layout(location=1) in vec4 normal;

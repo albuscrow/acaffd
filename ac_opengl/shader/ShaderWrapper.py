@@ -136,14 +136,6 @@ class DrawProgramWrap(ShaderProgramWrap):
         super().add_shader(GL_FRAGMENT_SHADER, self._file_name_prefix + fragment_shader_file_name)
         self._need_select = False  # type: bool
 
-    @property
-    def select_region(self):
-        return self._select_region
-
-    @select_region.setter
-    def select_region(self, rect: ACRect):
-        self._need_select = True
-
 
 class DeformComputeProgramWrap(ShaderProgramWrap):
     def __init__(self, file_name, splited_triangle_number, cage_size, tessellation_factor=3):

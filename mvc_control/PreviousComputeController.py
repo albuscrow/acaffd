@@ -109,6 +109,7 @@ class PreviousComputeController:
         self._program.use()
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
+        glUseProgram(0)
 
     @property
     def split_factor(self):

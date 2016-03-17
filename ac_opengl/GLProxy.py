@@ -11,7 +11,7 @@ from pyrr.matrix44 import *
 from mvc_model.plain_class import ACRect
 from util.GLUtil import *
 from Constant import *
-from ac_opengl.shader.ShaderWrapper import DeformComputeProgramWrap, DrawProgramWrap
+from ac_opengl.shader.ShaderWrapper import DrawProgramWrap
 
 
 class GLProxy:
@@ -28,8 +28,6 @@ class GLProxy:
         self.splited_triangle_number = 0
         self.previous_compute_controller = PreviousComputeController(self.model)  # type: PreviousComputeController
         self.deform_and_renderer_controller = None  # type: DeformAndDrawController
-        self.model_renderer_shader = None
-        self.need_deform = False
 
         # self.b_spline_body_ubo = None
         self.control_point_vertex_vbo = None
@@ -92,91 +90,40 @@ class GLProxy:
         self.splited_triangle_number = self.previous_compute_controller.split_model()
 
         # alloc memory in gpu for tessellated vertex
-        self.vertex_vbo.capacity = self.splited_triangle_number * self._tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        self.vertex_vbo.capacity = self.splited_triangle_number * \
+                                   self._tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
         self.vertex_vbo.gl_sync()
         # alloc memory in gpu for tessellated normal
-        self.normal_vbo.capacity = self.splited_triangle_number * self._tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        self.normal_vbo.capacity = self.splited_triangle_number * self._tessellated_point_number_pre_splited_triangle \
+                                   * VERTEX_SIZE
         self.normal_vbo.gl_sync()
         # alloc memory in gpu for tessellated index
         self.index_vbo.capacity = self.splited_triangle_number \
                                   * self._tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
         self.index_vbo.gl_sync()
 
-        self.model_renderer_shader = DrawProgramWrap('vertex.glsl', 'fragment.glsl')
-
         self.deform_and_renderer_controller = DeformAndDrawController(self.splited_triangle_number,
                                                                       self._embed_body_controller.get_cage_size())
-        self.need_deform = True
 
         self.is_inited = True
 
     def deform_and_draw_model(self, model_view_matrix, perspective_matrix):
         glBindVertexArray(self.model_vao)
         # if control points is change, run deform compute shader
-        if self.need_deform:
+        if self.deform_and_renderer_controller.need_deform:
             if self.tessellation_factor_is_change:
                 self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
             self._embed_body_controller.gl_sync_buffer_for_deformation()
             self.deform_and_renderer_controller.gl_compute()
-            self.need_deform = False
+            self.deform_and_renderer_controller.need_deform = False
 
-        glUseProgram(self.model_renderer_shader.get_program())
-        # common bind
-        wvp_matrix = multiply(model_view_matrix, perspective_matrix)
-        ml = glGetUniformLocation(self.model_renderer_shader.get_program(), 'wvp_matrix')
-        glUniformMatrix4fv(ml, 1, GL_FALSE, wvp_matrix)
-        ml = glGetUniformLocation(self.model_renderer_shader.get_program(), 'wv_matrix')
-        glUniformMatrix4fv(ml, 1, GL_FALSE, model_view_matrix)
-        glEnable(GL_DEPTH_TEST)
-        glDrawElements(GL_TRIANGLES, int(
-            self.splited_triangle_number *
-            self.deform_and_renderer_controller.tessellated_triangle_number_pre_splited_triangle * 3),
-                       GL_UNSIGNED_INT, None)
-        # glDrawElements(GL_TRIANGLES, int(self.splited_triangle_number * 1 * 3), GL_UNSIGNED_INT, None)
-        glUseProgram(0)
+        self.deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix)
+
         glBindVertexArray(0)
 
     def init_renderer_model_buffer(self):
-        # 加速采样后的控制顶点
-        # self.control_point_for_sample_ubo
-
-        # 经过tessellate后最终用于绘制的数据。
-        # vertice_vbo
-        # normal_vbo
-        # index_vbo
-
         glBindVertexArray(self.model_vao)
-
-        # self.deform_and_renderer_controller = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
-        #                                                                self.splited_triangle_number,
-        #                                                                self._embed_body_controller.get_cage_size())
-        # init compute shader before every frame
         self.deform_and_renderer_controller.gl_compute()
-        # glUseProgram(self.deform_and_renderer_controller.get_program())
-        # self.deform_compute_shader.test()
-        # glDispatchCompute(int(self.splited_triangle_number / 512 + 1), 1, 1)
-        # check compute result
-        # self.print_vbo(normal_vbo, len(obj.normal) / 4)
-        # run renderer shader
-        # gen renderer program
-        if self.model_renderer_shader is None:
-            self.model_renderer_shader = DrawProgramWrap('vertex.glsl', 'fragment.glsl')
-            glUseProgram(self.model_renderer_shader.get_program())
-            # set vertice attribute
-            glBindBuffer(GL_ARRAY_BUFFER, self.vertex_vbo)
-            vertex_location = 0
-            glEnableVertexAttribArray(vertex_location)
-            glVertexAttribPointer(vertex_location, 4, GL_FLOAT, False, 0, None)
-            # set normal attribute
-            glBindBuffer(GL_ARRAY_BUFFER, self.normal_vbo)
-            normal_location = 1
-            glEnableVertexAttribArray(normal_location)
-            glVertexAttribPointer(normal_location, 4, GL_FLOAT, False, 0, None)
-            glBindBuffer(GL_ARRAY_BUFFER, 0)
-            # specific index buffer
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.index_vbo)
-            # unbind program
-            glUseProgram(0)
         glBindVertexArray(0)
 
     def bind_model_buffer(self, index_vbo, normal_vbo, vertex_vbo):
@@ -202,11 +149,11 @@ class GLProxy:
 
     def move_control_points(self, x, y, z):
         self._embed_body_controller.move_selected_control_points([x, y, z])
-        self.need_deform = True
+        self.deform_and_renderer_controller.need_deform = True
 
     def change_tessellation_level(self, level):
         self.deform_and_renderer_controller.tessellation_factor = level
-        self.need_deform = True
+        self.deform_and_renderer_controller.need_deform = True
         self.tessellation_factor_is_change = True
 
     def change_control_point(self, u, v, w):
