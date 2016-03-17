@@ -21,7 +21,8 @@ class PreviousComputeShader(ShaderWrap):
     def pre_compile(self):
         self._source_code = self._source_code \
             .replace('uvec4 splitIndex[]', 'uvec4 splitIndex[%d]' % (self._controller.pattern_indexes.size / 4)) \
-            .replace('vec4 splitParameter[]', 'vec4 splitParameter[%d]' % (self._controller.pattern_parameters.size / 4)) \
+            .replace('vec4 splitParameter[]',
+                     'vec4 splitParameter[%d]' % (self._controller.pattern_parameters.size / 4)) \
             .replace('uint offset_number[]', 'uint offset_number[%d]' % self._controller.pattern_offsets.size) \
             .replace('const int max_split_factor = 0',
                      'const int max_split_factor = %d' % self._controller.MAX_SEGMENTS) \
@@ -42,6 +43,7 @@ class PreviousComputeController:
         self._pattern_indexes = None  # type: np.array
         self._pattern_parameters = None  # type: np.array
         self._split_factor_change = False  # type: bool
+        self._splited_triangle_number = -1  # type: int
         self.init_pattern_data()
 
         # declare buffer
@@ -61,14 +63,14 @@ class PreviousComputeController:
     def gl_init(self):
         self._program.link()
         self.gl_set_split_factor()
-        # init vbo
-        self.gl_init_buffer_for_self()
+        # async update vbo
+        self.gl_async_update_buffer_for_self()
 
     def gl_init_split_counter(self):
         self._splited_triangle_counter_acbo.async_update(np.array([0], dtype=np.uint32))
         self._splited_triangle_counter_acbo.gl_sync()
 
-    def gl_init_buffer_for_self(self):
+    def gl_async_update_buffer_for_self(self):
         split_info_buffer = glGenBuffers(1)
         indexes_size = self._pattern_indexes.size * self._pattern_indexes.itemsize
         parameter_size = self._pattern_parameters.size * self._pattern_parameters.itemsize
@@ -110,6 +112,7 @@ class PreviousComputeController:
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
         glUseProgram(0)
+        self._splited_triangle_number = self.get_splited_triangles_number()
 
     @property
     def split_factor(self):
@@ -159,6 +162,6 @@ class PreviousComputeController:
     def get_splited_triangles_number(self) -> int:
         return self._splited_triangle_counter_acbo.get_value(ctypes.c_uint32)[0]
 
-    def split_model(self) -> int:
-        self.gl_compute()
-        return self.get_splited_triangles_number()
+    @property
+    def splited_triangle_number(self):
+        return self._splited_triangle_number

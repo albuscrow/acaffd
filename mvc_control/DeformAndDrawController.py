@@ -5,6 +5,7 @@ from ac_opengl.shader.ShaderWrapper2 import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from pyrr.matrix44 import *
+from mvc_control.BSplineBodyController import BSplineBodyController
 
 
 def add_compute_prefix(file_name: str):
@@ -40,8 +41,8 @@ class DeformComputeShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, splited_triangle_number: int, cage_size: list):
-        self._splited_triangle_number = splited_triangle_number  # type: int
+    def __init__(self, triangle_number: int, cage_size: list):
+        self._splited_triangle_number = triangle_number
         self._cage_size = cage_size  # type: list
 
         self._tessellation_level = -1  # type: int
@@ -53,6 +54,12 @@ class DeformAndDrawController:
 
         self._need_deform = True  # type: bool
 
+        # vbo
+        self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._model_vao = -1  # type: int
+
         # program
         self._deform_program = DeformComputeShader(self) \
             .add_shader(ShaderWrap(GL_COMPUTE_SHADER, add_compute_prefix('deform_compute_shader_oo.glsl')))
@@ -61,26 +68,60 @@ class DeformAndDrawController:
             .add_shader(ShaderWrap(GL_VERTEX_SHADER, add_renderer_prefix('vertex.glsl'))) \
             .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_renderer_prefix('fragment.glsl')))  # type: ProgramWrap
 
-    def gl_compute(self):
-        if self._need_deform:
+    def gl_init(self):
+        self._model_vao = glGenVertexArrays(1)
+        glBindVertexArray(self._model_vao)
+        # set vertice attribute
+        self._vertex_vbo.as_array_buffer(0, 4, GL_FLOAT)
+        # set normal attribute
+        self._normal_vbo.as_array_buffer(1, 4, GL_FLOAT)
+        # specific index buffer
+        self._index_vbo.as_element_array_buffer()
+        # unbind program
+        glBindVertexArray(0)
+        self.gl_async_update_buffer_for_self()
+
+    def gl_async_update_buffer_for_self(self):
+        self._vertex_vbo.capacity = self.splited_triangle_number * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        # alloc memory in gpu for tessellated normal
+        self._normal_vbo.capacity = self.splited_triangle_number * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        # alloc memory in gpu for tessellated index
+        self._index_vbo.capacity = self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
+
+    def gl_sync_buffer(self):
+        self._vertex_vbo.gl_sync()
+        self._normal_vbo.gl_sync()
+        self._index_vbo.gl_sync()
+
+    def gl_compute(self, b_spline_controller: BSplineBodyController):
+        if self.need_deform:
+            b_spline_controller.gl_sync_buffer_for_deformation()
             self._deform_program.use()
             glDispatchCompute(*self.group_size)
             self._need_deform = False
             glUseProgram(0)
-        pass
 
-    def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array):
+    def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array,
+                    b_spline_controller: BSplineBodyController):
+        self.gl_sync_buffer()
+        self.gl_compute(b_spline_controller)
         self._renderer_program.use()
         # common bind
         wvp_matrix = multiply(model_view_matrix, perspective_matrix)
         glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
         glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
         glEnable(GL_DEPTH_TEST)
+        glBindVertexArray(self._model_vao)
         glDrawElements(GL_TRIANGLES, int(
             self.splited_triangle_number *
             self.tessellated_triangle_number_pre_splited_triangle * 3),
                        GL_UNSIGNED_INT, None)
+        glBindVertexArray(0)
         glUseProgram(0)
+
+    @property
+    def splited_triangle_number(self):
+        return self._splited_triangle_number
 
     @property
     def group_size(self):
@@ -113,10 +154,6 @@ class DeformAndDrawController:
                     self._tessellation_index.append(next_index)
                 prev = next_index
         self._tessellation_index = [x + [0] for x in self._tessellation_index]
-
-    @property
-    def splited_triangle_number(self):
-        return self._splited_triangle_number
 
     @property
     def cage_size(self):
