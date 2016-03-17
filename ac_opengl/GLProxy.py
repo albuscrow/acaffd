@@ -11,7 +11,7 @@ from pyrr.matrix44 import *
 from mvc_model.plain_class import ACRect
 from util.GLUtil import *
 from Constant import *
-from ac_opengl.shader.ShaderWrapper import PrevComputeProgramWrap, DeformComputeProgramWrap, DrawProgramWrap
+from ac_opengl.shader.ShaderWrapper import DeformComputeProgramWrap, DrawProgramWrap
 
 
 class GLProxy:
@@ -27,7 +27,7 @@ class GLProxy:
 
         self.model_vao = None
         self.splited_triangle_number = 0
-        self.previous_compute_controller = None  # type: PreviousComputeController
+        self.previous_compute_controller = PreviousComputeController(self.model)  # type: PreviousComputeController
         self.deform_compute_shader = None
         self.model_renderer_shader = None
         self.need_deform = False
@@ -52,16 +52,10 @@ class GLProxy:
         self.task = []
         self.lock = threading.Lock()
 
-        self.original_vertex_ssbo = None
-        self.original_normal_ssbo = None
-        self.original_index_ssbo = None
         self.adjacency_info_ssbo = None
         self.share_adjacency_pn_triangle_ssbo = None
         self.splited_triangle_ssbo = None
-        self.splited_triangle_counter_acbo = None
         self.control_point_for_sample_ubo = None
-        # self._control_point_vbo_position = None
-        # self._control_point_vbo_color = None
 
     def draw(self, model_view_matrix, perspective_matrix):
         if not self.is_inited:
@@ -80,27 +74,15 @@ class GLProxy:
         self._embed_body_controller.gl_sync_buffer_for_previous_computer()
         # init code for openGL
         # create ssbo
-        # 原始顶点数据,也是顶点在b样条体中的参数;要满足这一条件必须使控制顶点和节点向量满足一定条件。
-        # original_vertex_ssbo original_normal_ssbo original_index_ssbo
         # 原始面片邻接关系, 共享的原始面片pn triangle
         # adjacency_ssbo share_adjacency_pn_triangle_ssbo
         # 经过分割以后的数据。
         # splited_triangle_ssbo
         # B spline body 的信息。
         # b_spline_body_ubo
-        self.original_vertex_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 0, None, GL_STATIC_DRAW)
-        self.original_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 1, self.model.normal, GL_STATIC_DRAW)
-        self.original_index_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 2, None, GL_STATIC_DRAW)
         self.adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_STATIC_DRAW)
         self.share_adjacency_pn_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_STATIC_DRAW)
         self.splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
-
-        # 分割后三角形的计数器
-        self.splited_triangle_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 0, None, GL_DYNAMIC_DRAW)
-
-        # 变形要用到的buffer
-        # 加速采样后的控制顶点
-        # self.control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)
 
         # 经过tessellate后最终用于绘制的数据。
         # vertice_vbo
@@ -121,7 +103,6 @@ class GLProxy:
         glBindVertexArray(0)
 
         # init previous compute shader
-        self.previous_compute_controller = PreviousComputeController(self.model)
         self.previous_compute_controller.gl_init()
 
         self.gl_init_for_model()
@@ -135,15 +116,6 @@ class GLProxy:
         self.is_inited = True
 
     def gl_init_for_model(self) -> None:
-        # alloc memory in gpu for splited vertex
-        self.original_vertex_ssbo.async_update(self.model.vertex)
-        self.original_vertex_ssbo.gl_sync()
-        # copy original vertex to gpu, and bind original_vertex_vbo to bind point 0
-        self.original_normal_ssbo.async_update(self.model.normal)
-        self.original_normal_ssbo.gl_sync()
-        # copy original normal to gpu, and bind original_normal_vbo to bind point 1
-        self.original_index_ssbo.async_update(self.model.index)
-        self.original_index_ssbo.gl_sync()
         # copy original index to gpu, and bind original_index_vbo to bind point 2
         self.adjacency_info_ssbo.async_update(self.model.adjacency)
         self.adjacency_info_ssbo.gl_sync()
@@ -167,13 +139,6 @@ class GLProxy:
         self.index_vbo.capacity = self.splited_triangle_number \
                                   * self._tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
         self.index_vbo.gl_sync()
-
-        # def gl_init_for_b_spline(self):
-        # init b_spline_body_ubo copy BSpline body info to gpu
-        # self.b_spline_body_ubo.gl_sync()
-        # init control_point_for_sample_ubo
-        # self.control_point_for_sample_ubo.async_update(self.b_spline_body.get_control_point_for_sample())
-        # self.control_point_for_sample_ubo.gl_sync()
 
     def deform_and_draw_model(self, model_view_matrix, perspective_matrix):
         glBindVertexArray(self.model_vao)
@@ -215,10 +180,6 @@ class GLProxy:
 
         self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
                                                               self.splited_triangle_number, self.b_spline_body)
-        # self.bind_model_buffer(self.index_vbo, self.normal_vbo, self.vertex_vbo)
-        # copy control point info to gpu
-        # self.control_point_for_sample_ubo.async_update(self.b_spline_body.get_control_point_for_sample())
-        # self.control_point_for_sample_ubo.gl_sync()
         # init compute shader before every frame
         glUseProgram(self.deform_compute_shader.get_program())
         # self.deform_compute_shader.test()
@@ -264,22 +225,10 @@ class GLProxy:
                   self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE,
                   np.uint32, GL_DYNAMIC_DRAW)
 
-        # def load_b_spline_body_to_gpu(self):
-        # 更新b样条体相关信息
-        bspline_body_info = self.b_spline_body.get_info()
-        # self.b_spline_body_ubo.async_update(bspline_body_info)
-        # self.b_spline_body_ubo.gl_sync()
-
     def prev_computer(self):
-        # 用于同步
-        # init atom buffer for count splited triangle number
-        self.splited_triangle_counter_acbo.async_update(np.array([0], dtype=np.uint32))
-        self.splited_triangle_counter_acbo.gl_sync()
-
         # prev computer
-        self.previous_compute_controller._program.use()
-        glDispatchCompute(int(self.model.original_triangle_number / 512 + 1), 1, 1)
-        self.splited_triangle_number = self.splited_triangle_counter_acbo.get_value(ctypes.c_uint32)[0]
+        self.previous_compute_controller.gl_compute()
+        self.splited_triangle_number = self.previous_compute_controller.get_splited_triangles_number()
 
     def set_select_region(self, x1, y1, x2, y2):
         region = ACRect(x1, y1, x2 - x1, y2 - y1)

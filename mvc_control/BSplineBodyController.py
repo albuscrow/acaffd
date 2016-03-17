@@ -21,27 +21,22 @@ class BSplineBodyController:
             raise Exception('b spline body size < 0, error')
 
         # init b-spline body
-        self._b_spline_body = BSplineBody(*size)
+        self._b_spline_body = BSplineBody(*size)  # type: BSplineBody
 
         # init shader program
         self._program = ProgramWrap().add_shader(ShaderWrap(GL_VERTEX_SHADER, add_prefix('aux.v.glsl'))) \
-            .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_prefix('aux.f.glsl')))
-        self._control_point_position_vbo = None  # type: ACVBO
-        self._control_point_color_vbo = None  # type: ACVBO
-        self._control_point_for_sample_ubo = None # type: ACVBO
-        self._b_spline_body_info_ubo = None  # type: ACVBO
+            .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_prefix('aux.f.glsl')))  # type: ProgramWrap
+        # init buffer
+        self._control_point_position_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._control_point_color_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._b_spline_body_info_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)  # type: ACVBO
         self._vao = -1  # type: int
         self._visibility = True  # type: bool
         self._pick_region = None  # type: ACRect
         self._control_points_changed = True  # type: bool
 
     def gl_init(self):
-        # init buffer
-        self._control_point_position_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)
-        self._control_point_color_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)
-        self._control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)
-        self._b_spline_body_info_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)
-
         # init vao
         self._vao = glGenVertexArrays(1)
         glBindVertexArray(self._vao)
@@ -129,4 +124,3 @@ class BSplineBodyController:
 
     def get_control_point_for_sample(self):
         return self._b_spline_body.get_control_point_for_sample()
-

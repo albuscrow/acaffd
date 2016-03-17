@@ -5,7 +5,7 @@ from OpenGL.GL import *
 
 class ACVBO:
     def __init__(self, target: int, binding_point: int, data: np.array, usage_hint: int):
-        self._buffer_name = glGenBuffers(1)  # type: int
+        self._buffer_name = -1  # type: int
         self._binding_point = binding_point  # type: int
         self._target = target
         self._data = data  # type: np.array
@@ -35,29 +35,27 @@ class ACVBO:
         self._capacity = self._data.size * self._data.itemsize  # type: int
         self._dirty = True
 
+    @property
+    def buffer_name(self):
+        if self._buffer_name == -1:
+            self._buffer_name = glGenBuffers(1)
+        return self._buffer_name
+
     def gl_sync(self):
         if not self._is_bind:
-            glBindBufferBase(self._target, self._binding_point, self._buffer_name)
+            glBindBufferBase(self._target, self._binding_point, self.buffer_name)
             self._is_bind = True
         if self._dirty:
-            glBindBuffer(self._target, self._buffer_name)
+            glBindBuffer(self._target, self.buffer_name)
             glBufferData(self._target, len(self), self._data, self._usage_hint)
             glBindBuffer(self._target, 0)
             self._dirty = False
 
-    def get_value(self, buffer_type):
-        glBindBuffer(self._target, self._buffer_name)
+    def get_value(self, buffer_type) -> np.array:
+        glBindBuffer(self._target, self.buffer_name)
         pointer_to_buffer = glMapBuffer(self._target, GL_READ_ONLY)
         vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(buffer_type))
-        vbo_array = np.ctypeslib.as_array(vbo_pointer, (1, ))
-        glUnmapBuffer(self._target)
-        return vbo_array
-
-    def get_value2(self, buffer_type):
-        glBindBuffer(self._target, self._buffer_name)
-        pointer_to_buffer = glMapBuffer(self._target, GL_READ_ONLY)
-        vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(buffer_type))
-        vbo_array = np.ctypeslib.as_array(vbo_pointer, (100, 4))
+        vbo_array = np.ctypeslib.as_array(vbo_pointer, (1,))
         glUnmapBuffer(self._target)
         return vbo_array
 
@@ -66,11 +64,11 @@ class ACVBO:
             raise Exception("capacity error")
         return self._capacity
 
-    def as_array_buffer(self, location, size, type):
-        glBindBuffer(GL_ARRAY_BUFFER, self._buffer_name)
+    def as_array_buffer(self, location, size, data_type: int):
+        glBindBuffer(GL_ARRAY_BUFFER, self.buffer_name)
         glEnableVertexAttribArray(location)
-        glVertexAttribPointer(location, size, type, False, 0, None)
+        glVertexAttribPointer(location, size, data_type, False, 0, None)
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     def as_element_array_buffer(self):
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._buffer_name)
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.buffer_name)
