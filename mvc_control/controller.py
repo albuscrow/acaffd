@@ -13,13 +13,12 @@ __author__ = 'ac'
 
 
 class Controller(QObject):
-
     updateScene = pyqtSignal()
 
     def __init__(self):
         super().__init__()
         # todo test code
-        self.model = None
+        self._gl_proxy = None  # type: GLProxy
         self.load_file("")
 
         # default show b spline control points
@@ -42,12 +41,12 @@ class Controller(QObject):
 
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
-        self.model.move_control_points(x, y, z)
+        self._gl_proxy.move_control_points(x, y, z)
         self.updateScene.emit()
 
     @pyqtSlot(int)
     def change_tessellation_level(self, level):
-        self.model.change_tessellation_level(level)
+        self._gl_proxy.change_tessellation_level(level)
         self.updateScene.emit()
 
     @pyqtSlot(str)
@@ -78,7 +77,7 @@ class Controller(QObject):
         # raw_obj = OBJ("res/3d_model/sphere.obj", ModelFileFormatType.obj)
         # raw_obj = OBJ("res/3d_model/wheel.obj", ModelFileFormatType.obj)
         raw_obj = OBJ("res/3d_model/Mobile.obj", ModelFileFormatType.obj)
-        self.model = GLProxy(raw_obj)
+        self._gl_proxy = GLProxy(raw_obj)
 
     @pyqtSlot(int, int)
     def rotate(self, x, y):
@@ -93,7 +92,7 @@ class Controller(QObject):
 
     @pyqtSlot(bool)
     def show_aux(self, is_show: bool):
-        self.model._show_control_point = is_show
+        self._gl_proxy._show_control_point = is_show
 
     @pyqtSlot(int, int, int, int)
     def select(self, x1: int, y1: int, x2: int, y2: int):
@@ -101,12 +100,12 @@ class Controller(QObject):
         x2 = max(x1, x2)
         y1 = min(y1, y2)
         y2 = max(y1, y2)
-        self.model.set_select_region(x1, self.window_size.h - y2, x2, self.window_size.h - y1)
+        self._gl_proxy.set_select_region(x1, self.window_size.h - y2, x2, self.window_size.h - y1)
         self.updateScene.emit()
 
     @pyqtSlot(int, int, int)
     def change_control_point_number(self, u: int, v: int, w: int):
-        self.model.change_control_point(u, v, w)
+        self._gl_proxy.change_control_point_number(u, v, w)
         self.updateScene.emit()
 
     @pyqtSlot(int)
@@ -127,6 +126,7 @@ class Controller(QObject):
 
     def gl_init(self) -> None:
         glClearColor(1, 1, 1, 1)
+        self._gl_proxy.gl_init_global()
 
     def gl_on_frame_draw(self) -> None:
         glEnable(GL_SCISSOR_TEST)
@@ -136,8 +136,8 @@ class Controller(QObject):
         # todo 这句理论上应该在gl_on_view_port_change调用，但是会有问题
         glViewport(*self.window_size.xywh)
 
-        if self.model:
-            self.model.draw(self._model_view_matrix, self._perspective_matrix)
+        if self._gl_proxy:
+            self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
 
         glDisable(GL_SCISSOR_TEST)
 
@@ -147,4 +147,3 @@ class Controller(QObject):
             self.gl_init()
             self.inited = True
         self.gl_on_frame_draw()
-

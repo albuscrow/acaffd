@@ -15,7 +15,6 @@ class GLProxy:
         self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
         self._deform_and_renderer_controller = None  # type: DeformAndDrawController
 
-        self.is_inited = False
         self.tessellation_factor_is_change = False
 
         self.task = []
@@ -24,9 +23,6 @@ class GLProxy:
         self.control_point_for_sample_ubo = None
 
     def draw(self, model_view_matrix, perspective_matrix):
-        if not self.is_inited:
-            self.gl_init_global()
-
         with self.lock:
             for t in self.task:
                 t()
@@ -50,8 +46,6 @@ class GLProxy:
             self._embed_body_controller.get_cage_size())
         self._deform_and_renderer_controller.gl_init()
 
-        self.is_inited = True
-
     def set_select_region(self, x1, y1, x2, y2):
         region = ACRect(x1, y1, x2 - x1, y2 - y1)
         self._embed_body_controller.pick_control_point(region)
@@ -65,7 +59,7 @@ class GLProxy:
         self._deform_and_renderer_controller.need_deform = True
         self.tessellation_factor_is_change = True
 
-    def change_control_point(self, u, v, w):
+    def change_control_point_number(self, u, v, w):
         self._embed_body_controller.change_control_point_number(u, v, w)
         with self.lock:
             self.task.append(self._deform_and_renderer_controller.gl_compute)
