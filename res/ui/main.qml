@@ -92,6 +92,9 @@ ApplicationWindow {
                     SpinBox {
                         value: 3
                         onValueChanged: {
+                            if (value <= 0) {
+                                value = 1
+                            }
                             controller.change_tessellation_level(value)
                         }
                     }
@@ -112,16 +115,12 @@ ApplicationWindow {
                         id: cp_u
                         value: 5
                         onValueChanged: {
+                            if (cp_u.value <= 2) {
+                                cp_u.value = 3
+                            }
                             controller.change_control_point_number(cp_u.value, cp_v.value, cp_w.value)
                         }
                     }
-
-                   //Label {
-                   //    text: "order_u"
-                   //}
-                   //
-                   //SpinBox {
-                   //}
 
                     Label {
                         text: "cp_v"
@@ -131,16 +130,12 @@ ApplicationWindow {
                         id: cp_v
                         value: 5
                         onValueChanged: {
+                            if (cp_v.value <= 2) {
+                                cp_v.value = 3
+                            }
                             controller.change_control_point_number(cp_u.value, cp_v.value, cp_w.value)
                         }
                     }
-
-                    //Label {
-                    //    text: "order_v"
-                    //}
-                    //
-                    //SpinBox {
-                    //}
 
                     Label {
                         text: "cp_w"
@@ -150,16 +145,12 @@ ApplicationWindow {
                         id: cp_w
                         value: 5
                         onValueChanged: {
+                            if (cp_w.value <= 2) {
+                                cp_w.value = 3
+                            }
                             controller.change_control_point_number(cp_u.value, cp_v.value, cp_w.value)
                         }
                     }
-
-                    //Label {
-                    //    text: "order_w"
-                    //}
-                    //
-                    //SpinBox {
-                    //}
                 }
             }
 

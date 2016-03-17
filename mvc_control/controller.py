@@ -52,7 +52,7 @@ class Controller(QObject):
     @pyqtSlot(str)
     def load_file(self, file_path):
         # todo
-        # file_path = "res/3d_model/Mobile.obj"
+        file_path = "res/3d_model/Mobile.obj"
         # file_path = "res/3d_model/767.obj"
         # file_path = "res/3d_model/ttest.obj"
         # file_path = "res/3d_model/cube.obj"
@@ -61,7 +61,7 @@ class Controller(QObject):
         # file_path = "res/3d_model/test_same_normal.obj"
         # file_path = "res/3d_model/star.obj"
         # file_path = "res/3d_model/legoDog.obj"
-        file_path = "res/3d_model/test_2_triangle.obj"
+        # file_path = "res/3d_model/test_2_triangle.obj"
         # file_path = "res/3d_model/Mobile.obj"
         # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
         # file_path = "res/3d_model/test_2_triangle.obj"
