@@ -98,21 +98,7 @@ class GLProxy:
 
         # init previous compute shader
         self.previous_compute_controller.gl_init()
-
-        self.gl_init_for_model()
-
-        self.model_renderer_shader = DrawProgramWrap('vertex.glsl', 'fragment.glsl')
-
-        self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
-                                                              self.splited_triangle_number, self.b_spline_body)
-        self.need_deform = True
-
-        self.is_inited = True
-
-    def gl_init_for_model(self) -> None:
-
-        # 预计算（分割三角形） 初始化下列buffer的时候需要用到分割后的三角形，所以要先分割
-        self.prev_computer()
+        self.splited_triangle_number = self.previous_compute_controller.split_model()
 
         # alloc memory in gpu for tessellated vertex
         self.vertex_vbo.capacity = self.splited_triangle_number * self._tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
@@ -124,6 +110,14 @@ class GLProxy:
         self.index_vbo.capacity = self.splited_triangle_number \
                                   * self._tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
         self.index_vbo.gl_sync()
+
+        self.model_renderer_shader = DrawProgramWrap('vertex.glsl', 'fragment.glsl')
+
+        self.deform_compute_shader = DeformComputeProgramWrap('deform_compute_shader_oo.glsl',
+                                                              self.splited_triangle_number, self.b_spline_body)
+        self.need_deform = True
+
+        self.is_inited = True
 
     def deform_and_draw_model(self, model_view_matrix, perspective_matrix):
         glBindVertexArray(self.model_vao)
@@ -209,11 +203,6 @@ class GLProxy:
                   self.splited_triangle_number *
                   self.deform_compute_shader.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE,
                   np.uint32, GL_DYNAMIC_DRAW)
-
-    def prev_computer(self):
-        # prev computer
-        self.previous_compute_controller.gl_compute()
-        self.splited_triangle_number = self.previous_compute_controller.get_splited_triangles_number()
 
     def set_select_region(self, x1, y1, x2, y2):
         region = ACRect(x1, y1, x2 - x1, y2 - y1)

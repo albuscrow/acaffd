@@ -158,3 +158,7 @@ class PreviousComputeController:
 
     def get_splited_triangles_number(self) -> int:
         return self._splited_triangle_counter_acbo.get_value(ctypes.c_uint32)[0]
+
+    def split_model(self) -> int:
+        self.gl_compute()
+        return self.get_splited_triangles_number()
