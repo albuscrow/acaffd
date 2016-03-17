@@ -129,5 +129,5 @@ class BSplineBodyController:
         return self._b_spline_body.get_cage_size()
 
     def change_control_point_number(self, u, v, w):
-        # todo
+        self._b_spline_body.change_control_point_number(u, v, w)
         pass

@@ -61,5 +61,3 @@ class GLProxy:
 
     def change_control_point_number(self, u, v, w):
         self._embed_body_controller.change_control_point_number(u, v, w)
-        with self.lock:
-            self.task.append(self._deform_and_renderer_controller.gl_compute)
