@@ -52,9 +52,6 @@ class GLProxy:
         self.task = []
         self.lock = threading.Lock()
 
-        self.adjacency_info_ssbo = None
-        self.share_adjacency_pn_triangle_ssbo = None
-        self.splited_triangle_ssbo = None
         self.control_point_for_sample_ubo = None
 
     def draw(self, model_view_matrix, perspective_matrix):
@@ -80,9 +77,6 @@ class GLProxy:
         # splited_triangle_ssbo
         # B spline body 的信息。
         # b_spline_body_ubo
-        self.adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_STATIC_DRAW)
-        self.share_adjacency_pn_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_STATIC_DRAW)
-        self.splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
 
         # 经过tessellate后最终用于绘制的数据。
         # vertice_vbo
@@ -116,15 +110,6 @@ class GLProxy:
         self.is_inited = True
 
     def gl_init_for_model(self) -> None:
-        # copy original index to gpu, and bind original_index_vbo to bind point 2
-        self.adjacency_info_ssbo.async_update(self.model.adjacency)
-        self.adjacency_info_ssbo.gl_sync()
-        # copy adjacency table to gpu, and bind adjacency_vbo to bind point 3
-        self.share_adjacency_pn_triangle_ssbo.capacity = self.model.original_triangle_number * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
-        self.share_adjacency_pn_triangle_ssbo.gl_sync()
-        # 用于储存原始三角面片的PN-triangle
-        self.splited_triangle_ssbo.capacity = self.model.original_triangle_number * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE * SPLITED_TRIANGLE_SIZE
-        self.splited_triangle_ssbo.gl_sync()
 
         # 预计算（分割三角形） 初始化下列buffer的时候需要用到分割后的三角形，所以要先分割
         self.prev_computer()
