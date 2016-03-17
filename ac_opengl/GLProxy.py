@@ -16,7 +16,9 @@ class GLProxy:
         self._deform_and_renderer_controller = None  # type: DeformAndDrawController
 
     def draw(self, model_view_matrix, perspective_matrix):
-        self._previous_compute_controller.gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
+        self._deform_and_renderer_controller.splited_triangle_number \
+            = self._previous_compute_controller \
+            .gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
                                                          self._embed_body_controller.gl_sync_buffer_for_deformation)
         self._embed_body_controller.gl_draw(model_view_matrix, perspective_matrix)
@@ -51,3 +53,6 @@ class GLProxy:
         self._embed_body_controller.change_control_point_number(u, v, w)
         self._deform_and_renderer_controller.cage_size = self._embed_body_controller.get_cage_size()
         self._previous_compute_controller.need_compute = True
+
+    def change_split_factor(self, factor):
+        self._previous_compute_controller.split_factor = factor

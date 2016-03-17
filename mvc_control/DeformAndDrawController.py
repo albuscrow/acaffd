@@ -21,9 +21,12 @@ class DeformComputeShader(ProgramWrap):
         self._tessellation_indexes = ACVBO(GL_UNIFORM_BUFFER, 3, None, GL_STATIC_DRAW)  # type: ACVBO
 
     def init_uniform(self):
-        glProgramUniform1ui(self._gl_program_name, 0, int(self._controller.splited_triangle_number))
+        self.update_uniform_triangle_number()
         self.update_uniform_about_b_spline()
         self.update_uniform_about_tessellation()
+
+    def update_uniform_triangle_number(self):
+        glProgramUniform1ui(self._gl_program_name, 0, int(self._controller.splited_triangle_number))
 
     def update_uniform_about_tessellation(self):
         glProgramUniform1ui(self._gl_program_name, 4,
@@ -55,6 +58,7 @@ class DeformAndDrawController:
         self._tessellation_parameter = None  # type: list
         self._tessellation_index = None  # type: list
         self._tessellation_factor_changed = False  # type: bool
+        self._splited_triangle_number_changed = False  # type: bool
         self.init_tessellation_pattern_data(3)
 
         self._need_deform = True  # type: bool
@@ -114,6 +118,9 @@ class DeformAndDrawController:
         if self._tessellation_factor_changed:
             self._deform_program.update_uniform_about_tessellation()
             self._tessellation_factor_changed = False
+        if self._splited_triangle_number_changed:
+            self._deform_program.update_uniform_triangle_number()
+            self._splited_triangle_number_changed = False
         glDispatchCompute(*self.group_size)
         self._need_deform = False
         glUseProgram(0)
@@ -129,7 +136,6 @@ class DeformAndDrawController:
         glEnable(GL_DEPTH_TEST)
         glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
-        print("index number", number)
         glDrawElements(GL_TRIANGLES, number,
                        GL_UNSIGNED_INT, None)
         glBindVertexArray(0)
@@ -138,6 +144,19 @@ class DeformAndDrawController:
     @property
     def splited_triangle_number(self):
         return self._splited_triangle_number
+
+    @splited_triangle_number.setter
+    def splited_triangle_number(self, number: int):
+        if number == self._splited_triangle_number:
+            return
+        self._splited_triangle_number = number
+        self.gl_async_update_buffer_for_self()
+        self._splited_triangle_number_changed = True
+        self._need_deform = True
+
+    @property
+    def splited_triangle_number_changed(self):
+        return self._splited_triangle_number_changed
 
     @property
     def group_size(self):

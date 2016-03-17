@@ -85,6 +85,23 @@ ApplicationWindow {
                 GridLayout {
                     columns: 2
                     anchors.fill: parent
+
+                    Label {
+                        text: "切割参数"
+                    }
+
+                    SpinBox {
+                        value: 0.2
+                        decimals: 2
+                        stepSize: 0.05
+                        onValueChanged: {
+                            if (value <= 0) {
+                                value = 0.05
+                            }
+                            controller.change_split_factor(value)
+                        }
+                    }
+
                     Label {
                         text: "细分参数"
                     }

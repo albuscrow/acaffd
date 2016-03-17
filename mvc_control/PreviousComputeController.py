@@ -37,13 +37,13 @@ class PreviousComputeController:
         self._model = model  # type: OBJ
 
         # init pattern data
-        self._split_factor = 2  # type: float
+        self._split_factor = 0.2  # type: float
         self.MAX_SEGMENTS = -1  # type: int
         self._pattern_offsets = None  # type: np.array
         self._pattern_indexes = None  # type: np.array
         self._pattern_parameters = None  # type: np.array
-        self._split_factor_change = False  # type: bool
-        self._need_recompute = True
+        self._need_recompute = True  # type: bool
+        self._need_update_split_factor = True  # type: bool
         self._splited_triangle_number = -1  # type: int
         self.init_pattern_data()
 
@@ -107,10 +107,13 @@ class PreviousComputeController:
         self._share_adjacency_pn_triangle_ssbo.gl_sync()
         self._splited_triangle_ssbo.gl_sync()
 
-    def gl_compute(self, operator):
+    def gl_compute(self, operator) -> int:
         if not self._need_recompute:
-            return
+            return self._splited_triangle_number
         self.gl_sync()
+        if self._need_update_split_factor:
+            self.gl_set_split_factor()
+            self._need_update_split_factor = False
         operator()
         self._program.use()
         self.gl_init_split_counter()
@@ -118,6 +121,7 @@ class PreviousComputeController:
         glUseProgram(0)
         self._splited_triangle_number = self.get_splited_triangles_number()
         self._need_recompute = False
+        return self._splited_triangle_number
 
     @property
     def need_compute(self):
@@ -138,7 +142,8 @@ class PreviousComputeController:
     @split_factor.setter
     def split_factor(self, split_factor):
         self._split_factor = split_factor
-        self._split_factor_change = True
+        self._need_recompute = True
+        self._need_update_split_factor = True
 
     def gl_set_split_factor(self):
         glProgramUniform1f(self._program.program, 0, self._split_factor)
@@ -178,6 +183,3 @@ class PreviousComputeController:
     @property
     def splited_triangle_number(self):
         return self._splited_triangle_number
-
-    def need_recompute(self):
-        pass

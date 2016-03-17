@@ -37,7 +37,7 @@ class Controller(QObject):
         self._model_matrix = create_from_translation(np.array([0, 0, -8]), dtype='float32')  # type: np.array
         self._model_view_matrix = self._model_matrix  # type: np.array
 
-        self.inited = False  # type: bool
+        self._inited = False  # type: bool
 
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
@@ -47,6 +47,11 @@ class Controller(QObject):
     @pyqtSlot(int)
     def change_tessellation_level(self, level):
         self._gl_proxy.change_tessellation_level(level)
+        self.updateScene.emit()
+
+    @pyqtSlot(float)
+    def change_split_factor(self, level):
+        self._gl_proxy.change_split_factor(level)
         self.updateScene.emit()
 
     @pyqtSlot(str)
@@ -139,7 +144,7 @@ class Controller(QObject):
 
     @pyqtSlot()
     def paint(self):
-        if not self.inited:
+        if not self._inited:
             self.gl_init()
-            self.inited = True
+            self._inited = True
         self.gl_on_frame_draw()
