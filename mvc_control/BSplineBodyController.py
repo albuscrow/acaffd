@@ -130,4 +130,7 @@ class BSplineBodyController:
 
     def change_control_point_number(self, u, v, w):
         self._b_spline_body.change_control_point_number(u, v, w)
+        self.async_upload_to_gpu()
+        # self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
+        # self._b_spline_body_info_ubo.async_update(self._b_spline_body.get_info())
         pass

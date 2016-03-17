@@ -18,27 +18,19 @@ class GLProxy:
 
         self.tessellation_factor_is_change = False
 
-        self.task = []
-        self.lock = threading.Lock()
-
     def draw(self, model_view_matrix, perspective_matrix):
-        with self.lock:
-            for t in self.task:
-                t()
-            self.task.clear()
-
+        self._previous_compute_controller.gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
-                                                         self._embed_body_controller)
+                                                         self._embed_body_controller.gl_sync_buffer_for_deformation)
         self._embed_body_controller.gl_draw(model_view_matrix, perspective_matrix)
 
     def gl_init_global(self):
         glClearColor(1, 1, 1, 1)
         self._embed_body_controller.gl_init()
-        self._embed_body_controller.gl_sync_buffer_for_previous_computer()
 
         # init previous compute shader
         self._previous_compute_controller.gl_init()
-        self._previous_compute_controller.gl_compute()
+        self._previous_compute_controller.gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(
@@ -61,3 +53,4 @@ class GLProxy:
 
     def change_control_point_number(self, u, v, w):
         self._embed_body_controller.change_control_point_number(u, v, w)
+        self._previous_compute_controller.need_compute = True

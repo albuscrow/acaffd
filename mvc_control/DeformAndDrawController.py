@@ -93,18 +93,17 @@ class DeformAndDrawController:
         self._normal_vbo.gl_sync()
         self._index_vbo.gl_sync()
 
-    def gl_deform(self, b_spline_controller: BSplineBodyController):
+    def gl_deform(self, operator):
         if self.need_deform:
-            b_spline_controller.gl_sync_buffer_for_deformation()
+            operator()
             self._deform_program.use()
             glDispatchCompute(*self.group_size)
             self._need_deform = False
             glUseProgram(0)
 
-    def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array,
-                    b_spline_controller: BSplineBodyController):
+    def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
         self.gl_sync_buffer()
-        self.gl_deform(b_spline_controller)
+        self.gl_deform(operator)
         self._renderer_program.use()
         # common bind
         wvp_matrix = multiply(model_view_matrix, perspective_matrix)

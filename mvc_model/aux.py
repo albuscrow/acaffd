@@ -29,16 +29,17 @@ class BSplineBody:
 
         self._size = [lx, ly, lz]
 
-        self._ctrlPoints = np.zeros((self._control_point_number_u,
-                                     self._control_point_number_v,
-                                     self._control_point_number_w,
-                                     3), dtype=np.float32)  # type: np.array
+        self._ctrlPoints = None  # type: np.array
         self._control_points_backup = None  # type: np.array
         self._is_hit = None  # type: list
 
         self.init_data()
 
     def init_data(self):
+        self._ctrlPoints = np.zeros((self._control_point_number_u,
+                                     self._control_point_number_v,
+                                     self._control_point_number_w,
+                                     3), dtype=np.float32)  # type: np.array
         aux_x = self.get_control_point_aux_list(self._size[0], self._control_point_number_u, self._order_u)
         aux_y = self.get_control_point_aux_list(self._size[1], self._control_point_number_v, self._order_v)
         aux_z = self.get_control_point_aux_list(self._size[2], self._control_point_number_w, self._order_w)

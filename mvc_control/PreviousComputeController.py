@@ -43,6 +43,7 @@ class PreviousComputeController:
         self._pattern_indexes = None  # type: np.array
         self._pattern_parameters = None  # type: np.array
         self._split_factor_change = False  # type: bool
+        self._need_recompute = True
         self._splited_triangle_number = -1  # type: int
         self.init_pattern_data()
 
@@ -106,13 +107,25 @@ class PreviousComputeController:
         self._share_adjacency_pn_triangle_ssbo.gl_sync()
         self._splited_triangle_ssbo.gl_sync()
 
-    def gl_compute(self):
+    def gl_compute(self, operator):
+        if not self._need_recompute:
+            return
         self.gl_sync()
+        operator()
         self._program.use()
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
         glUseProgram(0)
         self._splited_triangle_number = self.get_splited_triangles_number()
+        self._need_recompute = False
+
+    @property
+    def need_compute(self):
+        return self._need_recompute
+
+    @need_compute.setter
+    def need_compute(self, b):
+        self._need_recompute = b
 
     @property
     def split_factor(self):
@@ -165,3 +178,6 @@ class PreviousComputeController:
     @property
     def splited_triangle_number(self):
         return self._splited_triangle_number
+
+    def need_recompute(self):
+        pass
