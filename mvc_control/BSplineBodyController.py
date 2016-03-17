@@ -1,6 +1,6 @@
 from mvc_model.GLObject import ACVBO
 from mvc_model.aux import BSplineBody
-from ac_opengl.shader.ShaderWrapper2 import ProgramWrap, ShaderWrap
+from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from pyrr.matrix44 import *
