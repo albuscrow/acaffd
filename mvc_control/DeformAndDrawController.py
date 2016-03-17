@@ -1,11 +1,8 @@
 from Constant import *
-from mvc_model.model import OBJ
 from mvc_model.GLObject import ACVBO
 from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
-from OpenGL.GLU import *
 from pyrr.matrix44 import *
-from mvc_control.BSplineBodyController import BSplineBodyController
 
 
 def add_compute_prefix(file_name: str):
@@ -23,12 +20,7 @@ class DeformComputeShader(ProgramWrap):
 
     def init_uniform(self):
         glProgramUniform1ui(self._gl_program_name, 0, int(self._controller.splited_triangle_number))
-        glProgramUniform1ui(self._gl_program_name, 1,
-                            int(self._controller.cage_size[1] * self._controller.cage_size[2]))
-        glProgramUniform1ui(self._gl_program_name, 2, int(self._controller.cage_size[1]))
-        glProgramUniform3f(self._gl_program_name, 3, 1 / self._controller.cage_size[0],
-                           1 / self._controller.cage_size[1],
-                           1 / self._controller.cage_size[2])
+        self.update_uniform_about_b_spline()
         glProgramUniform1ui(self._gl_program_name, 4,
                             int(self._controller.tessellated_point_number_pre_splited_triangle))
         glProgramUniform1ui(self._gl_program_name, 5,
@@ -38,6 +30,14 @@ class DeformComputeShader(ProgramWrap):
         tp.gl_sync()
         ti = ACVBO(GL_UNIFORM_BUFFER, 3, np.array(self._controller.tessellation_index, dtype=np.uint32), GL_STATIC_DRAW)
         ti.gl_sync()
+
+    def update_uniform_about_b_spline(self):
+        glProgramUniform1ui(self._gl_program_name, 1,
+                            int(self._controller.cage_size[1] * self._controller.cage_size[2]))
+        glProgramUniform1ui(self._gl_program_name, 2, int(self._controller.cage_size[2]))
+        glProgramUniform3f(self._gl_program_name, 3, 1 / self._controller.cage_size[0],
+                           1 / self._controller.cage_size[1],
+                           1 / self._controller.cage_size[2])
 
 
 class DeformAndDrawController:
@@ -53,6 +53,7 @@ class DeformAndDrawController:
         self.init_tessellation_pattern_data(3)
 
         self._need_deform = True  # type: bool
+        self._need_update_uniform_about_b_spline = False
 
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -94,12 +95,16 @@ class DeformAndDrawController:
         self._index_vbo.gl_sync()
 
     def gl_deform(self, operator):
-        if self.need_deform:
-            operator()
-            self._deform_program.use()
-            glDispatchCompute(*self.group_size)
-            self._need_deform = False
-            glUseProgram(0)
+        if not self.need_deform:
+            return
+        operator()
+        self._deform_program.use()
+        if self._need_update_uniform_about_b_spline:
+            self._deform_program.update_uniform_about_b_spline()
+            self._need_update_uniform_about_b_spline = False
+        glDispatchCompute(*self.group_size)
+        self._need_deform = False
+        glUseProgram(0)
 
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
         self.gl_sync_buffer()
@@ -181,3 +186,8 @@ class DeformAndDrawController:
     @need_deform.setter
     def need_deform(self, value):
         self._need_deform = value
+
+    @cage_size.setter
+    def cage_size(self, value):
+        self._cage_size = value
+        self._need_update_uniform_about_b_spline = True

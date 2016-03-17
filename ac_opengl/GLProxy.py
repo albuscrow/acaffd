@@ -53,4 +53,5 @@ class GLProxy:
 
     def change_control_point_number(self, u, v, w):
         self._embed_body_controller.change_control_point_number(u, v, w)
+        self._deform_and_renderer_controller.cage_size = self._embed_body_controller.get_cage_size()
         self._previous_compute_controller.need_compute = True
