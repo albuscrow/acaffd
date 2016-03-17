@@ -50,33 +50,29 @@ class Controller(QObject):
         self.updateScene.emit()
 
     @pyqtSlot(str)
-    def load_file(self, file_url):
-        """
-        :param file_url:
-        :type file_url: str
-        :return:
-        """
-        if file_url.startswith('file://'):
-            file_url = file_url[len('file://'):]
-        # raw_obj = OBJ(file_url, ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/767.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/ttest.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/cube.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/test2.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/bishop.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/test_same_normal.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/star.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/legoDog.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/test_2_triangle.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/Mobile.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/biship_cym_area_average_normal.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/test_2_triangle.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/biship_cym_area_average_normal.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/biship_cym_direct_average_normal.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/vase_cym.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/sphere.obj", ModelFileFormatType.obj)
-        # raw_obj = OBJ("res/3d_model/wheel.obj", ModelFileFormatType.obj)
-        raw_obj = OBJ("res/3d_model/Mobile.obj", ModelFileFormatType.obj)
+    def load_file(self, file_path):
+        # todo
+        file_path = "res/3d_model/Mobile.obj"
+        # file_path = "res/3d_model/767.obj"
+        # file_path = "res/3d_model/ttest.obj"
+        # file_path = "res/3d_model/cube.obj"
+        # file_path = "res/3d_model/test2.obj"
+        # file_path = "res/3d_model/bishop.obj"
+        # file_path = "res/3d_model/test_same_normal.obj"
+        # file_path = "res/3d_model/star.obj"
+        # file_path = "res/3d_model/legoDog.obj"
+        # file_path = "res/3d_model/test_2_triangle.obj"
+        # file_path = "res/3d_model/Mobile.obj"
+        # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+        # file_path = "res/3d_model/test_2_triangle.obj"
+        # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+        # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
+        # file_path = "res/3d_model/vase_cym.obj"
+        # file_path = "res/3d_model/sphere.obj"
+        # file_path = "res/3d_model/wheel.obj"
+        if file_path.startswith('file://'):
+            file_path = file_path[len('file://'):]
+        raw_obj = OBJ(file_path, ModelFileFormatType.obj)
         self._gl_proxy = GLProxy(raw_obj)
 
     @pyqtSlot(int, int)

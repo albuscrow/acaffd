@@ -5,6 +5,7 @@ from mvc_control.BSplineBodyController import BSplineBodyController
 from mvc_control.PreviousComputeController import PreviousComputeController
 from mvc_control.DeformAndDrawController import DeformAndDrawController
 from mvc_model.model import OBJ
+from OpenGL.GL import *
 
 from mvc_model.plain_class import ACRect
 
@@ -20,8 +21,6 @@ class GLProxy:
         self.task = []
         self.lock = threading.Lock()
 
-        self.control_point_for_sample_ubo = None
-
     def draw(self, model_view_matrix, perspective_matrix):
         with self.lock:
             for t in self.task:
@@ -33,6 +32,7 @@ class GLProxy:
         self._embed_body_controller.gl_draw(model_view_matrix, perspective_matrix)
 
     def gl_init_global(self):
+        glClearColor(1, 1, 1, 1)
         self._embed_body_controller.gl_init()
         self._embed_body_controller.gl_sync_buffer_for_previous_computer()
 
