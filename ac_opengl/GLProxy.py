@@ -1,7 +1,5 @@
-import threading
-
 from mvc_control.BSplineBodyController import BSplineBodyController
-from mvc_control.PreviousComputeController import PreviousComputeController
+from mvc_control.PreviousComputeControllerGPU import PreviousComputeController
 from mvc_control.DeformAndDrawController import DeformAndDrawController
 from mvc_model.model import OBJ
 from OpenGL.GL import *

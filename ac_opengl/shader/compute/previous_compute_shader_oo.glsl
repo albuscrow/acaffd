@@ -52,9 +52,9 @@ struct SplitedTriangle {
     SamplePointInfo samplePoint[37];
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
-    bool need_adj[6];
     vec4 original_normal[3];
     vec4 original_position[3];
+    bool need_adj[6];
 };
 
 
