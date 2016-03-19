@@ -10,10 +10,24 @@ from mvc_model.plain_class import ACRect
 
 
 class GLProxy:
-    def __init__(self, model: OBJ):
-        self._embed_body_controller = BSplineBodyController(model.get_length_xyz())  # type: BSplineBodyController
-        self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
+    def __init__(self):
+        self._embed_body_controller = None  # type: BSplineBodyController
+        self._previous_compute_controller = None  # type: PreviousComputeController
         self._deform_and_renderer_controller = None  # type: DeformAndDrawController
+
+    def change_model(self, model: OBJ):
+        if self._embed_body_controller is None:
+            self._embed_body_controller = BSplineBodyController(model.get_length_xyz())  # type: BSplineBodyController
+        else:
+            self._embed_body_controller.change_size(model.get_length_xyz())
+
+        if self._previous_compute_controller is None:
+            self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
+        else:
+            self._previous_compute_controller.change_model(model)
+
+        if self._deform_and_renderer_controller is not None:
+            self._deform_and_renderer_controller.cage_size = self._embed_body_controller.get_cage_size()
 
     def draw(self, model_view_matrix, perspective_matrix):
         self._deform_and_renderer_controller.splited_triangle_number \

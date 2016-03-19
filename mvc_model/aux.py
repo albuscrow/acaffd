@@ -27,11 +27,11 @@ class BSplineBody:
         else:
             raise Exception('input argv number error')
 
-        self._size = [lx, ly, lz]
-
         self._ctrlPoints = None  # type: np.array
         self._control_points_backup = None  # type: np.array
         self._is_hit = None  # type: list
+
+        self._size = [lx, ly, lz]
 
         self.init_data()
 

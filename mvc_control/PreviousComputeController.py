@@ -61,6 +61,11 @@ class PreviousComputeController:
             PreviousComputeShader(GL_COMPUTE_SHADER, add_prefix('previous_compute_shader_oo.glsl'),
                                   self))  # type: ProgramWrap
 
+    def change_model(self, model):
+        self._model = model
+        self.gl_async_update_buffer_for_self_about_model()
+        self._need_recompute = True  # type: bool
+
     def gl_init(self):
         self._program.link()
         self.gl_set_split_factor()
@@ -86,12 +91,13 @@ class PreviousComputeController:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, split_info_buffer)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)
 
+        self.gl_async_update_buffer_for_self_about_model()
+
+    def gl_async_update_buffer_for_self_about_model(self):
         self._original_vertex_ssbo.async_update(self._model.vertex)
         self._original_normal_ssbo.async_update(self._model.normal)
         self._original_index_ssbo.async_update(self._model.index)
-        # copy original index to gpu, and bind original_index_vbo to bind point 2
         self._adjacency_info_ssbo.async_update(self._model.adjacency)
-        # copy adjacency table to gpu, and bind adjacency_vbo to bind point 3
         self._share_adjacency_pn_triangle_ssbo.capacity = self._model.original_triangle_number \
                                                           * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
         # 用于储存原始三角面片的PN-triangle

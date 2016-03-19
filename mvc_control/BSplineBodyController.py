@@ -36,6 +36,15 @@ class BSplineBodyController:
         self._pick_region = None  # type: ACRect
         self._control_points_changed = True  # type: bool
 
+    def change_size(self, size):
+        # check input
+        if len(size) != 3:
+            raise Exception('b spline body size number error')
+        if any(i < 0 for i in size):
+            raise Exception('b spline body size < 0, error')
+        self._b_spline_body = BSplineBody(*size)  # type: BSplineBody
+        self.async_upload_to_gpu()
+
     def gl_init(self):
         # init vao
         self._vao = glGenVertexArrays(1)
@@ -131,6 +140,4 @@ class BSplineBodyController:
     def change_control_point_number(self, u, v, w):
         self._b_spline_body.change_control_point_number(u, v, w)
         self.async_upload_to_gpu()
-        # self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
-        # self._b_spline_body_info_ubo.async_update(self._b_spline_body.get_info())
         pass

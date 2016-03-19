@@ -17,9 +17,10 @@ class Controller(QObject):
 
     def __init__(self):
         super().__init__()
+        self._gl_proxy = GLProxy()  # type: GLProxy
+
         # todo test code
-        self._gl_proxy = None  # type: GLProxy
-        self.load_file("")
+        self.load_file(get_test_file_name())
 
         # default show b spline control points
         self.show_aux(True)
@@ -56,29 +57,10 @@ class Controller(QObject):
 
     @pyqtSlot(str)
     def load_file(self, file_path):
-        # todo
-        file_path = "res/3d_model/Mobile.obj"
-        # file_path = "res/3d_model/767.obj"
-        # file_path = "res/3d_model/ttest.obj"
-        # file_path = "res/3d_model/cube.obj"
-        # file_path = "res/3d_model/test2.obj"
-        # file_path = "res/3d_model/bishop.obj"
-        # file_path = "res/3d_model/test_same_normal.obj"
-        # file_path = "res/3d_model/star.obj"
-        # file_path = "res/3d_model/legoDog.obj"
-        # file_path = "res/3d_model/test_2_triangle.obj"
-        # file_path = "res/3d_model/Mobile.obj"
-        # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-        # file_path = "res/3d_model/test_2_triangle.obj"
-        # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-        # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
-        # file_path = "res/3d_model/vase_cym.obj"
-        # file_path = "res/3d_model/sphere.obj"
-        # file_path = "res/3d_model/wheel.obj"
         if file_path.startswith('file://'):
             file_path = file_path[len('file://'):]
         raw_obj = OBJ(file_path, ModelFileFormatType.obj)
-        self._gl_proxy = GLProxy(raw_obj)
+        self._gl_proxy.change_model(raw_obj)
 
     @pyqtSlot(int, int)
     def rotate(self, x, y):
@@ -148,3 +130,26 @@ class Controller(QObject):
             self.gl_init()
             self._inited = True
         self.gl_on_frame_draw()
+
+
+def get_test_file_name():
+    # todo
+    file_path = "res/3d_model/Mobile.obj"
+    # file_path = "res/3d_model/767.obj"
+    # file_path = "res/3d_model/ttest.obj"
+    # file_path = "res/3d_model/cube.obj"
+    # file_path = "res/3d_model/test2.obj"
+    # file_path = "res/3d_model/bishop.obj"
+    # file_path = "res/3d_model/test_same_normal.obj"
+    # file_path = "res/3d_model/star.obj"
+    # file_path = "res/3d_model/legoDog.obj"
+    # file_path = "res/3d_model/test_2_triangle.obj"
+    # file_path = "res/3d_model/Mobile.obj"
+    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    # file_path = "res/3d_model/test_2_triangle.obj"
+    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
+    # file_path = "res/3d_model/vase_cym.obj"
+    # file_path = "res/3d_model/sphere.obj"
+    # file_path = "res/3d_model/wheel.obj"
+    return file_path
