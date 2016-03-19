@@ -52,11 +52,11 @@ class ACVBO:
             glBindBuffer(self._target, 0)
             self._dirty = False
 
-    def get_value(self, buffer_type) -> np.array:
+    def get_value(self, buffer_type, shape: tuple = (1,)) -> np.array:
         glBindBuffer(self._target, self.buffer_name)
         pointer_to_buffer = glMapBuffer(self._target, GL_READ_ONLY)
         vbo_pointer = ctypes.cast(pointer_to_buffer, ctypes.POINTER(buffer_type))
-        vbo_array = np.ctypeslib.as_array(vbo_pointer, (1,))
+        vbo_array = np.ctypeslib.as_array(vbo_pointer, shape)
         glUnmapBuffer(self._target)
         return vbo_array
 

@@ -54,7 +54,7 @@ struct SplitedTriangle {
     vec4 adjacency_normal[6];
     vec4 original_normal[3];
     vec4 original_position[3];
-    bool need_adj[6];
+    int need_adj[6];
 };
 
 
@@ -318,14 +318,18 @@ void main() {
             uint currentEdge = adjacency_triangle_index_edge[j];
             uint adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
             if (currentEdge == -1 || adjacency_triangle_index_ == -1) {
-                st.need_adj[aux1[j * 2]] = false;
-                st.need_adj[aux1[j * 2 + 1]] = false;
+                st.need_adj[aux1[j * 2]] = -1;
+                st.need_adj[aux1[j * 2 + 1]] = -1;
             } else {
                 for (int k = 0; k < 2; ++k) {
                     int index = j * 2 + k;
                     vec3 adjacency_parameter = translate_parameter(parameter[aux2[index]], currentEdge);
                     st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
-                    st.need_adj[aux1[index]] = !all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4));
+                    if (all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4))) {
+                        st.need_adj[aux1[index]] = -1;
+                    } else {
+                        st.need_adj[aux1[index]] = 1;
+                    }
                 }
             }
         }
