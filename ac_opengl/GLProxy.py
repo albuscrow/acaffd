@@ -67,6 +67,7 @@ class GLProxy:
         self._embed_body_controller.change_control_point_number(u, v, w)
         self._deform_and_renderer_controller.cage_size = self._embed_body_controller.get_cage_size()
         self._previous_compute_controller.need_compute = True
+        self._deform_and_renderer_controller.need_deform = True
 
     def change_split_factor(self, factor):
         self._previous_compute_controller.split_factor = factor
