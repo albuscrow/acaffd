@@ -2,6 +2,8 @@ import logging
 from enum import Enum
 import numpy as np
 
+from mvc_model.aux import BSplineBody
+
 
 class ModelFileFormatType(Enum):
     obj = 1
@@ -14,10 +16,10 @@ def normalize(n):
 
 
 class OBJ:
-    def __init__(self, file_path, format_type):
+    def __init__(self, file_path, format_type: ModelFileFormatType = ModelFileFormatType.obj):
         self._vertex = []
         self._normal = []
-        self.tex_coord = []
+        self._tex_coord = []
         self._index = []
         self._adjacency = []
 
@@ -42,7 +44,6 @@ class OBJ:
                     l = l.strip()
                     if l is None or len(l) == 0 or l.startswith('#'):
                         continue
-
                     tokens = l.split()
                     first_token = tokens.pop(0)
                     if first_token == 'v':
@@ -51,7 +52,6 @@ class OBJ:
                         max_x, min_x = self.find_max_min(max_x, min_x, temp_vertices[-1][0])
                         max_y, min_y = self.find_max_min(max_y, min_y, temp_vertices[-1][1])
                         max_z, min_z = self.find_max_min(max_z, min_z, temp_vertices[-1][2])
-
                     elif first_token == 'vn':
                         temp_normals.append(list(map(float, tokens)))
                         temp_normals[-1] = normalize(temp_normals[-1])
@@ -139,10 +139,13 @@ class OBJ:
                 self._vertex.append(temp_vertices[vertex_index])
 
                 if len(index) == 2:
-                    self.tex_coord.append(temp_tex_coords[int(index[1])])
+                    self._tex_coord.append(temp_tex_coords[int(index[1])])
+                    self._normal.append([0, 0, 0, 0])
                 else:
                     if index[1]:
-                        self.tex_coord.append(temp_tex_coords[int(index[1])])
+                        self._tex_coord.append(temp_tex_coords[int(index[1])])
+                    else:
+                        self._tex_coord.append([0, 0])
                     self._normal.append(temp_normals[int(index[2])])
 
                 aux_vertex_map[v] = len(aux_vertex_map)
@@ -199,3 +202,135 @@ class OBJ:
     @property
     def adjacency(self):
         return np.array(self._adjacency, dtype=np.int32)
+
+    def split(self, bspline: BSplineBody):
+        data = np.zeros(self.original_triangle_number, dtype='37int8, float32, (2,3)float64')
+        self.reorganize()
+        return self.original_triangle_number, data
+
+    def reorganize(self):
+        res = []  # type: list[ACTriangle]
+        for i, index in enumerate(zip(*([iter(self._index)] * 3))):
+            print(index)
+            t = ACTriangle(i)  # type: ACTriangle
+            t.position, t.normal, t.tex_coord = map(lambda lst: [lst[x] for x in index],
+                                                    [self._vertex, self._normal, self._tex_coord])
+            res.append(t)
+        for i, triangle in enumerate(res):
+            triangle.neighbor = []
+            for j in self._adjacency[i]:
+                if j != -1:
+                    triangle.neighbor.append((res[j // 4], j % 4))
+                else:
+                    triangle.neighbor.append((None, -1))
+
+        for t in res:
+            print(t)
+        return res
+
+
+class ACTriangle:
+    def __init__(self, i):
+        self._id = i
+        self._position = None  # type: list[list[float]]
+        self._normal = None  # type: list[list[float]]
+        self._tex_coord = None  # type: list[list[float]]
+        self._neighbor = None  # type: list[(ACTriangle, int)]
+
+    def __str__(self):
+        return ','.join([str(x.id if x else None) + '-' + str(y) for x, y in self._neighbor])
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def position(self):
+        return self._position
+
+    @property
+    def normal(self):
+        return self._normal
+
+    @property
+    def tex_coord(self):
+        return self._tex_coord
+
+    @property
+    def neighbor(self):
+        return self._neighbor
+
+    @position.setter
+    def position(self, value):
+        self._position = value
+
+    @normal.setter
+    def normal(self, value):
+        self._normal = value
+
+    @tex_coord.setter
+    def tex_coord(self, value):
+        self._tex_coord = value
+
+    @neighbor.setter
+    def neighbor(self, value):
+        self._neighbor = value
+
+
+if __name__ == '__main__':
+    import numpy as np
+
+    # struct SamplePointInfo {
+    #     vec4 parameter;
+    #     vec4 sample_point_original_normal;
+    #     uvec4 knot_left_index;
+    # };
+    # struct SplitedTriangle {
+    #     SamplePointInfo samplePoint[37];
+    #     vec4 normal_adj[3];
+    #     vec4 adjacency_normal[6];
+    #     vec4 original_normal[3];
+    #     vec4 original_position[3];
+    #     bool need_adj[6];
+    # };
+
+    data = [('spire', '250um', [(0, 1.89e6, 0.0), (1, 2e6, 1e-2), (2, 2.02e6, 3.8e-2)]),
+            ('spire', '350', [(0, 1.89e6, 0.0), (2, 2.02e6, 3.8e-2), (2, 2.02e6, 3.8e-2)])
+            ]
+    data = []
+    for i in range(10):
+        samplePoint = []
+        for j in range(37):
+            samplePoint.append(([j + .5] * 4, [j + .5] * 4, [j] * 4))
+        data.append((samplePoint,
+                     [i + .5] * 4,
+                     [i + .5] * 4,
+                     [i + .5] * 4,
+                     [i + .5] * 4,
+                     [.5] * 8
+                     ))
+
+    table = np.array(data, dtype=[('samplePoint', [('parameter', '4f4'),
+                                                   ('sample_point_original_normal', '4f4'),
+                                                   ('knot_left_index', '4u4')], 37),
+                                  ('normal_adj', '4f4'),
+                                  ('adjacency_normal', '4f4'),
+                                  ('original_normal', '4f4'),
+                                  ('original_position', '4f4'),
+                                  ('need_adj', '8f'),
+                                  ])
+
+    for i in range(10):
+        samplePoint = []
+        for j in range(37):
+            samplePoint.append(([j + .5] * 4, [j + .5] * 4, [j] * 4))
+        data.append((samplePoint,
+                     [i + .5] * 4,
+                     [i + .5] * 4,
+                     [i + .5] * 4,
+                     [i + .5] * 4,
+                     [.5] * 8
+                     ))
+
+    model = OBJ('../res/3d_model/test_2_triangle.obj')
+    model.reorganize()
