@@ -124,10 +124,22 @@ class PreviousComputeController:
         self._program.use()
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
+        # self.test_print_splited_triangle()
         glUseProgram(0)
         self._splited_triangle_number = self.get_splited_triangles_number()
         self._need_recompute = False
         return self._splited_triangle_number
+
+    def test_print_splited_triangle(self):
+        for i in self._splited_triangle_ssbo.get_value(ctypes.c_float, (2, 512)):
+            for k, j in enumerate(i):
+                if k % 32 == 0:
+                    print()
+                print(j, end=' ')
+            print()
+            print()
+            print()
+            print()
 
     @property
     def need_compute(self):

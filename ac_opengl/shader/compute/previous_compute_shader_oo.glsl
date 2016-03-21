@@ -54,7 +54,7 @@ struct SplitedTriangle {
     vec4 adjacency_normal[6];
     vec4 original_normal[3];
     vec4 original_position[3];
-    int need_adj[6];
+    int need_adj[8];
 };
 
 

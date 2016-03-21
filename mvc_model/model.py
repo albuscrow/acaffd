@@ -205,7 +205,10 @@ class OBJ:
 
     def split(self, bspline: BSplineBody):
         data = np.zeros(self.original_triangle_number, dtype='37int8, float32, (2,3)float64')
-        self.reorganize()
+        triangles = self.reorganize()
+        for t in triangles:
+            # data[]
+            pass
         return self.original_triangle_number, data
 
     def reorganize(self):
@@ -223,7 +226,6 @@ class OBJ:
                     triangle.neighbor.append((res[j // 4], j % 4))
                 else:
                     triangle.neighbor.append((None, -1))
-
         for t in res:
             print(t)
         return res
@@ -301,24 +303,25 @@ if __name__ == '__main__':
     for i in range(10):
         samplePoint = []
         for j in range(37):
-            samplePoint.append(([j + .5] * 4, [j + .5] * 4, [j] * 4))
+            samplePoint.append(([j + 1000 + .5] * 4, [j + .5] * 4, [j] * 4))
         data.append((samplePoint,
-                     [i + .5] * 4,
-                     [i + .5] * 4,
-                     [i + .5] * 4,
-                     [i + .5] * 4,
-                     [.5] * 8
+                     [[i + .5] * 4] * 3,
+                     [[i + .5] * 4] * 6,
+                     [[i + .5] * 4] * 3,
+                     [[i + .5] * 4] * 3,
+                     [i] * 8
                      ))
 
-    table = np.array(data, dtype=[('samplePoint', [('parameter', '4f4'),
+    table = np.zeros((1,), dtype=[('samplePoint', [('parameter', '4f4'),
                                                    ('sample_point_original_normal', '4f4'),
                                                    ('knot_left_index', '4u4')], 37),
-                                  ('normal_adj', '4f4'),
-                                  ('adjacency_normal', '4f4'),
-                                  ('original_normal', '4f4'),
-                                  ('original_position', '4f4'),
-                                  ('need_adj', '8f'),
+                                  ('normal_adj', '4f4', 3),
+                                  ('adjacency_normal', '4f4', 6),
+                                  ('original_normal', '4f4', 3),
+                                  ('original_position', '4f4', 3),
+                                  ('need_adj', '8i4'),
                                   ])
+    print(table[0])
 
     for i in range(10):
         samplePoint = []
@@ -331,6 +334,10 @@ if __name__ == '__main__':
                      [i + .5] * 4,
                      [.5] * 8
                      ))
+    print(table[0][0][0])
+    print(table.itemsize)
+    SPLITED_TRIANGLE_SIZE = 48 * 37 + 15 * 16 + 32
+    print(SPLITED_TRIANGLE_SIZE)
 
     model = OBJ('../res/3d_model/test_2_triangle.obj')
     model.reorganize()
