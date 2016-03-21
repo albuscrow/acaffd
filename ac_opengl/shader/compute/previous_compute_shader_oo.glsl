@@ -577,7 +577,7 @@ float getBSplineInfoU(float t, out uint leftIndex){
     float step = lengthU / float(interNumberU);
     float temp = (t - minU) / step;
     leftIndex = uint(temp);
-    if (leftIndex == interNumberU) {
+    if (leftIndex >= interNumberU) {
         leftIndex -= 1;
     }
     t = temp - leftIndex;
@@ -588,7 +588,7 @@ float getBSplineInfoV(float t, out uint leftIndex){
     float step = lengthV / float(interNumberV);
     float temp = (t - minV) / step;
     leftIndex = uint(temp);
-    if (leftIndex == interNumberV) {
+    if (leftIndex >= interNumberV) {
         leftIndex -= 1;
     }
     t = temp - leftIndex;
@@ -600,7 +600,7 @@ float getBSplineInfoW(float t, out uint leftIndex){
     float step = lengthW / float(interNumberW);
     float temp = (t - minW) / step;
     leftIndex = uint(temp);
-    if (leftIndex == interNumberW) {
+    if (leftIndex >= interNumberW) {
         leftIndex -= 1;
     }
     t = temp - leftIndex;

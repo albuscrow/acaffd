@@ -214,7 +214,6 @@ class OBJ:
     def reorganize(self):
         res = []  # type: list[ACTriangle]
         for i, index in enumerate(zip(*([iter(self._index)] * 3))):
-            print(index)
             t = ACTriangle(i)  # type: ACTriangle
             t.position, t.normal, t.tex_coord = [np.array([lst[x] for x in index], dtype='f4') for lst in
                                                  [self._vertex, self._normal, self._tex_coord]]
@@ -226,8 +225,6 @@ class OBJ:
                     triangle.neighbor.append((res[j // 4], j % 4))
                 else:
                     triangle.neighbor.append((None, -1))
-        for t in res:
-            print(t)
         return res
 
 
@@ -297,14 +294,22 @@ class ACTriangle:
         data = []
         samplePoints = []
         for pattern in ACTriangle.SAMPLE_PATTERN:
-            samplePoints.append(self.get_sample_point(pattern, BSplineBody))
+            samplePoints.append(self.get_sample_point(pattern, b_spline_body))
+        data.append(samplePoints)
+        data.append(self.normal)
+        normaladj = np.zeros((6, 4), dtype='f4')
+        normaladj[:3, :] = self.normal
+        normaladj[3:, :] = self.normal
+        data.append(normaladj)
+        data.append(self.normal)
+        data.append(self.position)
+        data.append([-1] * 8)
+        return tuple(data)
 
-        return data
-
-    def get_sample_point(self, pattern: np.array, b_spline_Body: BSplineBody):
-        parameter = self._position * pattern
-        cage_t_and_left_knot_index = b_spline_Body.get_cage_t_and_left_knot_index(parameter)
-        return [cage_t_and_left_knot_index[0], self._normal * pattern, cage_t_and_left_knot_index[1]]
+    def get_sample_point(self, pattern: np.array, b_spline_body: BSplineBody):
+        parameter = np.dot(pattern, self._position)
+        cage_t_and_left_knot_index = b_spline_body.get_cage_t_and_left_knot_index(parameter)
+        return (cage_t_and_left_knot_index[0], np.dot(pattern, self._normal), cage_t_and_left_knot_index[1])
 
     @property
     def id(self):
@@ -368,11 +373,13 @@ if __name__ == '__main__':
                                   ('original_position', ('f4', (3, 4))),
                                   ('need_adj', '8i4'),
                                   ])
-    print(table[0])
-    print(table[0][0][0])
-    print(table.itemsize)
-    SPLITED_TRIANGLE_SIZE = 48 * 37 + 15 * 16 + 32
-    print(SPLITED_TRIANGLE_SIZE)
+    # print(table[0])
+    # print(table[0][0][0])
+    # print(table.itemsize)
+    # SPLITED_TRIANGLE_SIZE = 48 * 37 + 15 * 16 + 32
+    # print(SPLITED_TRIANGLE_SIZE)
 
     model = OBJ('../res/3d_model/test_2_triangle.obj')
     model.reorganize()
+    bsb = BSplineBody(2, 2, 2)
+    model.split(bsb)

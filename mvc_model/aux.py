@@ -24,6 +24,7 @@ class BSplineBody:
         self._control_points_backup = None  # type: np.array
         self._is_hit = None  # type: list
         self._knots = None  # type: list
+        self._step = None  # type: list
 
         self._size = [lx, ly, lz]
 
@@ -46,6 +47,7 @@ class BSplineBody:
         self.reset_hit_record()
         self._knots = [self.get_knots(size, order, cpn) for size, order, cpn in
                        zip(self._size, self._order, self._control_point_number)]
+        self._step = [x / y for x, y in zip(self._size, self.get_cage_size())]
 
     def reset_hit_record(self):
         self._is_hit = [False] * self.get_control_point_number()
@@ -97,12 +99,16 @@ class BSplineBody:
                 w = i % self._control_point_number[2]
                 self._ctrlPoints[u, v, w] += xyz
 
+    @property
+    def min_parameter(self):
+        return [-x / 2 for x in self._size]
+
     def get_info(self):
         return np.array(
             [*self._order,
              *self._control_point_number,
              *self._size,
-             *[-x / 2 for x in self._size]], dtype='float32')
+             *self.min_parameter], dtype='float32')
 
     def get_control_point_for_sample(self):
         # uvw三个方向的区间数
@@ -205,9 +211,11 @@ class BSplineBody:
         self._is_hit[select_name] = True
 
     def get_cage_t_and_left_knot_index(self, parameter):
-        # for t in parameter:
-        #     t - self.
-        pass
+        parameter = [x - y for x, y in zip(parameter, self.min_parameter)]
+        temp = [x / y for x, y in zip(parameter, self._step)]
+        left_knot_index = [(int(x) - 1 if x >= y else int(x)) for x, y in zip(temp, self.get_cage_size())]
+        cage_t = [x - y for x, y in zip(temp, left_knot_index)]
+        return cage_t + [0], [x + y - 1 for x, y in zip(left_knot_index, self._order)] + [0]
 
 
 def aux_multiply(value, v, result):
