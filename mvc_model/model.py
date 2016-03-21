@@ -204,20 +204,20 @@ class OBJ:
         return np.array(self._adjacency, dtype=np.int32)
 
     def split(self, bspline: BSplineBody):
-        data = np.zeros(self.original_triangle_number, dtype='37int8, float32, (2,3)float64')
         triangles = self.reorganize()
+        data = []
         for t in triangles:
-            # data[]
+            data.append(t.as_element_for_shader(bspline))
             pass
-        return self.original_triangle_number, data
+        return self.original_triangle_number, np.array(data, ACTriangle.DATA_TYPE)
 
     def reorganize(self):
         res = []  # type: list[ACTriangle]
         for i, index in enumerate(zip(*([iter(self._index)] * 3))):
             print(index)
             t = ACTriangle(i)  # type: ACTriangle
-            t.position, t.normal, t.tex_coord = map(lambda lst: [lst[x] for x in index],
-                                                    [self._vertex, self._normal, self._tex_coord])
+            t.position, t.normal, t.tex_coord = [np.array([lst[x] for x in index], dtype='f4') for lst in
+                                                 [self._vertex, self._normal, self._tex_coord]]
             res.append(t)
         for i, triangle in enumerate(res):
             triangle.neighbor = []
@@ -232,15 +232,77 @@ class OBJ:
 
 
 class ACTriangle:
+    DATA_TYPE = [('samplePoint', [('parameter', '4f4'),
+                                  ('sample_point_original_normal', '4f4'),
+                                  ('knot_left_index', '4u4')], 37),
+                 ('normal_adj', '4f4', 3),
+                 ('adjacency_normal', '4f4', 6),
+                 ('original_normal', '4f4', 3),
+                 ('original_position', '4f4', 3),
+                 ('need_adj', '8i4'),
+                 ]
+
+    SAMPLE_PATTERN = np.array([
+        [1.000000, 0.000000, 0.000000],
+
+        [0.833333, 0.166667, 0.000000],
+        [0.833333, 0.000000, 0.166667],
+
+        [0.666667, 0.333333, 0.000000],
+        [0.666667, 0.166667, 0.166667],
+        [0.666667, 0.000000, 0.333333],
+
+        [0.500000, 0.500000, 0.000000],
+        [0.500000, 0.333333, 0.166667],
+        [0.500000, 0.166667, 0.333333],
+        [0.500000, 0.000000, 0.500000],
+
+        [0.333333, 0.666667, 0.000000],
+        [0.333333, 0.500000, 0.166667],
+        [0.333333, 0.333333, 0.333333],
+        [0.333333, 0.166667, 0.500000],
+        [0.333333, 0.000000, 0.666667],
+
+        [0.166667, 0.833333, 0.000000],
+        [0.166667, 0.666667, 0.166667],
+        [0.166667, 0.500000, 0.333333],
+        [0.166667, 0.333333, 0.500000],
+        [0.166667, 0.166667, 0.666667],
+        [0.166667, 0.000000, 0.833333],
+
+        [0.000000, 1.000000, 0.000000],
+        [0.000000, 0.833333, 0.166667],
+        [0.000000, 0.666667, 0.333333],
+        [0.000000, 0.500000, 0.500000],
+        [0.000000, 0.333333, 0.666667],
+        [0.000000, 0.166667, 0.833333],
+        [0.000000, 0.000000, 1.000000],
+
+        [1, 0, 0],
+        [0.6667, 0.3333, 0], [0.6667, 0, 0.3333],
+        [0.3333, 0.6667, 0], [0.3333, 0, 0.6667],
+        [0, 1, 0], [0, 0.6667, 0.3333], [0, 0.3333, 0.6667], [0, 0, 1]], dtype='f4')
+
     def __init__(self, i):
         self._id = i
-        self._position = None  # type: list[list[float]]
-        self._normal = None  # type: list[list[float]]
-        self._tex_coord = None  # type: list[list[float]]
+        self._position = None  # type: np.array
+        self._normal = None  # type: np.array
+        self._tex_coord = None  # type: np.array
         self._neighbor = None  # type: list[(ACTriangle, int)]
 
     def __str__(self):
         return ','.join([str(x.id if x else None) + '-' + str(y) for x, y in self._neighbor])
+
+    def as_element_for_shader(self, b_spline_body: BSplineBody) -> list:
+        data = []
+        samplePoints = []
+        for pattern in ACTriangle.SAMPLE_PATTERN:
+            samplePoints.append(self.get_sample_point(pattern))
+
+        return data
+
+    def get_sample_point(self, pattern):
+        return [self._position * pattern, self._normal * pattern, [0, 0, 0, 0]]
 
     @property
     def id(self):
@@ -282,58 +344,29 @@ class ACTriangle:
 if __name__ == '__main__':
     import numpy as np
 
-    # struct SamplePointInfo {
-    #     vec4 parameter;
-    #     vec4 sample_point_original_normal;
-    #     uvec4 knot_left_index;
-    # };
-    # struct SplitedTriangle {
-    #     SamplePointInfo samplePoint[37];
-    #     vec4 normal_adj[3];
-    #     vec4 adjacency_normal[6];
-    #     vec4 original_normal[3];
-    #     vec4 original_position[3];
-    #     bool need_adj[6];
-    # };
-
-    data = [('spire', '250um', [(0, 1.89e6, 0.0), (1, 2e6, 1e-2), (2, 2.02e6, 3.8e-2)]),
-            ('spire', '350', [(0, 1.89e6, 0.0), (2, 2.02e6, 3.8e-2), (2, 2.02e6, 3.8e-2)])
-            ]
     data = []
     for i in range(10):
         samplePoint = []
         for j in range(37):
-            samplePoint.append(([j + 1000 + .5] * 4, [j + .5] * 4, [j] * 4))
+            samplePoint.append((np.array([j + 1000 + .5] * 4, dtype='f4'), [j + .5] * 4, [j] * 4))
         data.append((samplePoint,
-                     [[i + .5] * 4] * 3,
+                     np.array([[i + .5] * 4] * 3, dtype='f4'),
                      [[i + .5] * 4] * 6,
                      [[i + .5] * 4] * 3,
                      [[i + .5] * 4] * 3,
                      [i] * 8
                      ))
 
-    table = np.zeros((1,), dtype=[('samplePoint', [('parameter', '4f4'),
+    table = np.array(data, dtype=[('samplePoint', [('parameter', '4f4'),
                                                    ('sample_point_original_normal', '4f4'),
                                                    ('knot_left_index', '4u4')], 37),
-                                  ('normal_adj', '4f4', 3),
-                                  ('adjacency_normal', '4f4', 6),
-                                  ('original_normal', '4f4', 3),
-                                  ('original_position', '4f4', 3),
+                                  ('normal_adj', ('f4', (3, 4))),
+                                  ('adjacency_normal', ('f4', (6, 4))),
+                                  ('original_normal', ('f4', (3, 4))),
+                                  ('original_position', ('f4', (3, 4))),
                                   ('need_adj', '8i4'),
                                   ])
     print(table[0])
-
-    for i in range(10):
-        samplePoint = []
-        for j in range(37):
-            samplePoint.append(([j + .5] * 4, [j + .5] * 4, [j] * 4))
-        data.append((samplePoint,
-                     [i + .5] * 4,
-                     [i + .5] * 4,
-                     [i + .5] * 4,
-                     [i + .5] * 4,
-                     [.5] * 8
-                     ))
     print(table[0][0][0])
     print(table.itemsize)
     SPLITED_TRIANGLE_SIZE = 48 * 37 + 15 * 16 + 32

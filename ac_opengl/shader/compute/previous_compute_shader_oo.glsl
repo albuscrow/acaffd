@@ -95,6 +95,11 @@ vec3 normal[3];
 // switch
 uvec3 parameterSwitch;
 
+// 代表三个方向B spline body的区间数
+uint interNumberU;
+uint interNumberV;
+uint interNumberW;
+
 const vec3 ZERO3 = vec3(0.000001);
 const float ZERO = 0.000001;
 const vec4 ZERO4 = vec4(0.000001);
@@ -218,7 +223,11 @@ void main() {
         return;
     }
 
+
     // 初始化全局变量
+    interNumberU = uint(controlPointNumU - orderU + 1);
+    interNumberV = uint(controlPointNumV - orderV + 1);
+    interNumberW = uint(controlPointNumW - orderW + 1);
     // get current original tirangle index
     original_index[0] = originalIndex[triangleIndex * 3];
     original_index[1] = originalIndex[triangleIndex * 3 + 1];
@@ -564,65 +573,54 @@ void genPNTriangle(){
 }
 
 // uvw 为 1 2 3分别代表u v w
-float getNewT(uint uvw, float t) {
-    if (uvw == 1u) {
-        return (t - minU) / lengthU;
-    } else if (uvw == 2u) {
-        return (t - minV) / lengthV;
-    } else {
-        return (t - minW) / lengthW;
-    }
-}
-
-// uvw 为 1 2 3分别代表u v w
 float getBSplineInfoU(float t, out uint leftIndex){
-    float newT = getNewT(1u, t);
-    uint interNumber = uint(controlPointNumU - orderU + 1);
-    float step = 1.0 / float(interNumber);
-    leftIndex = uint(newT / step);
-    if (leftIndex == interNumber) {
+    float step = lengthU / float(interNumberU);
+    float temp = (t - minU) / step;
+    leftIndex = uint(temp);
+    if (leftIndex == interNumberU) {
         leftIndex -= 1;
     }
-    t = newT / step - leftIndex;
+    t = temp - leftIndex;
     leftIndex += uint(orderU - 1);
     return t;
 }
-
 float getBSplineInfoV(float t, out uint leftIndex){
-    float newT = getNewT(2u, t);
-    uint interNumber = uint(controlPointNumV - orderV + 1);
-    float step = 1.0 / float(interNumber);
-    leftIndex = uint(newT  / step);
-    if (leftIndex == interNumber) {
+    float step = lengthV / float(interNumberV);
+    float temp = (t - minV) / step;
+    leftIndex = uint(temp);
+    if (leftIndex == interNumberV) {
         leftIndex -= 1;
     }
-    t = newT / step - leftIndex;
+    t = temp - leftIndex;
     leftIndex += uint(orderV - 1);
     return t;
 }
 
 float getBSplineInfoW(float t, out uint leftIndex){
-    float newT = getNewT(3u, t);
-    uint interNumber = uint(controlPointNumW - orderW + 1);
-    float step = 1.0 / float(interNumber);
-    leftIndex = uint(newT / step);
-    if (leftIndex == interNumber) {
+    float step = lengthW / float(interNumberW);
+    float temp = (t - minW) / step;
+    leftIndex = uint(temp);
+    if (leftIndex == interNumberW) {
         leftIndex -= 1;
     }
-    t = newT / step - leftIndex;
+    t = temp - leftIndex;
     leftIndex += uint(orderW - 1);
     return t;
 }
 
 SamplePointInfo getBSplineInfo(SplitedTriangle st, int index) {
-
-            vec3 uvw = sampleParameter[index];
-            vec4 parameter = st.original_position[0] * uvw.x + st.original_position[1] * uvw.y + st.original_position[2] * uvw.z;
-//            vec4 normal = st.original_normal[0] * uvw.x + st.original_normal[1] * uvw.y + st.original_normal[2] * uvw.z;
-
-//            st.samplePoint[j].original_normal = st.original_normal[0] * uvw.x + st.original_normal[1] * uvw.y + st.original_normal[2] * uvw.z;
+    vec3 uvw = sampleParameter[index];
+    vec4 parameter = vec4(0);
+    for (int i = 0; i < 3; ++i) {
+        parameter +=  st.original_position[i] * uvw[i];
+    }
 
     SamplePointInfo result;
+
+    result.sample_point_original_normal = vec4(0);
+    for (int i = 0; i < 3; ++i) {
+        result.sample_point_original_normal += st.original_normal[i] * uvw[i];
+    }
 
     uint knot_left_index_u, knot_left_index_v, knot_left_index_w;
     float u = getBSplineInfoU(parameter.x, knot_left_index_u);
@@ -631,7 +629,6 @@ SamplePointInfo getBSplineInfo(SplitedTriangle st, int index) {
 
     result.parameter = vec4(u, v, w, 0);
     result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
-    result.sample_point_original_normal = st.original_normal[0] * uvw.x + st.original_normal[1] * uvw.y + st.original_normal[2] * uvw.z;
 
     return result;
 }

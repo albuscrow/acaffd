@@ -29,7 +29,7 @@ class ACVBO:
         self._capacity = int(capacity)
         self._dirty = True
 
-    def async_update(self, data):
+    def async_update(self, data: np.array):
         if data is None:
             raise Exception("input data can not be None")
         self._data = data

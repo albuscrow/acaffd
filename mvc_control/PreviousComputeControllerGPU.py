@@ -27,7 +27,7 @@ class PreviousComputeShader(ShaderWrap):
             .replace('const int max_split_factor = 0',
                      'const int max_split_factor = %d' % self._controller.MAX_SEGMENTS) \
             .replace('const uint look_up_table_for_i[0] = {0}',
-                     'const uint look_up_table_for_i[%d] = {%s}' % (
+                     'const uint look_up_table_for_i[%d] = %s' % (
                          self._controller.MAX_SEGMENTS, self._controller.get_offset_for_i()))
         return self
 
