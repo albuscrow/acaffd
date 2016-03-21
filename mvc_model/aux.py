@@ -1,6 +1,7 @@
 from itertools import product
 
 import numpy as np
+from functools import reduce
 
 from pre_computer_data.aux_matrix.sample_aux_matrix import get_aux_matrix_offset
 
@@ -9,50 +10,45 @@ class BSplineBody:
     def __init__(self, lx, ly, lz, *argv):
         if len(argv) == 0:
             # 阶数，阶数 = p + 1,当阶数=1时，基函数为常数。是每个knot区间所对应的顶点数。当knot左右重合顶点为阶数时，b-spline始末与控制顶点重合
-            self._order_u = 3
-            self._order_v = 3
-            self._order_w = 3
+            self._order = [3, 3, 3]  # type: list
             # 控制顶点数，knot节点数 = 阶数 + 控制顶点数
-            self._control_point_number_u = 5
-            self._control_point_number_v = 5
-            self._control_point_number_w = 5
+            self._control_point_number = [5, 5, 5]  # type: list
         elif len(argv) == 6:
-            self._order_u = argv[0]
-            self._order_v = argv[1]
-            self._order_w = argv[2]
+            self._order = argv[:3]  # type: list
             # 控制顶点数，knot节点数 = 阶数 + 控制顶点数
-            self._control_point_number_u = argv[3]
-            self._control_point_number_v = argv[4]
-            self._control_point_number_w = argv[5]
+            self._control_point_number = argv[3:]  # type: list
         else:
             raise Exception('input argv number error')
 
         self._ctrlPoints = None  # type: np.array
         self._control_points_backup = None  # type: np.array
         self._is_hit = None  # type: list
+        self._knots = None  # type: list
 
         self._size = [lx, ly, lz]
 
         self.init_data()
 
     def init_data(self):
-        self._ctrlPoints = np.zeros((self._control_point_number_u,
-                                     self._control_point_number_v,
-                                     self._control_point_number_w,
-                                     3), dtype=np.float32)  # type: np.array
-        aux_x = self.get_control_point_aux_list(self._size[0], self._control_point_number_u, self._order_u)
-        aux_y = self.get_control_point_aux_list(self._size[1], self._control_point_number_v, self._order_v)
-        aux_z = self.get_control_point_aux_list(self._size[2], self._control_point_number_w, self._order_w)
-        for u, x in enumerate(aux_x):
-            for v, y in enumerate(aux_y):
-                for w, z in enumerate(aux_z):
-                    self._ctrlPoints[u, v, w] = [x, y, z]
+        # self._ctrlPoints = np.zeros((self._control_point_number_u,
+        #                              self._control_point_number_v,
+        #                              self._control_point_number_w,
+        #                              3), dtype=np.float32)  # type: np.array
+        aux = [self.get_control_point_aux_list(size, cpn, o) for size, cpn, o in
+               zip(self._size, self._control_point_number, self._order)]
+        # for u, x in enumerate(aux[0]):
+        #     for v, y in enumerate(aux[1]):
+        #         for w, z in enumerate(aux[2]):
+        #             self._ctrlPoints[u, v, w] = [x, y, z]
+        self._ctrlPoints = np.array(list(product(*aux)), dtype='f4')
+        self._ctrlPoints.shape = (*self._control_point_number, 3)
         self._control_points_backup = self._ctrlPoints.copy()
         self.reset_hit_record()
+        self._knots = [self.get_knots(size, order, cpn) for size, order, cpn in
+                       zip(self._size, self._order, self._control_point_number)]
 
     def reset_hit_record(self):
-        self._is_hit = [
-                           False] * self._control_point_number_u * self._control_point_number_v * self._control_point_number_w
+        self._is_hit = [False] * self.get_control_point_number()
 
     @property
     def is_hit(self):
@@ -96,111 +92,80 @@ class BSplineBody:
     def move(self, xyz):
         for i, is_hit in enumerate(self._is_hit):
             if is_hit:
-                u = i // (self._control_point_number_v * self._control_point_number_w)
-                v = i % (self._control_point_number_v * self._control_point_number_w) // self._control_point_number_w
-                w = i % self._control_point_number_w
+                u = i // (self._control_point_number[1] * self._control_point_number[2])
+                v = i % (self._control_point_number[1] * self._control_point_number[2]) // self._control_point_number[2]
+                w = i % self._control_point_number[2]
                 self._ctrlPoints[u, v, w] += xyz
 
     def get_info(self):
         return np.array(
-            [self._order_u, self._order_v, self._order_w,
-             self._control_point_number_u, self._control_point_number_v, self._control_point_number_w,
-             self._size[0], self._size[1], self._size[2],
-             -self._size[0] / 2, -self._size[1] / 2, -self._size[2] / 2], dtype='float32')
+            [*self._order,
+             *self._control_point_number,
+             *self._size,
+             *[-x / 2 for x in self._size]], dtype='float32')
 
     def get_control_point_for_sample(self):
         # uvw三个方向的区间数
-        interval_number_u, interval_number_v, interval_number_w = self.get_cage_size()
-        result = np.zeros((interval_number_u, interval_number_v, interval_number_w,
-                           self._order_u, self._order_v, self._order_w,
+        interval_number = self.get_cage_size()
+        result = np.zeros((*interval_number,
+                           *self._order,
                            4), dtype=np.float32)
-        for interval_index_u, interval_index_v, interval_index_w in \
-                product(range(interval_number_u),
-                        range(interval_number_v),
-                        range(interval_number_w)):
+        for interval_index in product(*[range(x) for x in interval_number]):
 
-            left_u_index = interval_index_u + self._order_u - 1
-            left_v_index = interval_index_v + self._order_v - 1
-            left_w_index = interval_index_w + self._order_w - 1
+            left_index = [x + y - 1 for x, y in zip(interval_index, self._order)]
 
-            mu = get_aux_matrix_offset(self._order_u, self._control_point_number_u, left_u_index)
-            mv = get_aux_matrix_offset(self._order_v, self._control_point_number_v, left_v_index)
-            mw = get_aux_matrix_offset(self._order_w, self._control_point_number_w, left_w_index)
+            m = [get_aux_matrix_offset(order, cpn, li) for order, cpn, li in
+                 zip(self._order, self._control_point_number, left_index)]
 
-            control_point_base_u = left_u_index - self._order_u + 1
-            control_point_base_v = left_v_index - self._order_v + 1
-            control_point_base_w = left_w_index - self._order_w + 1
+            control_point_base = [x - y + 1 for x, y in zip(left_index, self._order)]
 
-            intermediate_results_1 = np.zeros((self._order_u, self._order_v, self._order_w, 3))
-            for w in range(self._order_w):
-                control_points = self._ctrlPoints[control_point_base_u:control_point_base_u + self._order_u,
-                                 control_point_base_v:control_point_base_v + self._order_v,
-                                 control_point_base_w + w]
-                intermediate_results_1[..., w, 0] = mu.dot(control_points[..., 0])
-                intermediate_results_1[..., w, 1] = mu.dot(control_points[..., 1])
-                intermediate_results_1[..., w, 2] = mu.dot(control_points[..., 2])
+            intermediate_results_1 = np.zeros((*self._order, 3))
+            for w in range(self._order[2]):
+                control_points = self._ctrlPoints[control_point_base[0]:control_point_base[0] + self._order[0],
+                                 control_point_base[1]:control_point_base[1] + self._order[1],
+                                 control_point_base[2] + w]
+                for i in range(3):
+                    intermediate_results_1[..., w, i] = m[0].dot(control_points[..., i])
 
-            intermediate_results_2 = np.zeros((self._order_u, self._order_v, self._order_w, 3))
-            for u in range(self._order_u):
+            intermediate_results_2 = np.zeros((*self._order, 3))
+            for u in range(self._order[0]):
                 control_point = intermediate_results_1[u, ...]
-                intermediate_results_2[u, ..., 0] = mv.dot(control_point[..., 0])
-                intermediate_results_2[u, ..., 1] = mv.dot(control_point[..., 1])
-                intermediate_results_2[u, ..., 2] = mv.dot(control_point[..., 2])
+                for i in range(3):
+                    intermediate_results_2[u, ..., i] = m[1].dot(control_point[..., i])
 
-            for v in range(self._order_v):
+            for v in range(self._order[1]):
                 control_point = intermediate_results_2[:, v, ...]
-                result[interval_index_u, interval_index_v, interval_index_w, :, v, :, 0] = \
-                    control_point[..., 0].dot(mw.T)
-                result[interval_index_u, interval_index_v, interval_index_w, :, v, :, 1] = \
-                    control_point[..., 1].dot(mw.T)
-                result[interval_index_u, interval_index_v, interval_index_w, :, v, :, 2] = \
-                    control_point[..., 2].dot(mw.T)
+                for i in range(3):
+                    result[interval_index[0], interval_index[1], interval_index[2], :, v, :, i] = \
+                        control_point[..., i].dot(m[2].T)
 
         return result
 
     def get_control_point_number(self):
-        return self._control_point_number_u * self._control_point_number_v * self._control_point_number_w
+        return reduce(lambda p, x: p * x, self._control_point_number, 1)
 
     def get_cage_size(self):
-        interval_number_u = self._control_point_number_u - self._order_u + 1
-        interval_number_v = self._control_point_number_v - self._order_v + 1
-        interval_number_w = self._control_point_number_w - self._order_w + 1
-        return [interval_number_u, interval_number_v, interval_number_w]
+        return [x - y + 1 for x, y in zip(self._control_point_number, self._order)]
 
     def change_control_point_number(self, u, v, w):
-        self._control_point_number_u = u
-        self._control_point_number_v = v
-        self._control_point_number_w = w
+        self._control_point_number = [u, v, w]
         self.init_data()
 
     def move_dffd(self, parameter, displacement):
         displacement = np.asarray(displacement, dtype=np.float32)
-        Rs = np.zeros((self._control_point_number_u,
-                       self._control_point_number_v,
-                       self._control_point_number_w), dtype=np.float32)
-
+        Rs = np.zeros((*self._control_point_number,), dtype=np.float32)
         aux = 0
-        for i, j, k in product(
-                range(self._control_point_number_u),
-                range(self._control_point_number_v),
-                range(self._control_point_number_w)):
-            Rs[i, j, k] = self.R(parameter, i, j, k)
-            aux += Rs[i, j, k] ** 2
+        for ijk in product(*[range(x) for x in self._control_point_number]):
+            Rs[ijk] = self.R(parameter, ijk)
+            aux += Rs[ijk] ** 2
 
-        for i, j, k in product(
-                range(self._control_point_number_u),
-                range(self._control_point_number_v),
-                range(self._control_point_number_w)):
+        for i, j, k in product(*[range(x) for x in self._control_point_number]):
             k_aux = displacement * Rs[i, j, k] / aux
             self._ctrlPoints[i, j, k] += k_aux
 
-    def R(self, parameter, i, j, k):
-        return self.B(self.get_knots(self._size[0], self._order_u, self._control_point_number_u), self._order_u, i,
-                      parameter[0]) \
-               * self.B(self.get_knots(self._size[1], self._order_v, self._control_point_number_v), self._order_v, j,
-                        parameter[1]) \
-               * self.B(self.get_knots(self._size[2], self._order_w, self._control_point_number_w), self._order_w, k,
-                        parameter[2])
+    def R(self, parameter, ijk):
+        return reduce(lambda p, x: p * x, [self.B(knots, order, i, para) for knots, order, i, para in
+                                           zip(self._knots, self._order, ijk, parameter)], 1)
 
     def B(self, knots, order, i, t):
         temp = [0] * order
@@ -238,6 +203,11 @@ class BSplineBody:
 
     def hit_point(self, select_name):
         self._is_hit[select_name] = True
+
+    def get_cage_t_and_left_knot_index(self, parameter):
+        # for t in parameter:
+        #     t - self.
+        pass
 
 
 def aux_multiply(value, v, result):

@@ -297,12 +297,14 @@ class ACTriangle:
         data = []
         samplePoints = []
         for pattern in ACTriangle.SAMPLE_PATTERN:
-            samplePoints.append(self.get_sample_point(pattern))
+            samplePoints.append(self.get_sample_point(pattern, BSplineBody))
 
         return data
 
-    def get_sample_point(self, pattern):
-        return [self._position * pattern, self._normal * pattern, [0, 0, 0, 0]]
+    def get_sample_point(self, pattern: np.array, b_spline_Body: BSplineBody):
+        parameter = self._position * pattern
+        cage_t_and_left_knot_index = b_spline_Body.get_cage_t_and_left_knot_index(parameter)
+        return [cage_t_and_left_knot_index[0], self._normal * pattern, cage_t_and_left_knot_index[1]]
 
     @property
     def id(self):
