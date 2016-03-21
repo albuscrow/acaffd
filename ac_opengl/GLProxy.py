@@ -1,10 +1,13 @@
 from mvc_control.BSplineBodyController import BSplineBodyController
-from mvc_control.PreviousComputeControllerGPU import PreviousComputeController
+from mvc_control.PreviousComputeControllerCPU import PreviousComputeControllerCPU
+from mvc_control.PreviousComputeControllerGPU import PreviousComputeControllerGPU
 from mvc_control.DeformAndDrawController import DeformAndDrawController
 from mvc_model.model import OBJ
 from OpenGL.GL import *
 
 from mvc_model.plain_class import ACRect
+
+PreviousComputeController = PreviousComputeControllerCPU
 
 
 class GLProxy:
@@ -20,7 +23,12 @@ class GLProxy:
             self._embed_body_controller.change_size(model.get_length_xyz())
 
         if self._previous_compute_controller is None:
-            self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
+            if PreviousComputeController == PreviousComputeControllerCPU:
+                self._previous_compute_controller = PreviousComputeController(model,
+                                                                              self._embed_body_controller.b_spline_body)  # type: PreviousComputeController
+            else:
+                self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
+
         else:
             self._previous_compute_controller.change_model(model)
 
@@ -28,9 +36,15 @@ class GLProxy:
             self._deform_and_renderer_controller.cage_size = self._embed_body_controller.get_cage_size()
 
     def draw(self, model_view_matrix, perspective_matrix):
-        self._deform_and_renderer_controller.splited_triangle_number \
-            = self._previous_compute_controller \
-            .gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
+        if isinstance(self._previous_compute_controller, PreviousComputeControllerGPU):
+            self._deform_and_renderer_controller.splited_triangle_number \
+                = self._previous_compute_controller \
+                .gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
+        else:
+            self._deform_and_renderer_controller.splited_triangle_number \
+                = self._previous_compute_controller \
+                .gl_compute()
+
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
                                                          self._embed_body_controller.gl_sync_buffer_for_deformation)
         self._embed_body_controller.gl_draw(model_view_matrix, perspective_matrix)
@@ -41,7 +55,10 @@ class GLProxy:
 
         # init previous compute shader
         self._previous_compute_controller.gl_init()
-        self._previous_compute_controller.gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
+        if isinstance(self._previous_compute_controller, PreviousComputeControllerGPU):
+            self._previous_compute_controller.gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
+        else:
+            self._previous_compute_controller.gl_compute()
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(
@@ -68,4 +85,5 @@ class GLProxy:
         self._deform_and_renderer_controller.need_deform = True
 
     def change_split_factor(self, factor):
-        self._previous_compute_controller.split_factor = factor
+        if isinstance(self._previous_compute_controller, PreviousComputeControllerGPU):
+            self._previous_compute_controller.split_factor = factor

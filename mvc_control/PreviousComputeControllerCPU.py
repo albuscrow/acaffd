@@ -5,8 +5,8 @@ from mvc_model.GLObject import ACVBO
 from OpenGL.GL import *
 
 
-class PreviousComputeController:
-    def __init__(self, model: OBJ, b_spline_body: BSplineBody=None):
+class PreviousComputeControllerCPU:
+    def __init__(self, model: OBJ, b_spline_body: BSplineBody):
         self._model = model  # type: OBJ
 
         self._need_recompute = True  # type: bool
@@ -25,7 +25,7 @@ class PreviousComputeController:
     def gl_init(self):
         pass
 
-    def gl_compute(self, operator=None) -> int:
+    def gl_compute(self) -> int:
         if not self._need_recompute:
             return self._splited_triangle_number
         self._splited_triangle_number = self.compute_cpu()
