@@ -196,15 +196,17 @@ class OBJ:
         triangles = self.reorganize()
         data = []
         for t in triangles:
+            t.gen_pn_triangle()
+        for t in triangles:
             data.append(t.as_element_for_shader(bspline))
-            pass
+        print(data[0])
         return self.original_triangle_number, np.array(data, ACTriangle.DATA_TYPE)
 
     def reorganize(self):
         res = []  # type: list[ACTriangle]
         for i, index in enumerate(zip(*([iter(self._index)] * 3))):
             t = ACTriangle(i)  # type: ACTriangle
-            t.position, t.normal, t.tex_coord = [np.array([lst[x] for x in index], dtype='f4') for lst in
+            t.positionv4, t.normalv4, t.tex_coord = [np.array([lst[x] for x in index], dtype='f4') for lst in
                                                  [self._vertex, self._normal, self._tex_coord]]
             res.append(t)
         for i, triangle in enumerate(res):
@@ -236,8 +238,7 @@ if __name__ == '__main__':
                      [[i + .5] * 4] * 6,
                      [[i + .5] * 4] * 3,
                      [[i + .5] * 4] * 3,
-                     [i] * 8
-                     ))
+                     [i] * 4 ))
 
     table = np.array(data, dtype=[('samplePoint', [('parameter', '4f4'),
                                                    ('sample_point_original_normal', '4f4'),
@@ -246,7 +247,7 @@ if __name__ == '__main__':
                                   ('adjacency_normal', ('f4', (6, 4))),
                                   ('original_normal', ('f4', (3, 4))),
                                   ('original_position', ('f4', (3, 4))),
-                                  ('need_adj', '8i4'),
+                                  ('need_adj', '4i4'),
                                   ])
     # print(table[0])
     # print(table[0][0][0])
