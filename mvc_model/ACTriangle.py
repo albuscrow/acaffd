@@ -6,6 +6,7 @@ from functools import reduce
 from Constant import ZERO
 from mvc_model.aux import BSplineBody
 from util.util import normalize
+from math import pow, factorial
 
 
 class ACTriangle:
@@ -66,6 +67,7 @@ class ACTriangle:
         self._normal = None  # type: np.array
         self._tex_coord = None  # type: np.array
         self._neighbor = None  # type: list[(ACTriangle, int)]
+        self._is_original_edge = None  # type: list
         self._pn_triangle_p = [None] * 10  # type: list
         self._pn_triangle_n = [None] * 6
 
@@ -73,19 +75,33 @@ class ACTriangle:
         return ','.join([str(x.id if x else None) + '-' + str(y) for x, y in self._neighbor])
 
     def as_element_for_shader(self, b_spline_body: BSplineBody) -> list:
+        self.gen_pn_triangle()
         data = []
         sample_points = []
         for pattern in ACTriangle.SAMPLE_PATTERN:
             sample_points.append(self.get_sample_point(pattern, b_spline_body))
         data.append(sample_points)
-        data.append(self.normal)
-        normaladj = np.zeros((6, 4), dtype='f4')
-        normaladj[:3, :] = self.normal
-        normaladj[3:, :] = self.normal
-        data.append(normaladj)
+
+        # ('normal_adj', '4f4', 3),
+        # ('adjacency_normal', '4f4', 6),
+        # ('original_normal', '4f4', 3),
+        # ('original_position', '4f4', 3),
+        # ('need_adj', '8i4'),
+        parameter = np.array([1, 0, 0, 0, 1, 0, 0, 0, 1], dtype='f4')
+        parameter.shape = (3, 3)
+
+        pn_normal = [self.get_normal_in_pn_triangle(x) for x in parameter]
+
+        pn_normal_adjacent = np.zeros((6, 4), dtype='f4')
+        pn_normal_adjacent[:3, :] = self.normal
+        pn_normal_adjacent[3:, :] = self.normal
+        is_sharp = []
+
+        data.append(pn_normal)
+        data.append(pn_normal_adjacent)
         data.append(self.normal)
         data.append(self.position)
-        data.append([-1] * 8)
+        data.append(is_sharp)
         return tuple(data)
 
     def get_sample_point(self, pattern: np.array, b_spline_body: BSplineBody):
@@ -93,7 +109,7 @@ class ACTriangle:
         cage_t_and_left_knot_index = b_spline_body.get_cage_t_and_left_knot_index(parameter)
         return (cage_t_and_left_knot_index[0], np.dot(pattern, self._normal), cage_t_and_left_knot_index[1])
 
-    def genPNTriangle(self):
+    def gen_pn_triangle(self):
         # 三个顶点对应的控制顶点
         self._pn_triangle_p[0] = self.position[0]
         self._pn_triangle_p[6] = self.position[1]
@@ -148,6 +164,30 @@ class ACTriangle:
         n = normalize(n_s + n_e)
         v = normalize(p_e - p_s)
         return normalize(n - 2 * v * np.dot(n, v))
+
+    def get_position_in_pn_triangle(self, parameter: np.array):
+        result = np.array([0] * 4, dtype='f4')
+        ctrl_point_index = 0
+        for i in range(3, -1, -1):
+            for j in range(3 - i, -1, -1):
+                k = 3 - i - j
+                n = 6.0 * pow(parameter[0], i) * pow(parameter[1], j) * pow(parameter[2], k) \
+                    / factorial(i) / factorial(j) / factorial(k)
+                result += self._pn_triangle_p[ctrl_point_index] * n
+                ctrl_point_index += 1
+        return result
+
+    def get_normal_in_pn_triangle(self, parameter: np.array):
+        result = np.array([0] * 4, dtype='f4')
+        ctrl_point_index = 0
+        for i in range(2, -1, -1):
+            for j in range(2 - i, -1, -1):
+                k = 2 - i - j
+                n = 2.0 * pow(parameter[0], i) * pow(parameter[1], j) * pow(parameter[2], k) \
+                    / factorial(i) / factorial(j) / factorial(k)
+                result += self._pn_triangle_n[ctrl_point_index] * n
+                ctrl_point_index += 1
+        return normalize(result)
 
     @property
     def id(self):
