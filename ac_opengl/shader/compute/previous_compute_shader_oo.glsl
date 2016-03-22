@@ -529,6 +529,12 @@ vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
     return normalize(n - 2 * v * dot(n, v));
 }
 
+//vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
+//    vec3 n = n_s + n_e;
+//    vec3 v = p_e - p_s;
+//    return normalize(n - 2 * dot(v, n) / dot(v,v) * v);
+//}
+
 void genPNTriangle(){
     // 三个顶点对应的控制顶点
     PNTriangleP[0] = point[0];
