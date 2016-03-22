@@ -199,7 +199,6 @@ class OBJ:
             t.gen_pn_triangle()
         for t in triangles:
             data.append(t.as_element_for_shader(bspline))
-        print(data[0])
         return self.original_triangle_number, np.array(data, ACTriangle.DATA_TYPE)
 
     def reorganize(self):

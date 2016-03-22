@@ -11,7 +11,6 @@ from math import pow, factorial
 SPLIT_PARAMETER_CHANGE_AUX = [[1, 0, 2], [0, 2, 1], [2, 1, 0]]
 
 
-
 class ACTriangle:
     DATA_TYPE = [('samplePoint', [('parameter', '4f4'),
                                   ('sample_point_original_normal', '4f4'),
@@ -194,14 +193,23 @@ class ACTriangle:
             T = np.cross(n, n_adj)
         return p_s + np.dot((p_e - p_s), T) / 3 * T
 
+    # def gen_normal_control_point(self, start, end):
+    #     p_s = self.positionv3[start]
+    #     p_e = self.positionv3[end]
+    #     n_s = self.normalv3[start]
+    #     n_e = self.normalv3[end]
+    #     n = normalize(n_s + n_e)
+    #     v = normalize(p_e - p_s)
+    #     return normalize(n - 2 * v * np.dot(n, v))
+
     def gen_normal_control_point(self, start, end):
         p_s = self.positionv3[start]
         p_e = self.positionv3[end]
         n_s = self.normalv3[start]
         n_e = self.normalv3[end]
-        n = normalize(n_s + n_e)
-        v = normalize(p_e - p_s)
-        return normalize(n - 2 * v * np.dot(n, v))
+        n = n_s + n_e
+        v = p_e - p_s
+        return normalize(n - 2 * np.dot(n, v) / np.dot(v, v) * v)
 
     def get_position_in_pn_triangle(self, parameter: np.array):
         result = np.array([0] * 4, dtype='f4')
