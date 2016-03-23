@@ -3,6 +3,7 @@ from itertools import product
 import numpy as np
 from functools import reduce
 
+from Constant import ZERO
 from pre_computer_data.aux_matrix.sample_aux_matrix import get_aux_matrix_offset
 
 
@@ -31,16 +32,8 @@ class BSplineBody:
         self.init_data()
 
     def init_data(self):
-        # self._ctrlPoints = np.zeros((self._control_point_number_u,
-        #                              self._control_point_number_v,
-        #                              self._control_point_number_w,
-        #                              3), dtype=np.float32)  # type: np.array
         aux = [self.get_control_point_aux_list(size, cpn, o) for size, cpn, o in
                zip(self._size, self._control_point_number, self._order)]
-        # for u, x in enumerate(aux[0]):
-        #     for v, y in enumerate(aux[1]):
-        #         for w, z in enumerate(aux[2]):
-        #             self._ctrlPoints[u, v, w] = [x, y, z]
         self._ctrlPoints = np.array(list(product(*aux)), dtype='f4')
         self._ctrlPoints.shape = (*self._control_point_number, 3)
         self._control_points_backup = self._ctrlPoints.copy()
@@ -206,6 +199,10 @@ class BSplineBody:
             res.append(res[-1] + step)
         res += [length / 2] * order
         return res
+
+    def get_split_line(self):
+        return [list(np.arange(step - length / 2, length / 2 - ZERO, step)) for step, length in
+                zip(self._step, self._size)]
 
     def hit_point(self, select_name):
         self._is_hit[select_name] = True

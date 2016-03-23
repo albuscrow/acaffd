@@ -7,8 +7,8 @@ from OpenGL.GL import *
 
 from mvc_model.plain_class import ACRect
 
-PreviousComputeController = PreviousComputeControllerGPU
-# PreviousComputeController = PreviousComputeControllerCPU
+# PreviousComputeController = PreviousComputeControllerGPU
+PreviousComputeController = PreviousComputeControllerCPU
 
 
 class GLProxy:

@@ -1,7 +1,7 @@
 import logging
 from enum import Enum
 from itertools import product
-from mvc_model.ACTriangle import ACTriangle
+from mvc_model.ACTriangle import ACTriangle, ACPoly
 from mvc_model.aux import BSplineBody
 from util.util import normalize
 import numpy as np
@@ -197,16 +197,41 @@ class OBJ:
         data = []
         for t in triangles:
             t.gen_pn_triangle()
+
+        polygons = []
+        for t in triangles:
+            polygons.append(ACPoly(t))
+
+        split_line = bspline.get_split_line()
+        for i in range(3):
+            up = []
+            down = polygons
+            # for j in [0.333333333]:
+            for j in split_line[i][::-1]:
+                down_temp = []
+                for p in down:  # type: ACPoly
+                    upp, downp = p.split(i, j)
+                    if upp:
+                        up.append(upp)
+                    if downp:
+                        down_temp.append(downp)
+                down = down_temp
+            polygons = up + down
+
+        triangles = []
+        for p in polygons:  # type: ACPoly
+            triangles += p.to_triangle()
+
         for t in triangles:
             data.append(t.as_element_for_shader(bspline))
-        return self.original_triangle_number, np.array(data, ACTriangle.DATA_TYPE)
+        return len(triangles), np.array(data, ACTriangle.DATA_TYPE)
 
     def reorganize(self):
         res = []  # type: list[ACTriangle]
         for i, index in enumerate(zip(*([iter(self._index)] * 3))):
             t = ACTriangle(i)  # type: ACTriangle
             t.positionv4, t.normalv4, t.tex_coord = [np.array([lst[x] for x in index], dtype='f4') for lst in
-                                                 [self._vertex, self._normal, self._tex_coord]]
+                                                     [self._vertex, self._normal, self._tex_coord]]
             res.append(t)
         for i, triangle in enumerate(res):
             triangle.neighbor = []
@@ -219,12 +244,6 @@ class OBJ:
 
 
 if __name__ == '__main__':
-
-    aux1 = [0, 1, 1, 2, 2, 0]
-    aux2, aux3 = zip(*list(product([0, 1, 2], [True, False])))
-    for x, y, z in zip(aux1, aux3, aux2):
-        print(x, y, z)
-
     import numpy as np
 
     data = []
@@ -237,7 +256,7 @@ if __name__ == '__main__':
                      [[i + .5] * 4] * 6,
                      [[i + .5] * 4] * 3,
                      [[i + .5] * 4] * 3,
-                     [i] * 4 ))
+                     [i] * 4))
 
     table = np.array(data, dtype=[('samplePoint', [('parameter', '4f4'),
                                                    ('sample_point_original_normal', '4f4'),
@@ -254,7 +273,7 @@ if __name__ == '__main__':
     # SPLITED_TRIANGLE_SIZE = 48 * 37 + 15 * 16 + 32
     # print(SPLITED_TRIANGLE_SIZE)
 
-    model = OBJ('../res/3d_model/test_2_triangle.obj')
+    model = OBJ('../res/3d_model/test2.obj')
     model.reorganize()
     bsb = BSplineBody(2, 2, 2)
     model.split(bsb)
