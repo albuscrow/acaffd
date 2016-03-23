@@ -224,6 +224,7 @@ class OBJ:
 
         for t in triangles:
             data.append(t.as_element_for_shader(bspline))
+        print(len(triangles))
         return len(triangles), np.array(data, ACTriangle.DATA_TYPE)
 
     def reorganize(self):
@@ -273,7 +274,7 @@ if __name__ == '__main__':
     # SPLITED_TRIANGLE_SIZE = 48 * 37 + 15 * 16 + 32
     # print(SPLITED_TRIANGLE_SIZE)
 
-    model = OBJ('../res/3d_model/test2.obj')
+    model = OBJ('../res/3d_model/test_2_triangle.obj')
     model.reorganize()
     bsb = BSplineBody(2, 2, 2)
     model.split(bsb)

@@ -68,8 +68,6 @@ class ACPoly:
 
         @staticmethod
         def split(p1, p2, component, value):
-            if p2.position[component] - p1.position[component] == 0:
-                print('equal')
             t = (value - p1.position[component]) / (p2.position[component] - p1.position[component])
 
             if abs(t - 0) < ZERO:
@@ -151,7 +149,7 @@ class ACPoly:
                 else:
                     down.append(self._points[i])
 
-        return ACPoly.check_then_new(self._triangle, up),  ACPoly.check_then_new(self._triangle, down)
+        return ACPoly.check_then_new(self._triangle, up), ACPoly.check_then_new(self._triangle, down)
 
     def to_triangle(self):
         res = []
@@ -160,7 +158,7 @@ class ACPoly:
             t = ACTriangle(-1)
             ps = [c, pre, p]
             t.positionv3 = np.array([p.position for p in ps], dtype='f4')
-            t.normalv3 = np.array([p.normal for p in ps], dtype='f4')
+            t.normalv3 = np.array([normalize(p.normal) for p in ps], dtype='f4')
             t.tex_coord = np.array([p.tex_coord for p in ps], dtype='f4')
             t.parameter = np.array([p.parameter for p in ps], dtype='f4')
             t.neighbor = self._triangle.neighbor
@@ -213,6 +211,10 @@ class ACTriangle:
 
     def as_element_for_shader(self, b_spline_body: BSplineBody) -> list:
         data = []
+
+        pn_position = [self.get_position_in_pn_triangle(x) for x in self._parameter]
+        self.positionv4 = np.array(pn_position, dtype='f4')
+
         sample_points = []
         for pattern in SAMPLE_PATTERN:
             sample_points.append(self.get_sample_point(pattern, b_spline_body))
@@ -239,11 +241,27 @@ class ACTriangle:
                     is_sharp.append(-1)
                     for j in range(2):
                         index = i * 2 + j
-                        adjacent_parameter = self.transform_parameter(self._parameter[aux1[index]], i)
+                        adjacent_parameter = self.transform_parameter(self._parameter[aux1[index]], original_edge_info[i])
                         adjacent_normal = self.neighbor[original_edge_info[i]][0] \
                             .get_normal_in_pn_triangle(adjacent_parameter)
                         pn_normal_adjacent[aux2[index]] = adjacent_normal
                         if not equal_vec(adjacent_normal, pn_normal[aux1[index]]):
+                            print('begin self')
+                            for k in self.pn_triangle_n:
+                                print(['%.2f' % x for x in k])
+                            print()
+                            print(self._parameter[aux1[index]])
+                            print(pn_normal[aux1[index]])
+
+                            print('other')
+                            for k in self.neighbor[original_edge_info[i]][0].pn_triangle_n:
+                                print(['%.2f' % x for x in k])
+                            print()
+                            print(adjacent_parameter)
+                            print(adjacent_normal)
+
+                            print('diff')
+                            print(adjacent_normal - pn_normal[aux1[index]])
                             is_sharp[-1] = 1
 
         data.append(pn_normal)
@@ -262,7 +280,6 @@ class ACTriangle:
 
     def transform_parameter(self, parameter, edge_index):
         unchange = SPLIT_PARAMETER_CHANGE_AUX[edge_index][self.neighbor[edge_index][1]]
-        aux = None
         if unchange == 0:
             aux = [0, 2, 1]
             # return parameter.xzy
@@ -327,26 +344,26 @@ class ACTriangle:
             T = np.cross(n, n_adj)
         return p_s + np.dot((p_e - p_s), T) / 3 * T
 
-    # def gen_normal_control_point(self, start, end):
-    #     p_s = self.positionv3[start]
-    #     p_e = self.positionv3[end]
-    #     n_s = self.normalv3[start]
-    #     n_e = self.normalv3[end]
-    #     n = normalize(n_s + n_e)
-    #     v = normalize(p_e - p_s)
-    #     return normalize(n - 2 * v * np.dot(n, v))
-
     def gen_normal_control_point(self, start, end):
         p_s = self.positionv3[start]
         p_e = self.positionv3[end]
         n_s = self.normalv3[start]
         n_e = self.normalv3[end]
-        n = n_s + n_e
-        v = p_e - p_s
-        return normalize(n - 2 * np.dot(n, v) / np.dot(v, v) * v)
+        n = normalize(n_s + n_e)
+        v = normalize(p_e - p_s)
+        return normalize(n - 2 * v * np.dot(n, v))
+
+    # def gen_normal_control_point(self, start, end):
+    #     p_s = self.positionv3[start]
+    #     p_e = self.positionv3[end]
+    #     n_s = self.normalv3[start]
+    #     n_e = self.normalv3[end]
+    #     n = n_s + n_e
+    #     v = p_e - p_s
+    #     return normalize(n - 2 * np.dot(n, v) / np.dot(v, v) * v)
 
     def get_position_in_pn_triangle(self, parameter: np.array):
-        result = np.array([0] * 4, dtype='f4')
+        result = np.array([0] * 3, dtype='f4')
         ctrl_point_index = 0
         for i in range(3, -1, -1):
             for j in range(3 - i, -1, -1):
@@ -355,7 +372,7 @@ class ACTriangle:
                     / factorial(i) / factorial(j) / factorial(k)
                 result += self._pn_triangle_p[ctrl_point_index] * n
                 ctrl_point_index += 1
-        return result
+        return np.append(result, 1)
 
     def get_normal_in_pn_triangle(self, parameter: np.array):
         result = np.array([0] * 3, dtype='f4')
