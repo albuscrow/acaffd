@@ -4,11 +4,14 @@ from mvc_control.PreviousComputeControllerGPU import PreviousComputeControllerGP
 from mvc_control.DeformAndDrawController import DeformAndDrawController
 from mvc_model.model import OBJ
 from OpenGL.GL import *
+import sys
 
 from mvc_model.plain_class import ACRect
 
-# PreviousComputeController = PreviousComputeControllerGPU
-PreviousComputeController = PreviousComputeControllerCPU
+if sys.argv[1] == 'cpu':
+    PreviousComputeController = PreviousComputeControllerCPU
+else:
+    PreviousComputeController = PreviousComputeControllerGPU
 
 
 class GLProxy:
