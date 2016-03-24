@@ -329,13 +329,23 @@ void main() {
                 }
             }
         }
-        //todo, 计算三角形质量
-        st.is_sharp3_triangle_quality1[3] = 200;
-
         vec3[3] original_position;
         for (int i = 0; i < 3; ++i) {
             original_position[i] = getPosition(st.parameter_in_original[i].xyz);
         }
+        vec3 t[3];
+        t[0] = original_position[0] - original_position[1];
+        t[1] = original_position[1] - original_position[2];
+        t[2] = original_position[2] - original_position[0];
+        vec3 l;
+        for (int i = 0; i < 3; ++i) {
+            l[i] = sqrt(t[i].x * t[i].x + t[i].y * t[i].y + t[i].z * t[i].z);
+        }
+        float perimeter = l[0] + l[1] + l[2];
+        float double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2;
+        float radius = double_area / perimeter;
+        st.is_sharp3_triangle_quality1[3] = int(radius / max(l[0], max(l[1], l[2])) * 3.4 * 255);
+
 
         for (int j = 0; j < 37; ++j) {
             st.samplePoint[j] = getBSplineInfo(st, j, original_position);

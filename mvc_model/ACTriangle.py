@@ -7,7 +7,7 @@ from numbers import Number
 from Constant import ZERO
 from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec
-from math import pow, factorial
+from math import pow, factorial, sqrt
 
 SPLIT_PARAMETER_CHANGE_AUX = [[1, 0, 2], [0, 2, 1], [2, 1, 0]]
 
@@ -223,7 +223,7 @@ class ACTriangle:
         pn_normal = [self.get_normal_in_pn_triangle(x) for x in self._parameter]
         # v4
         pn_normal_adjacent = np.zeros((6, 4), dtype='f4')
-        is_sharp = []
+        is_sharp3_triangle_quality = []
         aux1 = [2, 0, 0, 1, 1, 2]
         aux2 = [5, 0, 1, 2, 3, 4]
         occupy_edge_info = [ACTriangle.occupy_edge(p) for p in self.parameter]
@@ -232,27 +232,35 @@ class ACTriangle:
         for i in range(3):
             if original_edge_info[i] == -1:
                 # 是内部三角形
-                is_sharp.append(-1)
+                is_sharp3_triangle_quality.append(-1)
             else:
                 if self.neighbor[original_edge_info[i]][0] is None:
                     # 没有邻接三角形
-                    is_sharp.append(-1)
+                    is_sharp3_triangle_quality.append(-1)
                 else:
-                    is_sharp.append(-1)
+                    is_sharp3_triangle_quality.append(-1)
                     for j in range(2):
                         index = i * 2 + j
-                        adjacent_parameter = self.transform_parameter(self._parameter[aux1[index]], original_edge_info[i])
+                        adjacent_parameter = self.transform_parameter(self._parameter[aux1[index]],
+                                                                      original_edge_info[i])
                         adjacent_normal = self.neighbor[original_edge_info[i]][0] \
                             .get_normal_in_pn_triangle(adjacent_parameter)
                         pn_normal_adjacent[aux2[index]] = adjacent_normal
                         if not equal_vec(adjacent_normal, pn_normal[aux1[index]]):
-                            is_sharp[-1] = 1
+                            is_sharp3_triangle_quality[-1] = 1
+
+        t = [self.positionv3[i - 1] - self.positionv3[i] for i in [1, 2, 0]]
+        l = [sqrt(sum([y * y for y in x])) for x in t]
+        perimeter = sum(l)
+        double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2
+        radius = double_area / perimeter
+        is_sharp3_triangle_quality.append(int(radius / max(l[0], max(l[1], l[2])) * 3.4 * 255))
 
         data.append(pn_normal)
         data.append(pn_normal_adjacent)
         data.append(self.normalv4)
         data.append(np.append(self._parameter, [[0], [0], [0]], axis=1))
-        data.append(is_sharp + [-1])
+        data.append(is_sharp3_triangle_quality)
         return tuple(data)
 
     @staticmethod
