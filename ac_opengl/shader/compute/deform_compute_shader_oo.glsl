@@ -11,7 +11,7 @@ struct SplitedTriangle {
     vec4 adjacency_normal[6];
     vec4 original_normal[3];
     vec4 original_position[3];
-    int need_adj[8];
+    int is_sharp[4];
 };
 //input
 layout(std430, binding=5) buffer TriangleBuffer{
@@ -126,13 +126,14 @@ void main() {
 
     uint oppo_point_index[6] =    {2,1,0,2,1,0};
     uint move_control_point[6] =  {2,1,3,7,8,5};
+    uint is_sharp_index[6] = {0,1,1,2,2,0};
     vec3 delta = vec3(0);
     for (int i = 0; i < 6; ++i) {
         vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
         vec3 current_point = position[i/2].xyz;
         vec3 p = bezierPositionControlPoint[move_control_point[i]];
         vec3 result;
-        if (currentTriangle.need_adj[i] > 0) {
+        if (currentTriangle.is_sharp[is_sharp_index[i]] > 0) {
             SamplePointInfo spi = currentTriangle.samplePoint[normal_aux[i/2]];
             spi.sample_point_original_normal = currentTriangle.adjacency_normal[i];
             vec3 adj_normal = sample_bspline_normal_fast(spi);

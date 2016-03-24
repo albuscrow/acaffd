@@ -1,18 +1,14 @@
 import logging
 from enum import Enum
-import numpy as np
-
+from itertools import product
+from mvc_model.ACTriangle import ACTriangle, ACPoly
 from mvc_model.aux import BSplineBody
+from util.util import normalize
+import numpy as np
 
 
 class ModelFileFormatType(Enum):
     obj = 1
-
-
-def normalize(n):
-    l = (n[0] ** 2 + n[1] ** 2 + n[2] ** 2) ** 0.5
-    return [x / l for x in n]
-    pass
 
 
 class OBJ:
@@ -86,13 +82,6 @@ class OBJ:
         else:
             logging.error('only support obj file')
             raise Exception()
-
-        # check adjacency
-        # for i in range(len(self.adjacency)):
-        #     for ti in self.adjacency[i]:
-        #         if i * 3 not in self.adjacency[int(ti / 3)]:
-        #             print('error')
-        #             print(self.adjacency[i])
 
         # 归一化，使模型坐标从-1,1
         mid_x = (max_x + min_x) / 2
@@ -207,16 +196,43 @@ class OBJ:
         triangles = self.reorganize()
         data = []
         for t in triangles:
+            t.gen_pn_triangle()
+
+        polygons = []
+        for t in triangles:
+            polygons.append(ACPoly(t))
+
+        split_line = bspline.get_split_line()
+        for i in range(3):
+            up = []
+            down = polygons
+            # for j in [0.333333333]:
+            for j in split_line[i][::-1]:
+                down_temp = []
+                for p in down:  # type: ACPoly
+                    upp, downp = p.split(i, j)
+                    if upp:
+                        up.append(upp)
+                    if downp:
+                        down_temp.append(downp)
+                down = down_temp
+            polygons = up + down
+
+        triangles = []
+        for p in polygons:  # type: ACPoly
+            triangles += p.to_triangle()
+
+        for t in triangles:
             data.append(t.as_element_for_shader(bspline))
-            pass
-        return self.original_triangle_number, np.array(data, ACTriangle.DATA_TYPE)
+        print(len(triangles))
+        return len(triangles), np.array(data, ACTriangle.DATA_TYPE)
 
     def reorganize(self):
         res = []  # type: list[ACTriangle]
         for i, index in enumerate(zip(*([iter(self._index)] * 3))):
             t = ACTriangle(i)  # type: ACTriangle
-            t.position, t.normal, t.tex_coord = [np.array([lst[x] for x in index], dtype='f4') for lst in
-                                                 [self._vertex, self._normal, self._tex_coord]]
+            t.positionv4, t.normalv4, t.tex_coord = [np.array([lst[x] for x in index], dtype='f4') for lst in
+                                                     [self._vertex, self._normal, self._tex_coord]]
             res.append(t)
         for i, triangle in enumerate(res):
             triangle.neighbor = []
@@ -226,126 +242,6 @@ class OBJ:
                 else:
                     triangle.neighbor.append((None, -1))
         return res
-
-
-class ACTriangle:
-    DATA_TYPE = [('samplePoint', [('parameter', '4f4'),
-                                  ('sample_point_original_normal', '4f4'),
-                                  ('knot_left_index', '4u4')], 37),
-                 ('normal_adj', '4f4', 3),
-                 ('adjacency_normal', '4f4', 6),
-                 ('original_normal', '4f4', 3),
-                 ('original_position', '4f4', 3),
-                 ('need_adj', '8i4'),
-                 ]
-
-    SAMPLE_PATTERN = np.array([
-        [1.000000, 0.000000, 0.000000],
-
-        [0.833333, 0.166667, 0.000000],
-        [0.833333, 0.000000, 0.166667],
-
-        [0.666667, 0.333333, 0.000000],
-        [0.666667, 0.166667, 0.166667],
-        [0.666667, 0.000000, 0.333333],
-
-        [0.500000, 0.500000, 0.000000],
-        [0.500000, 0.333333, 0.166667],
-        [0.500000, 0.166667, 0.333333],
-        [0.500000, 0.000000, 0.500000],
-
-        [0.333333, 0.666667, 0.000000],
-        [0.333333, 0.500000, 0.166667],
-        [0.333333, 0.333333, 0.333333],
-        [0.333333, 0.166667, 0.500000],
-        [0.333333, 0.000000, 0.666667],
-
-        [0.166667, 0.833333, 0.000000],
-        [0.166667, 0.666667, 0.166667],
-        [0.166667, 0.500000, 0.333333],
-        [0.166667, 0.333333, 0.500000],
-        [0.166667, 0.166667, 0.666667],
-        [0.166667, 0.000000, 0.833333],
-
-        [0.000000, 1.000000, 0.000000],
-        [0.000000, 0.833333, 0.166667],
-        [0.000000, 0.666667, 0.333333],
-        [0.000000, 0.500000, 0.500000],
-        [0.000000, 0.333333, 0.666667],
-        [0.000000, 0.166667, 0.833333],
-        [0.000000, 0.000000, 1.000000],
-
-        [1, 0, 0],
-        [0.6667, 0.3333, 0], [0.6667, 0, 0.3333],
-        [0.3333, 0.6667, 0], [0.3333, 0, 0.6667],
-        [0, 1, 0], [0, 0.6667, 0.3333], [0, 0.3333, 0.6667], [0, 0, 1]], dtype='f4')
-
-    def __init__(self, i):
-        self._id = i
-        self._position = None  # type: np.array
-        self._normal = None  # type: np.array
-        self._tex_coord = None  # type: np.array
-        self._neighbor = None  # type: list[(ACTriangle, int)]
-
-    def __str__(self):
-        return ','.join([str(x.id if x else None) + '-' + str(y) for x, y in self._neighbor])
-
-    def as_element_for_shader(self, b_spline_body: BSplineBody) -> list:
-        data = []
-        samplePoints = []
-        for pattern in ACTriangle.SAMPLE_PATTERN:
-            samplePoints.append(self.get_sample_point(pattern, b_spline_body))
-        data.append(samplePoints)
-        data.append(self.normal)
-        normaladj = np.zeros((6, 4), dtype='f4')
-        normaladj[:3, :] = self.normal
-        normaladj[3:, :] = self.normal
-        data.append(normaladj)
-        data.append(self.normal)
-        data.append(self.position)
-        data.append([-1] * 8)
-        return tuple(data)
-
-    def get_sample_point(self, pattern: np.array, b_spline_body: BSplineBody):
-        parameter = np.dot(pattern, self._position)
-        cage_t_and_left_knot_index = b_spline_body.get_cage_t_and_left_knot_index(parameter)
-        return (cage_t_and_left_knot_index[0], np.dot(pattern, self._normal), cage_t_and_left_knot_index[1])
-
-    @property
-    def id(self):
-        return self._id
-
-    @property
-    def position(self):
-        return self._position
-
-    @property
-    def normal(self):
-        return self._normal
-
-    @property
-    def tex_coord(self):
-        return self._tex_coord
-
-    @property
-    def neighbor(self):
-        return self._neighbor
-
-    @position.setter
-    def position(self, value):
-        self._position = value
-
-    @normal.setter
-    def normal(self, value):
-        self._normal = value
-
-    @tex_coord.setter
-    def tex_coord(self, value):
-        self._tex_coord = value
-
-    @neighbor.setter
-    def neighbor(self, value):
-        self._neighbor = value
 
 
 if __name__ == '__main__':
@@ -361,8 +257,7 @@ if __name__ == '__main__':
                      [[i + .5] * 4] * 6,
                      [[i + .5] * 4] * 3,
                      [[i + .5] * 4] * 3,
-                     [i] * 8
-                     ))
+                     [i] * 4))
 
     table = np.array(data, dtype=[('samplePoint', [('parameter', '4f4'),
                                                    ('sample_point_original_normal', '4f4'),
@@ -371,7 +266,7 @@ if __name__ == '__main__':
                                   ('adjacency_normal', ('f4', (6, 4))),
                                   ('original_normal', ('f4', (3, 4))),
                                   ('original_position', ('f4', (3, 4))),
-                                  ('need_adj', '8i4'),
+                                  ('need_adj', '4i4'),
                                   ])
     # print(table[0])
     # print(table[0][0][0])

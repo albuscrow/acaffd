@@ -54,7 +54,7 @@ struct SplitedTriangle {
     vec4 adjacency_normal[6];
     vec4 original_normal[3];
     vec4 original_position[3];
-    int need_adj[8];
+    int is_sharp[4];
 };
 
 
@@ -160,7 +160,7 @@ const vec3 sampleParameter[37] = {
 };
 
 
-const uint splitParameterEdgeInfoAux[5] = {-1,2,0,-2,1};
+const int splitParameterEdgeInfoAux[5] = {-1,2,0,-2,1};
 
 const uint splitParameterChangeAux[3][3] =
 {{1,0,2},
@@ -256,19 +256,9 @@ void main() {
     for (int i = 0; i < 6; ++i) {
         PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
     }
-
-//    for (int i = 0; i < 10; ++i) {
-//        myOutputBuffer[triangleIndex * 10 + i].xyz = PNTriangleP[i];
-//    }
     memoryBarrierBuffer();
 
     // 获取pattern
-//    uint splitParameterOffset;
-//    uint splitIndexOffset;
-//    uint subTriangleNumber;
-//    uint pointNumber;
-//    getSplitePattern(splitIndexOffset, subTriangleNumber);
-
     uint splitIndexOffset;
     uint subTriangleNumber;
     getSplitePattern(splitIndexOffset, subTriangleNumber);
@@ -318,26 +308,28 @@ void main() {
         edgeInfo[1] = getEdgeInfo(parameter[1]);
         edgeInfo[2] = getEdgeInfo(parameter[2]);
 
-        uint adjacency_triangle_index_edge[3];
+        int adjacency_triangle_index_edge[3];
         adjacency_triangle_index_edge[0] = splitParameterEdgeInfoAux[edgeInfo[2] & edgeInfo[0]];
         adjacency_triangle_index_edge[1] = splitParameterEdgeInfoAux[edgeInfo[0] & edgeInfo[1]];
         adjacency_triangle_index_edge[2] = splitParameterEdgeInfoAux[edgeInfo[1] & edgeInfo[2]];
 
         for (int j = 0; j < 3; ++j) {
-            uint currentEdge = adjacency_triangle_index_edge[j];
-            uint adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
-            if (currentEdge == -1 || adjacency_triangle_index_ == -1) {
-                st.need_adj[aux1[j * 2]] = -1;
-                st.need_adj[aux1[j * 2 + 1]] = -1;
+            int currentEdge = adjacency_triangle_index_edge[j];
+            if (currentEdge == -1 ) {
+                st.is_sharp[j] = -1;
             } else {
-                for (int k = 0; k < 2; ++k) {
-                    int index = j * 2 + k;
-                    vec3 adjacency_parameter = translate_parameter(parameter[aux2[index]], currentEdge);
-                    st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
-                    if (all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4))) {
-                        st.need_adj[aux1[index]] = -1;
-                    } else {
-                        st.need_adj[aux1[index]] = 1;
+                int adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
+                if (adjacency_triangle_index_ == -1) {
+                    st.is_sharp[j] = -1;
+                } else {
+                    st.is_sharp[j] = -1;
+                    for (int k = 0; k < 2; ++k) {
+                        int index = j * 2 + k;
+                        vec3 adjacency_parameter = translate_parameter(parameter[aux2[index]], currentEdge);
+                        st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
+                        if (! all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4))) {
+                            st.is_sharp[j] = 1;
+                        }
                     }
                 }
             }
@@ -349,12 +341,6 @@ void main() {
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
-//    for (int i = 0; i < 25344; ++i) {
-//        myOutputBuffer[i*4] = splitParameter[i].x;
-//        myOutputBuffer[i*4 + 1] = splitParameter[i].y;
-//        myOutputBuffer[i*4 + 2] = splitParameter[i].z;
-//        myOutputBuffer[i*4 + 3] = splitParameter[i].w;
-//    }
 }
 
 float factorial(int n) {
@@ -391,8 +377,10 @@ vec4 getNormalAdj(vec3 parameter) {
 }
 
 vec4 getNormalOrg(vec3 parameter) {
-    vec3 result = normal[0] * parameter.x + normal[1] * parameter.y + normal[2] * parameter.z;
-    //todo mark
+    vec3 result = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result += normal[i] * parameter[i];
+    }
     return vec4(normalize(result), 0);
 }
 
@@ -415,11 +403,9 @@ vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
 vec4 getPosition(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
-    //todo
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
             int k = 3 - i - j;
-
             float n = 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
                     / factorial(i) / factorial(j) / factorial(k);
             result += PNTriangleP[ctrlPointIndex ++] * n;
@@ -495,11 +481,11 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
 }
 
 vec3 getAdjacencyNormal(uint adjacency_index, bool isFirst, vec3 normal) {
-    uint triangleIndex = adjacency_triangle_index[adjacency_index];
+    int triangleIndex = adjacency_triangle_index[adjacency_index];
     if (triangleIndex == -1) {
         return normal;
     }
-    uint pointIndex = adjacency_triangle_edge[adjacency_index];
+    int pointIndex = adjacency_triangle_edge[adjacency_index];
     if (isFirst) {
         if (pointIndex == 0) {
             pointIndex = 3;
@@ -523,10 +509,16 @@ vec3 genPNControlPoint(vec3 p_s, vec3 p_e, vec3 n, vec3 n_adj) {
     }
 }
 
+//vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
+//    vec3 n = normalize(n_s + n_e);
+//    vec3 v = normalize(p_e - p_s);
+//    return normalize(n - 2 * v * dot(n, v));
+//}
+
 vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
-    vec3 n = normalize(n_s + n_e);
-    vec3 v = normalize(p_e - p_s);
-    return normalize(n - 2 * v * dot(n, v));
+    vec3 n = n_s + n_e;
+    vec3 v = p_e - p_s;
+    return normalize(n - 2 * dot(v, n) / dot(v,v) * v);
 }
 
 void genPNTriangle(){
