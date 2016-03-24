@@ -38,8 +38,8 @@ class Controller(QObject):
 
         # m v p matrix
         self._perspective_matrix = None  # type: np.array
-        self._translate_matrix = create_from_translation(np.array([0, 0, -8]), dtype='float32')  # type: np.array
-        self._model_view_matrix = self._translate_matrix  # type: np.array
+        self._translate = [0, 0, -8]  # type: np.array
+        self._model_view_matrix = create_from_translation(np.array(self._translate), dtype='float32')  # type: np.array
 
         self._inited = False  # type: bool
 
@@ -73,8 +73,8 @@ class Controller(QObject):
         # update _mode_view_matrix
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = multiply(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
-                                                                     -self._rotate_y / 180 * pi), dtype='float32'),
-                                           np.dot(scale_matrix, self._translate_matrix))
+                                                                     -self._rotate_y / 180 * pi), dtype='f4'),
+                                           np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
         self.updateScene.emit()
 
     @pyqtSlot(bool)
@@ -113,7 +113,7 @@ class Controller(QObject):
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = np.dot(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
                                                                    -self._rotate_y / 180 * pi), dtype='float32'),
-                                         np.dot(scale_matrix, self._translate_matrix))
+                                         np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
         self.updateScene.emit()
 
     @property
