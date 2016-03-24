@@ -246,32 +246,13 @@ class ACTriangle:
                             .get_normal_in_pn_triangle(adjacent_parameter)
                         pn_normal_adjacent[aux2[index]] = adjacent_normal
                         if not equal_vec(adjacent_normal, pn_normal[aux1[index]]):
-                            print('begin self')
-                            for k in self.pn_triangle_n:
-                                print(['%.2f' % x for x in k])
-                            print()
-                            print(self._parameter[aux1[index]])
-                            print(pn_normal[aux1[index]])
-
-                            print('other')
-                            for k in self.neighbor[original_edge_info[i]][0].pn_triangle_n:
-                                print(['%.2f' % x for x in k])
-                            print()
-                            print(adjacent_parameter)
-                            print(adjacent_normal)
-
-                            print('diff')
-                            print(adjacent_normal - pn_normal[aux1[index]])
                             is_sharp[-1] = 1
 
         data.append(pn_normal)
         data.append(pn_normal_adjacent)
         data.append(self.normalv4)
-        data.append(self.positionv4)
+        data.append(np.append(self._parameter, [[0], [0], [0]], axis=1))
         data.append(is_sharp + [-1])
-        # print(pn_normal)
-        # print(pn_normal_adjacent.shape)
-        # print(sample_points)
         return tuple(data)
 
     @staticmethod
