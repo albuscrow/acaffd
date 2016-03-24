@@ -168,6 +168,7 @@ void main() {
         parameterInSplit[point_offset] = tessellatedParameter[i];
         parameterInOriginal[point_offset] =
             getTessellatedSplitParameter(currentTriangle.parameter_in_original, tessellatedParameter[i]);
+        parameterInOriginal[point_offset][3] = currentTriangle.is_sharp3_triangle_quality1[3] / 255f;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         point_index[i] = point_offset;

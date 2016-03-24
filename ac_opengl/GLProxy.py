@@ -99,3 +99,6 @@ class GLProxy:
 
     def set_splited_edge_visibility(self, v):
         self._deform_and_renderer_controller.set_splited_edge_visibility(v)
+
+    def set_show_triangle_quality(self, is_show):
+        self._deform_and_renderer_controller.set_show_triangle_quality(is_show)
