@@ -107,7 +107,6 @@ class Controller(QObject):
     def zoom(self, delta):
         delta /= 10
         self._scale += delta
-        print(self._scale)
         if self._scale[0] == 0:
             self._scale += delta
         scale_matrix = create_from_scale(self._scale, dtype='f4')
