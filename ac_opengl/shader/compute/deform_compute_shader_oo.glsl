@@ -10,8 +10,8 @@ struct SplitedTriangle {
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
     vec4 original_normal[3];
-    vec4 split_parameter[3];
-    int is_sharp[4];
+    vec4 parameter_in_original[3];
+    int is_sharp3_triangle_quality1[4];
 };
 //input
 layout(std430, binding=5) buffer TriangleBuffer{
@@ -43,13 +43,13 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
 };
 
 //output
-layout(std430, binding=9) buffer TesselatedSplitParameterBuffer{
-    vec4[] tessellatedSplitParameter;
+layout(std430, binding=9) buffer ParameterInOriginalBuffer{
+    vec4[] parameterInOriginal;
 };
 
 //output
-layout(std430, binding=10) buffer TesselateParameterBuffer{
-    vec4[] tessellateParameter;
+layout(std430, binding=10) buffer ParameterInSplitBuffer{
+    vec4[] parameterInSplit;
 };
 
 //debug
@@ -143,7 +143,7 @@ void main() {
         vec3 current_point = position[i/2].xyz;
         vec3 p = bezierPositionControlPoint[move_control_point[i]];
         vec3 result;
-        if (currentTriangle.is_sharp[is_sharp_index[i]] > 0) {
+        if (currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i]] > 0) {
             SamplePointInfo spi = currentTriangle.samplePoint[normal_aux[i/2]];
             spi.sample_point_original_normal = currentTriangle.adjacency_normal[i];
             vec3 adj_normal = sample_bspline_normal_fast(spi);
@@ -159,32 +159,15 @@ void main() {
 
     bezierPositionControlPoint[4] += delta * 1.5 / 6;
 
-    // 输出分割三角形
-    // 生成顶点数据
-//    uint point_index[100];
-//    for (int i = 0; i < 3; ++i) {
-//        vec3 pointParameter = tessellatedParameter[i];
-//        uint point_offset = triangleIndex * 3 + i;
-//        tessellatedVertex[point_offset] = vec4(sample_points[normal_aux[i]], 1);
-//        tessellatedNormal[point_offset] = vec4(sample_normals[normal_aux[i]], 0);
-//        point_index[i] = point_offset;
-//    }
-//    // 生成index数据
-//    uint index_offset = triangleIndex;
-//    tessellatedIndex[index_offset * 3] = point_index[0];
-//    tessellatedIndex[index_offset * 3 + 1] = point_index[1];
-//    tessellatedIndex[index_offset * 3 + 2] = point_index[2];
-
-
     // 细分
     // 生成顶点数据
     uint point_index[100];
     for (int i = 0; i < tessellatedParameterLength; ++i) {
         vec3 pointParameter = tessellatedParameter[i].xyz;
         uint point_offset = triangleIndex * tessellatedParameterLength + i;
-        tessellateParameter[point_offset] = tessellatedParameter[i];
-        tessellatedSplitParameter[point_offset] =
-            getTessellatedSplitParameter(currentTriangle.split_parameter, tessellatedParameter[i]);
+        parameterInSplit[point_offset] = tessellatedParameter[i];
+        parameterInOriginal[point_offset] =
+            getTessellatedSplitParameter(currentTriangle.parameter_in_original, tessellatedParameter[i]);
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         point_index[i] = point_offset;

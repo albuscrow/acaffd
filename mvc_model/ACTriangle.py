@@ -269,9 +269,6 @@ class ACTriangle:
         data.append(self.normalv4)
         data.append(self.positionv4)
         data.append(is_sharp + [-1])
-        # print(pn_normal)
-        # print(pn_normal_adjacent.shape)
-        # print(sample_points)
         return tuple(data)
 
     @staticmethod

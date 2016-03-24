@@ -53,8 +53,8 @@ struct SplitedTriangle {
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
     vec4 original_normal[3];
-    vec4 split_parameter[3];
-    int is_sharp[4];
+    vec4 parameter_in_original[3];
+    int is_sharp3_triangle_quality1[4];
 };
 
 
@@ -286,21 +286,21 @@ void main() {
         SplitedTriangle st;
 
         for (int i = 0; i < 3; ++i) {
-            st.split_parameter[i].xyz = changeParameter(splitParameter[index[i]].xyz);
+            st.parameter_in_original[i].xyz = changeParameter(splitParameter[index[i]].xyz);
         }
 
 
         for (int i = 0; i < 3; ++i) {
-            st.original_normal[i] = getNormalOrg(st.split_parameter[i].xyz);
+            st.original_normal[i] = getNormalOrg(st.parameter_in_original[i].xyz);
         }
 
         for (int i = 0; i < 3; ++i) {
-            st.normal_adj[i] = getNormalAdj(st.split_parameter[i].xyz);
+            st.normal_adj[i] = getNormalAdj(st.parameter_in_original[i].xyz);
         }
 
         uint edgeInfo[3];
         for (int i = 0; i < 3; ++i) {
-            edgeInfo[i] = getEdgeInfo(st.split_parameter[i].xyz);
+            edgeInfo[i] = getEdgeInfo(st.parameter_in_original[i].xyz);
         }
 
         int adjacency_triangle_index_edge[3];
@@ -311,28 +311,29 @@ void main() {
         for (int j = 0; j < 3; ++j) {
             int currentEdge = adjacency_triangle_index_edge[j];
             if (currentEdge == -1 ) {
-                st.is_sharp[j] = -1;
+                st.is_sharp3_triangle_quality1[j] = -1;
             } else {
                 int adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
                 if (adjacency_triangle_index_ == -1) {
-                    st.is_sharp[j] = -1;
+                    st.is_sharp3_triangle_quality1[j] = -1;
                 } else {
-                    st.is_sharp[j] = -1;
+                    st.is_sharp3_triangle_quality1[j] = -1;
                     for (int k = 0; k < 2; ++k) {
                         int index = j * 2 + k;
-                        vec3 adjacency_parameter = translate_parameter(st.split_parameter[aux2[index]].xyz, currentEdge);
+                        vec3 adjacency_parameter = translate_parameter(st.parameter_in_original[aux2[index]].xyz, currentEdge);
                         st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
                         if (! all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4))) {
-                            st.is_sharp[j] = 1;
+                            st.is_sharp3_triangle_quality1[j] = 1;
                         }
                     }
                 }
             }
         }
+        st.is_sharp3_triangle_quality1[3] = 125;
 
         vec3[3] original_position;
         for (int i = 0; i < 3; ++i) {
-            original_position[i] = getPosition(st.split_parameter[i].xyz);
+            original_position[i] = getPosition(st.parameter_in_original[i].xyz);
         }
 
         for (int j = 0; j < 37; ++j) {
