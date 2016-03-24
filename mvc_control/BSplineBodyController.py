@@ -145,3 +145,12 @@ class BSplineBodyController:
     @property
     def b_spline_body(self):
         return self._b_spline_body
+
+    @property
+    def visibility(self):
+        return self._visibility
+
+    @visibility.setter
+    def visibility(self, v):
+        self._visibility = v
+

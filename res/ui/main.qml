@@ -168,6 +168,22 @@ ApplicationWindow {
                             controller.change_control_point_number(cp_u.value, cp_v.value, cp_w.value)
                         }
                     }
+
+                    CheckBox {
+                        text: qsTr("显示控制定点")
+                        checked: false
+                        onClicked: {
+                            controller.set_control_point_visibility(checked)
+                        }
+                    }
+
+                    CheckBox {
+                        text: qsTr("显示切割边界")
+                        checked: false
+                        onClicked: {
+                            controller.set_splited_edge_visibility(checked)
+                        }
+                    }
                 }
             }
 

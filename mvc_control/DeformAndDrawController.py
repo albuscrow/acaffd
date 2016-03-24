@@ -47,6 +47,20 @@ class DeformComputeShader(ProgramWrap):
                            1 / self._controller.cage_size[2])
 
 
+class ModelRendererShader(ProgramWrap):
+    def __init__(self, controller):
+        super().__init__()
+        self._controller = controller  # type: DeformAndDrawController
+        self._is_show_splited_edge_uniform = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)  # type: ACVBO
+
+    def init_uniform(self):
+        self.update_uniform()
+
+    def update_uniform(self):
+        glProgramUniform1i(self._gl_program_name, 3, 1 if self._controller.splited_edge_visibility else -1)
+        print("update_uniform")
+
+
 class DeformAndDrawController:
     def __init__(self, triangle_number: int, cage_size: list):
         self._splited_triangle_number = triangle_number
@@ -64,11 +78,15 @@ class DeformAndDrawController:
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False
 
+        self._need_update_show_splited_edge_flag = False
+        self._splited_edge_visibility = False
+
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self.parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 9, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self.parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 9, None,
+                                                       GL_DYNAMIC_DRAW)  # type: ACVBO
         self.parameter_in_original_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._model_vao = -1  # type: int
 
@@ -76,7 +94,7 @@ class DeformAndDrawController:
         self._deform_program = DeformComputeShader(self) \
             .add_shader(ShaderWrap(GL_COMPUTE_SHADER, add_compute_prefix('deform_compute_shader_oo.glsl')))
 
-        self._renderer_program = ProgramWrap() \
+        self._renderer_program = ModelRendererShader(self) \
             .add_shader(ShaderWrap(GL_VERTEX_SHADER, add_renderer_prefix('vertex.glsl'))) \
             .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_renderer_prefix('fragment.glsl')))  # type: ProgramWrap
 
@@ -141,6 +159,9 @@ class DeformAndDrawController:
         glUseProgram(0)
 
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
+        if self._need_update_show_splited_edge_flag:
+            self._renderer_program.update_uniform()
+            self._need_update_show_splited_edge_flag = False
         self.gl_sync_buffer()
         self.gl_deform(operator)
         self._renderer_program.use()
@@ -229,6 +250,14 @@ class DeformAndDrawController:
     @property
     def need_deform(self):
         return self._need_deform
+
+    @property
+    def splited_edge_visibility(self):
+        return self._splited_edge_visibility
+
+    def set_splited_edge_visibility(self, v):
+        self._splited_edge_visibility = v
+        self._need_update_show_splited_edge_flag = True
 
     @need_deform.setter
     def need_deform(self, value):
