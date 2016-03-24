@@ -53,7 +53,7 @@ struct SplitedTriangle {
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
     vec4 original_normal[3];
-    vec4 original_position[3];
+    vec4 split_parameter[3];
     int is_sharp[4];
 };
 
@@ -197,14 +197,14 @@ vec4 getNormalOrg(vec3 parameter);
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_);
 
 // 根据 parameter 获得PNTriangle中的位置
-vec4 getPosition(vec3 parameter);
+vec3 getPosition(vec3 parameter);
 
 uint getEdgeInfo(vec3 parameter);
 
 vec3 changeParameter(vec3 parameter);
 
 // 根据在整个bspline体中的参数求该采样点的相关信息
-SamplePointInfo getBSplineInfo(SplitedTriangle st, int index);
+SamplePointInfo getBSplineInfo(SplitedTriangle st, int index, vec3[3] original_position);
 
 // 根据三角形形状，取得splite pattern
 void getSplitePattern(out uint indexOffset, out uint triangleNumber);
@@ -283,30 +283,25 @@ void main() {
     uint aux2[6] = {2,0,0,1,1,2};
     for (uint i = splitIndexOffset; i < splitIndexOffset + subTriangleNumber; ++i) {
         uvec4 index = splitIndex[i];
-
-        vec3 parameter[3];
-        parameter[0] = changeParameter(splitParameter[index.x].xyz);
-        parameter[1] = changeParameter(splitParameter[index.y].xyz);
-        parameter[2] = changeParameter(splitParameter[index.z].xyz);
-
         SplitedTriangle st;
 
-        st.original_normal[0] = getNormalOrg(parameter[0]);
-        st.original_normal[1] = getNormalOrg(parameter[1]);
-        st.original_normal[2] = getNormalOrg(parameter[2]);
+        for (int i = 0; i < 3; ++i) {
+            st.split_parameter[i].xyz = changeParameter(splitParameter[index[i]].xyz);
+        }
 
-        st.original_position[0] = getPosition(parameter[0]);
-        st.original_position[1] = getPosition(parameter[1]);
-        st.original_position[2] = getPosition(parameter[2]);
 
-        st.normal_adj[0] = getNormalAdj(parameter[0]);
-        st.normal_adj[1] = getNormalAdj(parameter[1]);
-        st.normal_adj[2] = getNormalAdj(parameter[2]);
+        for (int i = 0; i < 3; ++i) {
+            st.original_normal[i] = getNormalOrg(st.split_parameter[i].xyz);
+        }
+
+        for (int i = 0; i < 3; ++i) {
+            st.normal_adj[i] = getNormalAdj(st.split_parameter[i].xyz);
+        }
 
         uint edgeInfo[3];
-        edgeInfo[0] = getEdgeInfo(parameter[0]);
-        edgeInfo[1] = getEdgeInfo(parameter[1]);
-        edgeInfo[2] = getEdgeInfo(parameter[2]);
+        for (int i = 0; i < 3; ++i) {
+            edgeInfo[i] = getEdgeInfo(st.split_parameter[i].xyz);
+        }
 
         int adjacency_triangle_index_edge[3];
         adjacency_triangle_index_edge[0] = splitParameterEdgeInfoAux[edgeInfo[2] & edgeInfo[0]];
@@ -325,7 +320,7 @@ void main() {
                     st.is_sharp[j] = -1;
                     for (int k = 0; k < 2; ++k) {
                         int index = j * 2 + k;
-                        vec3 adjacency_parameter = translate_parameter(parameter[aux2[index]], currentEdge);
+                        vec3 adjacency_parameter = translate_parameter(st.split_parameter[aux2[index]].xyz, currentEdge);
                         st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
                         if (! all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4))) {
                             st.is_sharp[j] = 1;
@@ -335,8 +330,13 @@ void main() {
             }
         }
 
+        vec3[3] original_position;
+        for (int i = 0; i < 3; ++i) {
+            original_position[i] = getPosition(st.split_parameter[i].xyz);
+        }
+
         for (int j = 0; j < 37; ++j) {
-            st.samplePoint[j] = getBSplineInfo(st, j);
+            st.samplePoint[j] = getBSplineInfo(st, j, original_position);
         }
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
@@ -400,7 +400,7 @@ vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
 }
 
 // 根据 parameter 获得PNTriangle中的位置
-vec4 getPosition(vec3 parameter) {
+vec3 getPosition(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
     for (int i = 3; i >=0; --i) {
@@ -411,7 +411,7 @@ vec4 getPosition(vec3 parameter) {
             result += PNTriangleP[ctrlPointIndex ++] * n;
         }
     }
-    return vec4(result, 1);
+    return result;
 }
 
 
@@ -600,11 +600,11 @@ float getBSplineInfoW(float t, out uint leftIndex){
     return t;
 }
 
-SamplePointInfo getBSplineInfo(SplitedTriangle st, int index) {
+SamplePointInfo getBSplineInfo(SplitedTriangle st, int index, vec3[3] original_position) {
     vec3 uvw = sampleParameter[index];
-    vec4 parameter = vec4(0);
+    vec3 parameter = vec3(0);
     for (int i = 0; i < 3; ++i) {
-        parameter +=  st.original_position[i] * uvw[i];
+        parameter +=  original_position[i] * uvw[i];
     }
 
     SamplePointInfo result;

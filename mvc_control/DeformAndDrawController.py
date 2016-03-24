@@ -68,6 +68,8 @@ class DeformAndDrawController:
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._tessellate_parameter_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 9, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._split_parameter_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._model_vao = -1  # type: int
 
         # program
@@ -85,6 +87,10 @@ class DeformAndDrawController:
         self._vertex_vbo.as_array_buffer(0, 4, GL_FLOAT)
         # set normal attribute
         self._normal_vbo.as_array_buffer(1, 4, GL_FLOAT)
+        # set tessellate parameter attribute
+        self._tessellate_parameter_vbo.as_array_buffer(2, 4, GL_FLOAT)
+        # set split parameter attribute
+        self._split_parameter_vbo.as_array_buffer(3, 4, GL_FLOAT)
         # specific index buffer
         self._index_vbo.as_element_array_buffer()
         # unbind program
@@ -98,6 +104,13 @@ class DeformAndDrawController:
         if self._normal_vbo is not None:
             self._normal_vbo.capacity = self.splited_triangle_number \
                                         * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+
+        if self._tessellate_parameter_vbo is not None:
+            self._tessellate_parameter_vbo.capacity = self.splited_triangle_number \
+                                                      * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        if self._split_parameter_vbo is not None:
+            self._split_parameter_vbo.capacity = self.splited_triangle_number \
+                                                 * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
         if self._index_vbo is not None:
             self._index_vbo.capacity = self.splited_triangle_number \
                                        * self.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
@@ -105,6 +118,8 @@ class DeformAndDrawController:
     def gl_sync_buffer(self):
         self._vertex_vbo.gl_sync()
         self._normal_vbo.gl_sync()
+        self._tessellate_parameter_vbo.gl_sync()
+        self._split_parameter_vbo.gl_sync()
         self._index_vbo.gl_sync()
 
     def gl_deform(self, operator):
