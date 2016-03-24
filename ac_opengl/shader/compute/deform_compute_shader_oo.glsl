@@ -10,7 +10,7 @@ struct SplitedTriangle {
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
     vec4 original_normal[3];
-    vec4 original_position[3];
+    vec4 split_parameter[3];
     int is_sharp[4];
 };
 //input
@@ -40,6 +40,16 @@ layout(std430, binding=7) buffer TesselatedNormalBuffer{
 //output
 layout(std430, binding=8) buffer TesselatedIndexBuffer{
     uint[] tessellatedIndex;
+};
+
+//output
+layout(std430, binding=9) buffer TesselatedSplitParameterBuffer{
+    vec4[] tessellatedSplitParameter;
+};
+
+//output
+layout(std430, binding=10) buffer TesselateParameterBuffer{
+    vec4[] tessellateParameter;
 };
 
 //debug
@@ -86,6 +96,7 @@ vec3 bezierPositionControlPoint[10];
 vec3 bezierNormalControlPoint[10];
 vec4 getPosition(vec3 parameter);
 vec4 getNormal(vec3 parameter);
+vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter);
 
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
@@ -93,7 +104,6 @@ void main() {
         return;
     }
     SplitedTriangle currentTriangle = input_triangles[triangleIndex];
-
     // 计算采样点
     vec3 sample_points[37];
     vec3 sample_normals[37];
@@ -172,6 +182,9 @@ void main() {
     for (int i = 0; i < tessellatedParameterLength; ++i) {
         vec3 pointParameter = tessellatedParameter[i].xyz;
         uint point_offset = triangleIndex * tessellatedParameterLength + i;
+        tessellateParameter[point_offset] = tessellatedParameter[i];
+        tessellatedSplitParameter[point_offset] =
+            getTessellatedSplitParameter(currentTriangle.split_parameter, tessellatedParameter[i]);
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         point_index[i] = point_offset;
@@ -202,6 +215,15 @@ float power(float b, int n) {
     }
 }
 
+
+vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter){
+    vec4 res = vec4(0);
+    for (int i = 0; i < 3; ++i) {
+        res += split_parameter[i] * tessellatedParameter[i];
+    }
+    return res;
+}
+
 vec4 getNormal(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
@@ -213,9 +235,7 @@ vec4 getNormal(vec3 parameter) {
             result += bezierNormalControlPoint[ctrlPointIndex ++] * n;
         }
     }
-    //todo mark
     return vec4(normalize(result), 0);
-//    return vec4(result, 0);
 }
 
 vec4 getPosition(vec3 parameter) {

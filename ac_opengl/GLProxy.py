@@ -8,7 +8,7 @@ import sys
 
 from mvc_model.plain_class import ACRect
 
-if sys.argv[1] == 'cpu':
+if len(sys.argv) > 1 and sys.argv[1] == 'cpu':
     PreviousComputeController = PreviousComputeControllerCPU
 else:
     PreviousComputeController = PreviousComputeControllerGPU
