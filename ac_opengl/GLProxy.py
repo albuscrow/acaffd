@@ -71,12 +71,14 @@ class GLProxy:
         self._deform_and_renderer_controller.gl_init()
 
     def set_select_region(self, x1, y1, x2, y2):
-        region = ACRect(x1, y1, x2 - x1, y2 - y1)
-        self._embed_body_controller.pick_control_point(region)
+        if self._embed_body_controller.visibility:
+            region = ACRect(x1, y1, x2 - x1, y2 - y1)
+            self._embed_body_controller.pick_control_point(region)
 
     def move_control_points(self, x, y, z):
-        self._embed_body_controller.move_selected_control_points([x, y, z])
-        self._deform_and_renderer_controller.need_deform = True
+        if self._embed_body_controller.visibility:
+            self._embed_body_controller.move_selected_control_points([x, y, z])
+            self._deform_and_renderer_controller.need_deform = True
 
     def change_tessellation_level(self, level):
         self._deform_and_renderer_controller.set_tessellation_factor(level)  # type: DeformAndDrawController
@@ -91,3 +93,9 @@ class GLProxy:
     def change_split_factor(self, factor):
         if isinstance(self._previous_compute_controller, PreviousComputeControllerGPU):
             self._previous_compute_controller.split_factor = factor
+
+    def set_control_point_visibility(self, v):
+        self._embed_body_controller.visibility = v
+
+    def set_splited_edge_visibility(self, v):
+        self._deform_and_renderer_controller.set_splited_edge_visibility(v)

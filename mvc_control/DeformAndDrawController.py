@@ -47,6 +47,19 @@ class DeformComputeShader(ProgramWrap):
                            1 / self._controller.cage_size[2])
 
 
+class ModelRendererShader(ProgramWrap):
+    def __init__(self, controller):
+        super().__init__()
+        self._controller = controller  # type: DeformAndDrawController
+        self._is_show_splited_edge_uniform = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)  # type: ACVBO
+
+    def init_uniform(self):
+        self.update_uniform()
+
+    def update_uniform(self):
+        glProgramUniform1i(self._gl_program_name, 3, 1 if self._controller.splited_edge_visibility else -1)
+
+
 class DeformAndDrawController:
     def __init__(self, triangle_number: int, cage_size: list):
         self._splited_triangle_number = triangle_number
@@ -64,19 +77,23 @@ class DeformAndDrawController:
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False
 
+        self._need_update_show_splited_edge_flag = False
+        self._splited_edge_visibility = False
+
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._tessellate_parameter_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 9, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._split_parameter_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self.parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 9, None,
+                                                       GL_DYNAMIC_DRAW)  # type: ACVBO
+        self.parameter_in_original_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._model_vao = -1  # type: int
 
         # program
         self._deform_program = DeformComputeShader(self) \
             .add_shader(ShaderWrap(GL_COMPUTE_SHADER, add_compute_prefix('deform_compute_shader_oo.glsl')))
 
-        self._renderer_program = ProgramWrap() \
+        self._renderer_program = ModelRendererShader(self) \
             .add_shader(ShaderWrap(GL_VERTEX_SHADER, add_renderer_prefix('vertex.glsl'))) \
             .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_renderer_prefix('fragment.glsl')))  # type: ProgramWrap
 
@@ -88,9 +105,9 @@ class DeformAndDrawController:
         # set normal attribute
         self._normal_vbo.as_array_buffer(1, 4, GL_FLOAT)
         # set tessellate parameter attribute
-        self._tessellate_parameter_vbo.as_array_buffer(2, 4, GL_FLOAT)
+        self.parameter_in_splited_triangle_vbo.as_array_buffer(2, 4, GL_FLOAT)
         # set split parameter attribute
-        self._split_parameter_vbo.as_array_buffer(3, 4, GL_FLOAT)
+        self.parameter_in_original_vbo.as_array_buffer(3, 4, GL_FLOAT)
         # specific index buffer
         self._index_vbo.as_element_array_buffer()
         # unbind program
@@ -105,12 +122,12 @@ class DeformAndDrawController:
             self._normal_vbo.capacity = self.splited_triangle_number \
                                         * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
 
-        if self._tessellate_parameter_vbo is not None:
-            self._tessellate_parameter_vbo.capacity = self.splited_triangle_number \
+        if self.parameter_in_splited_triangle_vbo is not None:
+            self.parameter_in_splited_triangle_vbo.capacity = self.splited_triangle_number \
+                                                              * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        if self.parameter_in_original_vbo is not None:
+            self.parameter_in_original_vbo.capacity = self.splited_triangle_number \
                                                       * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
-        if self._split_parameter_vbo is not None:
-            self._split_parameter_vbo.capacity = self.splited_triangle_number \
-                                                 * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
         if self._index_vbo is not None:
             self._index_vbo.capacity = self.splited_triangle_number \
                                        * self.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
@@ -118,8 +135,8 @@ class DeformAndDrawController:
     def gl_sync_buffer(self):
         self._vertex_vbo.gl_sync()
         self._normal_vbo.gl_sync()
-        self._tessellate_parameter_vbo.gl_sync()
-        self._split_parameter_vbo.gl_sync()
+        self.parameter_in_splited_triangle_vbo.gl_sync()
+        self.parameter_in_original_vbo.gl_sync()
         self._index_vbo.gl_sync()
 
     def gl_deform(self, operator):
@@ -141,6 +158,9 @@ class DeformAndDrawController:
         glUseProgram(0)
 
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
+        if self._need_update_show_splited_edge_flag:
+            self._renderer_program.update_uniform()
+            self._need_update_show_splited_edge_flag = False
         self.gl_sync_buffer()
         self.gl_deform(operator)
         self._renderer_program.use()
@@ -229,6 +249,14 @@ class DeformAndDrawController:
     @property
     def need_deform(self):
         return self._need_deform
+
+    @property
+    def splited_edge_visibility(self):
+        return self._splited_edge_visibility
+
+    def set_splited_edge_visibility(self, v):
+        self._splited_edge_visibility = v
+        self._need_update_show_splited_edge_flag = True
 
     @need_deform.setter
     def need_deform(self, value):

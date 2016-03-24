@@ -23,7 +23,7 @@ class Controller(QObject):
         self.load_file(get_test_file_name())
 
         # default show b spline control points
-        self.show_aux(True)
+        self.set_control_point_visibility(False)
 
         # for renderer
         # window size for glSetViewPort
@@ -74,8 +74,12 @@ class Controller(QObject):
         self.updateScene.emit()
 
     @pyqtSlot(bool)
-    def show_aux(self, is_show: bool):
-        self._gl_proxy._show_control_point = is_show
+    def set_control_point_visibility(self, is_show: bool):
+        self._gl_proxy.set_control_point_visibility(is_show)
+
+    @pyqtSlot(bool)
+    def set_splited_edge_visibility(self, is_show: bool):
+        self._gl_proxy.set_splited_edge_visibility(is_show)
 
     @pyqtSlot(int, int, int, int)
     def select(self, x1: int, y1: int, x2: int, y2: int):
