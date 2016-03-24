@@ -329,7 +329,8 @@ void main() {
                 }
             }
         }
-        st.is_sharp3_triangle_quality1[3] = 125;
+        //todo, 计算三角形质量
+        st.is_sharp3_triangle_quality1[3] = 200;
 
         vec3[3] original_position;
         for (int i = 0; i < 3; ++i) {

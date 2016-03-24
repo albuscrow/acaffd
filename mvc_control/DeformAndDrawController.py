@@ -54,10 +54,13 @@ class ModelRendererShader(ProgramWrap):
         self._is_show_splited_edge_uniform = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)  # type: ACVBO
 
     def init_uniform(self):
-        self.update_uniform()
+        self.update_uniform_about_split_edge()
 
-    def update_uniform(self):
+    def update_uniform_about_split_edge(self):
         glProgramUniform1i(self._gl_program_name, 3, 1 if self._controller.splited_edge_visibility else -1)
+
+    def update_uniform_about_triangle_quality(self):
+        glProgramUniform1i(self._gl_program_name, 4, 1 if self._controller.show_quality else -1)
 
 
 class DeformAndDrawController:
@@ -79,6 +82,9 @@ class DeformAndDrawController:
 
         self._need_update_show_splited_edge_flag = False
         self._splited_edge_visibility = False
+
+        self._need_update_triangle_quality_flag = False
+        self._show_quality = False
 
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -159,8 +165,12 @@ class DeformAndDrawController:
 
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
         if self._need_update_show_splited_edge_flag:
-            self._renderer_program.update_uniform()
+            self._renderer_program.update_uniform_about_split_edge()
             self._need_update_show_splited_edge_flag = False
+
+        if self._need_update_triangle_quality_flag:
+            self._renderer_program.update_uniform_about_triangle_quality()
+            self._need_update_triangle_quality_flag = False
         self.gl_sync_buffer()
         self.gl_deform(operator)
         self._renderer_program.use()
@@ -254,9 +264,17 @@ class DeformAndDrawController:
     def splited_edge_visibility(self):
         return self._splited_edge_visibility
 
+    @property
+    def show_quality(self):
+        return self._show_quality
+
     def set_splited_edge_visibility(self, v):
         self._splited_edge_visibility = v
         self._need_update_show_splited_edge_flag = True
+
+    def set_show_triangle_quality(self, v):
+        self._show_quality = v
+        self._need_update_triangle_quality_flag = True
 
     @need_deform.setter
     def need_deform(self, value):

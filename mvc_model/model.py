@@ -206,7 +206,6 @@ class OBJ:
         for i in range(3):
             up = []
             down = polygons
-            # for j in [0.333333333]:
             for j in split_line[i][::-1]:
                 down_temp = []
                 for p in down:  # type: ACPoly

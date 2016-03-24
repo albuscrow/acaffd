@@ -184,6 +184,14 @@ ApplicationWindow {
                             controller.set_splited_edge_visibility(checked)
                         }
                     }
+
+                    CheckBox {
+                        text: qsTr("显示三角形质量")
+                        checked: false
+                        onClicked: {
+                            controller.set_show_triangle_quality_flag(checked)
+                        }
+                    }
                 }
             }
 
