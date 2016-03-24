@@ -194,55 +194,6 @@ ApplicationWindow {
                     }
                 }
             }
-
-           //GroupBox {
-           //    id: edit_panel
-           //    title: "编辑"
-           //    Layout.fillWidth: true
-
-           //    GridLayout {
-           //        anchors.fill: parent
-           //        columns: 2
-
-           //        Label {
-           //            text: "切割参数"
-           //        }
-           //        Slider {
-           //            id: slider_x
-           //            Layout.fillWidth: true
-           //            minimumValue: -1
-           //            onValueChanged: {
-           //                controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
-           //            }
-           //        }
-
-           //        Label {
-           //            text: "切割参数"
-           //        }
-
-           //        Slider {
-           //            Layout.fillWidth: true
-           //            id: slider_y
-           //            minimumValue: -1
-           //            onValueChanged: {
-           //                controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
-           //            }
-           //        }
-
-           //        Label {
-           //            text: "切割参数"
-           //        }
-
-           //        Slider {
-           //            Layout.fillWidth: true
-           //            id: slider_z
-           //            minimumValue: -1
-           //            onValueChanged: {
-           //                controller.move_control_points(slider_x.value, slider_y.value, slider_z.value);
-           //            }
-           //        }
-           //    }
-           //}
         }
     }
 }

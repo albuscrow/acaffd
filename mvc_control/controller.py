@@ -33,10 +33,13 @@ class Controller(QObject):
         self._rotate_x = 0  # type: int
         self._rotate_y = 0  # type: int
 
+        # for zoom
+        self._scale = np.array([1, 1, 1], dtype='f4')
+
         # m v p matrix
         self._perspective_matrix = None  # type: np.array
-        self._model_matrix = create_from_translation(np.array([0, 0, -8]), dtype='float32')  # type: np.array
-        self._model_view_matrix = self._model_matrix  # type: np.array
+        self._translate_matrix = create_from_translation(np.array([0, 0, -8]), dtype='float32')  # type: np.array
+        self._model_view_matrix = self._translate_matrix  # type: np.array
 
         self._inited = False  # type: bool
 
@@ -68,9 +71,10 @@ class Controller(QObject):
         self._rotate_y += x
         self._rotate_x += y
         # update _mode_view_matrix
+        scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = multiply(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
                                                                      -self._rotate_y / 180 * pi), dtype='float32'),
-                                           self._model_matrix)
+                                           np.dot(scale_matrix, self._translate_matrix))
         self.updateScene.emit()
 
     @pyqtSlot(bool)
@@ -101,7 +105,16 @@ class Controller(QObject):
 
     @pyqtSlot(int)
     def zoom(self, delta):
-        pass
+        delta /= 10
+        self._scale += delta
+        print(self._scale)
+        if self._scale[0] == 0:
+            self._scale += delta
+        scale_matrix = create_from_scale(self._scale, dtype='f4')
+        self._model_view_matrix = np.dot(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
+                                                                   -self._rotate_y / 180 * pi), dtype='float32'),
+                                         np.dot(scale_matrix, self._translate_matrix))
+        self.updateScene.emit()
 
     @property
     def window_size(self):
