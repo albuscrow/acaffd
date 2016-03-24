@@ -224,7 +224,6 @@ class OBJ:
 
         for t in triangles:
             data.append(t.as_element_for_shader(bspline))
-        print(len(triangles))
         return len(triangles), np.array(data, ACTriangle.DATA_TYPE)
 
     def reorganize(self):

@@ -58,7 +58,6 @@ class ModelRendererShader(ProgramWrap):
 
     def update_uniform(self):
         glProgramUniform1i(self._gl_program_name, 3, 1 if self._controller.splited_edge_visibility else -1)
-        print("update_uniform")
 
 
 class DeformAndDrawController:
