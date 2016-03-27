@@ -204,7 +204,7 @@ uint getEdgeInfo(vec3 parameter);
 vec3 changeParameter(vec3 parameter);
 
 // 根据在整个bspline体中的参数求该采样点的相关信息
-SamplePointInfo getBSplineInfo(SplitedTriangle st, int index, vec3[3] original_position);
+SamplePointInfo getBSplineInfo(vec4[3] original_normal, int index, vec3[3] original_position);
 
 // 根据三角形形状，取得splite pattern
 void getSplitePattern(out uint indexOffset, out uint triangleNumber);
@@ -348,7 +348,7 @@ void main() {
 
 
         for (int j = 0; j < 37; ++j) {
-            st.samplePoint[j] = getBSplineInfo(st, j, original_position);
+            st.samplePoint[j] = getBSplineInfo(st.original_normal, j, original_position);
         }
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
@@ -612,7 +612,7 @@ float getBSplineInfoW(float t, out uint leftIndex){
     return t;
 }
 
-SamplePointInfo getBSplineInfo(SplitedTriangle st, int index, vec3[3] original_position) {
+SamplePointInfo getBSplineInfo(vec4[3] original_normal, int index, vec3[3] original_position) {
     vec3 uvw = sampleParameter[index];
     vec3 parameter = vec3(0);
     for (int i = 0; i < 3; ++i) {
@@ -623,7 +623,7 @@ SamplePointInfo getBSplineInfo(SplitedTriangle st, int index, vec3[3] original_p
 
     result.sample_point_original_normal = vec4(0);
     for (int i = 0; i < 3; ++i) {
-        result.sample_point_original_normal += st.original_normal[i] * uvw[i];
+        result.sample_point_original_normal += original_normal[i] * uvw[i];
     }
 
     uint knot_left_index_u, knot_left_index_v, knot_left_index_w;

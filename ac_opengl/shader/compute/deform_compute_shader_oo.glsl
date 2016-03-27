@@ -1,5 +1,23 @@
 #version 450
 
+//input
+layout(std140, binding=0) uniform BSplineBodyInfo{
+    uniform float orderU;
+    uniform float orderV;
+    uniform float orderW;
+
+    uniform float controlPointNumU;
+    uniform float controlPointNumV;
+    uniform float controlPointNumW;
+
+    uniform float lengthU;
+    uniform float lengthV;
+    uniform float lengthW;
+    uniform float minU;
+    uniform float minV;
+    uniform float minW;
+};
+
 struct SamplePointInfo {
     vec4 parameter;
     vec4 sample_point_original_normal;
@@ -97,12 +115,26 @@ vec3 bezierNormalControlPoint[10];
 vec4 getPosition(vec3 parameter);
 vec4 getNormal(vec3 parameter);
 vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter);
+// uvw 为 1 2 3分别代表u v w
+float getBSplineInfoU(float t, out uint leftIndex);
+float getBSplineInfoV(float t, out uint leftIndex);
+float getBSplineInfoW(float t, out uint leftIndex);
+SamplePointInfo getBSplineInfo(vec4[3] original_normal, int index, vec3[3] original_position);
+
+// 代表三个方向B spline body的区间数
+uint interNumberU;
+uint interNumberV;
+uint interNumberW;
 
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
     if (triangleIndex >= triangleNumber) {
         return;
     }
+
+    interNumberU = uint(controlPointNumU - orderU + 1);
+    interNumberV = uint(controlPointNumV - orderV + 1);
+    interNumberW = uint(controlPointNumW - orderW + 1);
     SplitedTriangle currentTriangle = input_triangles[triangleIndex];
     // 计算采样点
     vec3 sample_points[37];
@@ -375,3 +407,62 @@ vec3 sample_bspline_position_fast(SamplePointInfo spi) {
     return sample_helper(spi, un, vn, wn);
 }
 
+// uvw 为 1 2 3分别代表u v w
+float getBSplineInfoU(float t, out uint leftIndex){
+    float step = lengthU / float(interNumberU);
+    float temp = (t - minU) / step;
+    leftIndex = uint(temp);
+    if (leftIndex >= interNumberU) {
+        leftIndex -= 1;
+    }
+    t = temp - leftIndex;
+    leftIndex += uint(orderU - 1);
+    return t;
+}
+float getBSplineInfoV(float t, out uint leftIndex){
+    float step = lengthV / float(interNumberV);
+    float temp = (t - minV) / step;
+    leftIndex = uint(temp);
+    if (leftIndex >= interNumberV) {
+        leftIndex -= 1;
+    }
+    t = temp - leftIndex;
+    leftIndex += uint(orderV - 1);
+    return t;
+}
+
+float getBSplineInfoW(float t, out uint leftIndex){
+    float step = lengthW / float(interNumberW);
+    float temp = (t - minW) / step;
+    leftIndex = uint(temp);
+    if (leftIndex >= interNumberW) {
+        leftIndex -= 1;
+    }
+    t = temp - leftIndex;
+    leftIndex += uint(orderW - 1);
+    return t;
+}
+
+SamplePointInfo getBSplineInfo(vec4[3] original_normal, vec3 uvw, vec3[3] original_position) {
+    vec3 parameter = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        parameter +=  original_position[i] * uvw[i];
+    }
+
+    SamplePointInfo result;
+
+    result.sample_point_original_normal = vec4(0);
+    for (int i = 0; i < 3; ++i) {
+        result.sample_point_original_normal += original_normal[i] * uvw[i];
+    }
+
+    uint knot_left_index_u, knot_left_index_v, knot_left_index_w;
+    float u = getBSplineInfoU(parameter.x, knot_left_index_u);
+    float v = getBSplineInfoV(parameter.y, knot_left_index_v);
+    float w = getBSplineInfoW(parameter.z, knot_left_index_w);
+
+    result.parameter = vec4(u, v, w, 0);
+    result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
+
+    return result;
+}
