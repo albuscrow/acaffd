@@ -43,12 +43,12 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
 };
 
 //output
-layout(std430, binding=9) buffer ParameterInOriginalBuffer{
+layout(std430, binding=10) buffer ParameterInOriginalBuffer{
     vec4[] parameterInOriginal;
 };
 
 //output
-layout(std430, binding=10) buffer ParameterInSplitBuffer{
+layout(std430, binding=11) buffer ParameterInSplitBuffer{
     vec4[] parameterInSplit;
 };
 

@@ -90,9 +90,9 @@ class DeformAndDrawController:
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self.parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 9, None,
+        self.parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None,
                                                        GL_DYNAMIC_DRAW)  # type: ACVBO
-        self.parameter_in_original_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self.parameter_in_original_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 11, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._model_vao = -1  # type: int
 
         # program

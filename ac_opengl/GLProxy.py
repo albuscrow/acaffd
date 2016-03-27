@@ -2,6 +2,7 @@ from mvc_control.BSplineBodyController import BSplineBodyController
 from mvc_control.PreviousComputeControllerCPU import PreviousComputeControllerCPU
 from mvc_control.PreviousComputeControllerGPU import PreviousComputeControllerGPU
 from mvc_control.DeformAndDrawController import DeformAndDrawController
+from mvc_model.GLObject import ACVBO
 from mvc_model.model import OBJ
 from OpenGL.GL import *
 import sys
@@ -57,10 +58,16 @@ class GLProxy:
         glClearColor(1, 1, 1, 1)
         self._embed_body_controller.gl_init()
 
+        debug_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 14, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        debug_buffer.capacity = 2048
+        debug_buffer.gl_sync()
+
         # init previous compute shader
         self._previous_compute_controller.gl_init()
         if isinstance(self._previous_compute_controller, PreviousComputeControllerGPU):
-            self._previous_compute_controller.gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
+            self._previous_compute_controller.debug_buffer = debug_buffer
+            self._previous_compute_controller.gl_compute(
+                self._embed_body_controller.gl_sync_buffer_for_previous_computer)
         else:
             self._previous_compute_controller.gl_compute()
 
