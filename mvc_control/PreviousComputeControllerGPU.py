@@ -55,7 +55,6 @@ class PreviousComputeControllerGPU:
         self._adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_STATIC_DRAW)
         self._share_adjacency_pn_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_STATIC_DRAW)
         self._splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
-        self._debug_buffer = None  # type: ACVBO
 
         # init shader
         self._program = ProgramWrap().add_shader(
@@ -191,10 +190,3 @@ class PreviousComputeControllerGPU:
     def splited_triangle_number(self):
         return self._splited_triangle_number
 
-    @property
-    def debug_buffer(self):
-        return self.debug_buffer
-
-    @debug_buffer.setter
-    def debug_buffer(self, buffer):
-        self._debug_buffer = buffer

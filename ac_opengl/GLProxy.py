@@ -20,6 +20,7 @@ class GLProxy:
         self._embed_body_controller = None  # type: BSplineBodyController
         self._previous_compute_controller = None  # type: PreviousComputeController
         self._deform_and_renderer_controller = None  # type: DeformAndDrawController
+        self._debug_buffer = None  # type: ACVBO
 
     def change_model(self, model: OBJ):
         if self._embed_body_controller is None:
@@ -58,14 +59,13 @@ class GLProxy:
         glClearColor(1, 1, 1, 1)
         self._embed_body_controller.gl_init()
 
-        debug_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 14, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        debug_buffer.capacity = 2048
-        debug_buffer.gl_sync()
+        self._debug_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 14, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._debug_buffer.capacity = 2048
+        self._debug_buffer.gl_sync()
 
         # init previous compute shader
         self._previous_compute_controller.gl_init()
         if isinstance(self._previous_compute_controller, PreviousComputeControllerGPU):
-            self._previous_compute_controller.debug_buffer = debug_buffer
             self._previous_compute_controller.gl_compute(
                 self._embed_body_controller.gl_sync_buffer_for_previous_computer)
         else:

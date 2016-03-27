@@ -10,8 +10,8 @@ in vec3 varying_diff_position;
 out vec4 color;
 
 void main() {
-//    color = vec4(varying_normal, 1);
-//    return;
+    color = vec4(varying_diff_position, 1);
+    return;
     if (show_splited_edge > 0) {
         if (any(lessThan(varying_parameter_in_original3_triangle_quality1.xyz, vec3(0.01)))) {
             color = vec4(1,0,0,1);

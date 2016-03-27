@@ -5,11 +5,9 @@ layout(std140, binding=0) uniform BSplineBodyInfo{
     uniform float orderU;
     uniform float orderV;
     uniform float orderW;
-
     uniform float controlPointNumU;
     uniform float controlPointNumV;
     uniform float controlPointNumW;
-
     uniform float lengthU;
     uniform float lengthV;
     uniform float lengthW;
@@ -215,13 +213,11 @@ void main() {
         parameterInOriginal[point_offset][3] = currentTriangle.is_sharp3_triangle_quality1[3] / 255f;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
-        point_index[i] = point_offset;
-
-
         // get background data
         SamplePointInfo spi = getBSplineInfo(original_normal, original_position, pointParameter);
-        realPosition[i].xyz = sample_bspline_position_fast(spi);
-        realNormal[i].xyz = sample_bspline_normal_fast(spi);
+        realPosition[point_offset] = vec4(sample_bspline_position_fast(spi), 1);
+        realNormal[point_offset] = vec4(sample_bspline_normal_fast(spi), 0);
+        point_index[i] = point_offset;
     }
     // 生成index数据
     for (int i = 0; i < tessellateIndexLength; ++i) {

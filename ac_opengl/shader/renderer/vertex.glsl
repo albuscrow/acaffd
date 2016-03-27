@@ -16,10 +16,9 @@ out vec3 varying_diff_normal;
 out vec3 varying_diff_position;
 void main() {
     gl_Position = wvp_matrix * vertice;
-    varying_normal.xyz = normalize(vec3(wv_matrix * real_normal));
+    varying_normal.xyz = normalize(vec3(wv_matrix * normal));
     varying_parameter_in_original3_triangle_quality1 = parameter_in_original3_triangle_quality1;
     varying_parameter_in_splited_triangle = parameter_in_splited_edge.xyz;
     varying_diff_normal = abs((real_normal - normal).xyz);
-    varying_diff_position = abs((real_position - vertice).xyz);
-//    varying_normal = vec3(normal);
+    varying_diff_position = abs((real_position - vertice).xyz * 100);
 }
