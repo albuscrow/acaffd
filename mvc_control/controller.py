@@ -77,6 +77,30 @@ class Controller(QObject):
                                            np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
         self.updateScene.emit()
 
+    @pyqtSlot(int, int)
+    def move(self, x, y):
+        # record rotate_y and rotate_x
+        xyz = [x / 100, - y / 100, 0]
+        self._translate = [x + y for x, y in zip(self._translate, xyz)]
+        # update _mode_view_matrix
+        scale_matrix = create_from_scale(self._scale, dtype='f4')
+        self._model_view_matrix = multiply(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
+                                                                     -self._rotate_y / 180 * pi), dtype='f4'),
+                                           np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
+        self.updateScene.emit()
+
+    @pyqtSlot(int, int)
+    def rotate(self, x, y):
+        # record rotate_y and rotate_x
+        self._rotate_y += x
+        self._rotate_x += y
+        # update _mode_view_matrix
+        scale_matrix = create_from_scale(self._scale, dtype='f4')
+        self._model_view_matrix = multiply(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
+                                                                     -self._rotate_y / 180 * pi), dtype='f4'),
+                                           np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
+        self.updateScene.emit()
+
     @pyqtSlot(bool)
     def set_control_point_visibility(self, is_show: bool):
         self._gl_proxy.set_control_point_visibility(is_show)
@@ -164,11 +188,12 @@ def get_test_file_name():
     # file_path = "res/3d_model/star.obj"
     # file_path = "res/3d_model/legoDog.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
+    file_path = "res/3d_model/test_2_triangle_plain.obj"
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
-    file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"

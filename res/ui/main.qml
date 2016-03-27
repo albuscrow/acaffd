@@ -51,8 +51,19 @@ ApplicationWindow {
                 anchors.rightMargin: 0
                 drag.axis: Drag.XAndYAxis
                 anchors.fill: parent
+                property int pressKey
+                Keys.onPressed: {
+                    pressKey = event.key
+                }
+                Keys.onReleased: {
+                    pressKey = 0
+                }
                 onRightMoveDelta: {
-                    controller.rotate(x, y)
+                    if (pressKey == Qt.Key_M) {
+                        controller.move(x, y)
+                    } else {
+                        controller.rotate(x, y)
+                    }
                 }
                 onLeftMoveInfo: {
                     controller.select(x, y, x2, y2)

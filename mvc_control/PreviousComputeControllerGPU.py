@@ -55,6 +55,7 @@ class PreviousComputeControllerGPU:
         self._adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_STATIC_DRAW)
         self._share_adjacency_pn_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_STATIC_DRAW)
         self._splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
+        self._debug_buffer = None  # type: ACVBO
 
         # init shader
         self._program = ProgramWrap().add_shader(
@@ -77,10 +78,10 @@ class PreviousComputeControllerGPU:
         self._splited_triangle_counter_acbo.gl_sync()
 
     def gl_async_update_buffer_for_self(self):
-        split_info_buffer = glGenBuffers(1)
         indexes_size = self._pattern_indexes.size * self._pattern_indexes.itemsize
         parameter_size = self._pattern_parameters.size * self._pattern_parameters.itemsize
         offset_size = self._pattern_offsets.size * self._pattern_offsets.itemsize
+        split_info_buffer = glGenBuffers(1)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, split_info_buffer)
         glBufferData(GL_SHADER_STORAGE_BUFFER, offset_size + indexes_size + parameter_size,
                      None,
@@ -124,22 +125,10 @@ class PreviousComputeControllerGPU:
         self._program.use()
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
-        # self.test_print_splited_triangle()
         glUseProgram(0)
         self._splited_triangle_number = self.get_splited_triangles_number()
         self._need_recompute = False
         return self._splited_triangle_number
-
-    def test_print_splited_triangle(self):
-        for i in self._splited_triangle_ssbo.get_value(ctypes.c_float, (2, 512)):
-            for k, j in enumerate(i):
-                if k % 32 == 0:
-                    print()
-                print(j, end=' ')
-            print()
-            print()
-            print()
-            print()
 
     @property
     def need_compute(self):
@@ -201,3 +190,11 @@ class PreviousComputeControllerGPU:
     @property
     def splited_triangle_number(self):
         return self._splited_triangle_number
+
+    @property
+    def debug_buffer(self):
+        return self.debug_buffer
+
+    @debug_buffer.setter
+    def debug_buffer(self, buffer):
+        self._debug_buffer = buffer
