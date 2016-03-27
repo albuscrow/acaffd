@@ -62,6 +62,12 @@ class ModelRendererShader(ProgramWrap):
     def update_uniform_about_triangle_quality(self):
         glProgramUniform1i(self._gl_program_name, 4, 1 if self._controller.show_quality else -1)
 
+    def update_uniform_about_normal_diff(self):
+        glProgramUniform1i(self._gl_program_name, 5, 1 if self._controller.show_normal_diff else -1)
+
+    def update_uniform_about_position_diff(self):
+        glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.show_position_diff else -1)
+
 
 class DeformAndDrawController:
     def __init__(self, triangle_number: int, cage_size: list):
@@ -80,11 +86,17 @@ class DeformAndDrawController:
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False
 
-        self._need_update_show_splited_edge_flag = False
+        self._need_update_show_splited_edge_flag = True
         self._splited_edge_visibility = False
 
-        self._need_update_triangle_quality_flag = False
+        self._need_update_triangle_quality_flag = True
         self._show_quality = False
+
+        self._need_update_normal_diff_flag = True
+        self._show_normal_diff = False
+
+        self._need_update_position_diff_flag = True
+        self._show_position_diff = False
 
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -177,6 +189,9 @@ class DeformAndDrawController:
         glUseProgram(0)
 
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
+        self.gl_sync_buffer()
+        self.gl_deform(operator)
+        self._renderer_program.use()
         if self._need_update_show_splited_edge_flag:
             self._renderer_program.update_uniform_about_split_edge()
             self._need_update_show_splited_edge_flag = False
@@ -184,9 +199,14 @@ class DeformAndDrawController:
         if self._need_update_triangle_quality_flag:
             self._renderer_program.update_uniform_about_triangle_quality()
             self._need_update_triangle_quality_flag = False
-        self.gl_sync_buffer()
-        self.gl_deform(operator)
-        self._renderer_program.use()
+
+        if self._need_update_normal_diff_flag:
+            self._renderer_program.update_uniform_about_normal_diff()
+            self._need_update_normal_diff_flag = False
+
+        if self._need_update_position_diff_flag:
+            self._renderer_program.update_uniform_about_position_diff()
+            self._need_update_position_diff_flag = False
         # common bind
         wvp_matrix = multiply(model_view_matrix, perspective_matrix)
         glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
@@ -280,6 +300,22 @@ class DeformAndDrawController:
     @property
     def show_quality(self):
         return self._show_quality
+
+    @property
+    def show_normal_diff(self):
+        return self._show_normal_diff
+
+    @property
+    def show_position_diff(self):
+        return self._show_position_diff
+
+    def set_show_normal_diff(self, v):
+        self._show_normal_diff = v
+        self._need_update_normal_diff_flag = True
+
+    def set_show_position_diff(self, v):
+        self._show_position_diff = v
+        self._need_update_position_diff_flag = True
 
     def set_splited_edge_visibility(self, v):
         self._splited_edge_visibility = v

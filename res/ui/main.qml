@@ -203,6 +203,22 @@ ApplicationWindow {
                             controller.set_show_triangle_quality_flag(checked)
                         }
                     }
+
+                    CheckBox {
+                        text: qsTr("显示法向差异")
+                        checked: false
+                        onClicked: {
+                            controller.set_show_normal_diff_flag(checked)
+                        }
+                    }
+
+                    CheckBox {
+                        text: qsTr("显示位置差异")
+                        checked: false
+                        onClicked: {
+                            controller.set_show_position_diff_flag(checked)
+                        }
+                    }
                 }
             }
         }

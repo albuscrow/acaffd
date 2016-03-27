@@ -109,3 +109,9 @@ class GLProxy:
 
     def set_show_triangle_quality(self, is_show):
         self._deform_and_renderer_controller.set_show_triangle_quality(is_show)
+
+    def set_show_normal_diff(self, is_show):
+        self._deform_and_renderer_controller.set_show_normal_diff(is_show)
+
+    def set_show_position_diff(self, is_show):
+        self._deform_and_renderer_controller.set_show_position_diff(is_show)

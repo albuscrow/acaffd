@@ -113,6 +113,14 @@ class Controller(QObject):
     def set_show_triangle_quality_flag(self, is_show: bool):
         self._gl_proxy.set_show_triangle_quality(is_show)
 
+    @pyqtSlot(bool)
+    def set_show_normal_diff_flag(self, is_show: bool):
+        self._gl_proxy.set_show_normal_diff(is_show)
+
+    @pyqtSlot(bool)
+    def set_show_position_diff_flag(self, is_show: bool):
+        self._gl_proxy.set_show_position_diff(is_show)
+
     @pyqtSlot(int, int, int, int)
     def select(self, x1: int, y1: int, x2: int, y2: int):
         x1 = min(x1, x2)
