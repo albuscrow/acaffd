@@ -27,7 +27,7 @@ struct SplitedTriangle {
     SamplePointInfo samplePoint[37];
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
-    vec4 original_normal[3];
+    vec4 original_position[3];
     vec4 parameter_in_original[3];
     int is_sharp3_triangle_quality1[4];
 };
@@ -68,6 +68,17 @@ layout(std430, binding=10) buffer ParameterInOriginalBuffer{
 //output
 layout(std430, binding=11) buffer ParameterInSplitBuffer{
     vec4[] parameterInSplit;
+};
+
+
+//output
+layout(std430, binding=12) buffer RealPosition{
+    vec4[] realPosition;
+};
+
+//output
+layout(std430, binding=13) buffer RealNormal{
+    vec4[] realNormal;
 };
 
 //debug
@@ -119,7 +130,7 @@ vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParam
 float getBSplineInfoU(float t, out uint leftIndex);
 float getBSplineInfoV(float t, out uint leftIndex);
 float getBSplineInfoW(float t, out uint leftIndex);
-SamplePointInfo getBSplineInfo(vec4[3] original_normal, int index, vec3[3] original_position);
+SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_position, vec3 uvw);
 
 // 代表三个方向B spline body的区间数
 uint interNumberU;
@@ -155,12 +166,13 @@ void main() {
     }
 
     vec3 position[3];
-    position[0] = sample_points[0];
-    position[1] = sample_points[21];
-    position[2] = sample_points[27];
-
     uint normal_aux[3] = {0,21,27};
+    vec3 original_normal[3];
+    vec3 original_position[3];
     for (int i = 0; i < 3; ++i) {
+        original_position[i] = currentTriangle.original_position[i].xyz;
+        original_normal[i] = currentTriangle.samplePoint[normal_aux[i]].sample_point_original_normal.xyz;
+        position[i] = sample_points[normal_aux[i]];
         SamplePointInfo current_normal_spi = currentTriangle.samplePoint[normal_aux[i]];
         current_normal_spi.sample_point_original_normal = currentTriangle.normal_adj[i];
         currentTriangle.normal_adj[i].xyz = sample_bspline_normal_fast(current_normal_spi);
@@ -204,6 +216,12 @@ void main() {
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         point_index[i] = point_offset;
+
+
+        // get background data
+        SamplePointInfo spi = getBSplineInfo(original_normal, original_position, pointParameter);
+        realPosition[i].xyz = sample_bspline_position_fast(spi);
+        realNormal[i].xyz = sample_bspline_normal_fast(spi);
     }
     // 生成index数据
     for (int i = 0; i < tessellateIndexLength; ++i) {
@@ -443,7 +461,7 @@ float getBSplineInfoW(float t, out uint leftIndex){
     return t;
 }
 
-SamplePointInfo getBSplineInfo(vec4[3] original_normal, vec3 uvw, vec3[3] original_position) {
+SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_position, vec3 uvw) {
     vec3 parameter = vec3(0);
     for (int i = 0; i < 3; ++i) {
         parameter +=  original_position[i] * uvw[i];
@@ -453,7 +471,7 @@ SamplePointInfo getBSplineInfo(vec4[3] original_normal, vec3 uvw, vec3[3] origin
 
     result.sample_point_original_normal = vec4(0);
     for (int i = 0; i < 3; ++i) {
-        result.sample_point_original_normal += original_normal[i] * uvw[i];
+        result.sample_point_original_normal.xyz += original_normal[i] * uvw[i];
     }
 
     uint knot_left_index_u, knot_left_index_v, knot_left_index_w;

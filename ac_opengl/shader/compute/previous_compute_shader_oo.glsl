@@ -52,7 +52,7 @@ struct SplitedTriangle {
     SamplePointInfo samplePoint[37];
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
-    vec4 original_normal[3];
+    vec4 original_position[3];
     vec4 parameter_in_original[3];
     int is_sharp3_triangle_quality1[4];
 };
@@ -191,7 +191,7 @@ void genPNTriangle();
 vec4 getNormalAdj(vec3 parameter);
 
 // 根据 parameter 获得普通插值法向
-vec4 getNormalOrg(vec3 parameter);
+vec3 getNormalOrg(vec3 parameter);
 
 // 根据 parameter 获得邻接PNTriangle中的法向
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_);
@@ -204,7 +204,7 @@ uint getEdgeInfo(vec3 parameter);
 vec3 changeParameter(vec3 parameter);
 
 // 根据在整个bspline体中的参数求该采样点的相关信息
-SamplePointInfo getBSplineInfo(vec4[3] original_normal, int index, vec3[3] original_position);
+SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_position, int index);
 
 // 根据三角形形状，取得splite pattern
 void getSplitePattern(out uint indexOffset, out uint triangleNumber);
@@ -290,8 +290,9 @@ void main() {
         }
 
 
+        vec3[3] original_normal;
         for (int i = 0; i < 3; ++i) {
-            st.original_normal[i] = getNormalOrg(st.parameter_in_original[i].xyz);
+            original_normal[i] = getNormalOrg(st.parameter_in_original[i].xyz);
         }
 
         for (int i = 0; i < 3; ++i) {
@@ -332,6 +333,7 @@ void main() {
         vec3[3] original_position;
         for (int i = 0; i < 3; ++i) {
             original_position[i] = getPosition(st.parameter_in_original[i].xyz);
+            st.original_position[i].xyz = original_position[i];
         }
         vec3 t[3];
         t[0] = original_position[0] - original_position[1];
@@ -348,7 +350,7 @@ void main() {
 
 
         for (int j = 0; j < 37; ++j) {
-            st.samplePoint[j] = getBSplineInfo(st.original_normal, j, original_position);
+            st.samplePoint[j] = getBSplineInfo(original_normal, original_position, j);
         }
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
@@ -388,12 +390,12 @@ vec4 getNormalAdj(vec3 parameter) {
     return vec4(normalize(result), 0);
 }
 
-vec4 getNormalOrg(vec3 parameter) {
+vec3 getNormalOrg(vec3 parameter) {
     vec3 result = vec3(0);
     for (int i = 0; i < 3; ++i) {
         result += normal[i] * parameter[i];
     }
-    return vec4(normalize(result), 0);
+    return normalize(result);
 }
 
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
@@ -612,7 +614,7 @@ float getBSplineInfoW(float t, out uint leftIndex){
     return t;
 }
 
-SamplePointInfo getBSplineInfo(vec4[3] original_normal, int index, vec3[3] original_position) {
+SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_position, int index) {
     vec3 uvw = sampleParameter[index];
     vec3 parameter = vec3(0);
     for (int i = 0; i < 3; ++i) {
@@ -623,7 +625,7 @@ SamplePointInfo getBSplineInfo(vec4[3] original_normal, int index, vec3[3] origi
 
     result.sample_point_original_normal = vec4(0);
     for (int i = 0; i < 3; ++i) {
-        result.sample_point_original_normal += original_normal[i] * uvw[i];
+        result.sample_point_original_normal.xyz += original_normal[i] * uvw[i];
     }
 
     uint knot_left_index_u, knot_left_index_v, knot_left_index_w;

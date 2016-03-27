@@ -5,9 +5,13 @@ layout(location=4) uniform int show_triangle_quality;
 in vec3 varying_normal;
 in vec4 varying_parameter_in_original3_triangle_quality1;
 in vec3 varying_parameter_in_splited_triangle;
+in vec3 varying_diff_normal;
+in vec3 varying_diff_position;
 out vec4 color;
 
 void main() {
+//    color = vec4(varying_normal, 1);
+//    return;
     if (show_splited_edge > 0) {
         if (any(lessThan(varying_parameter_in_original3_triangle_quality1.xyz, vec3(0.01)))) {
             color = vec4(1,0,0,1);
