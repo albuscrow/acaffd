@@ -81,16 +81,7 @@ class AuxController:
         glUseProgram(0)
 
     def gl_draw_control_points(self, model_view_matrix, perspective_matrix):
-        # multiply1 = multiply(model_view_matrix, perspective_matrix)
-        temp = []
-        for t in self._b_spline_body.control_points.reshape((125, 4)):
-            t[3] = 1
-            temp.append(np.mat(t) * np.mat(model_view_matrix))
-        # self._control_point_position_vbo.async_update(np.array())
-        if self._normal_control_point_visibility:
-            glUniformMatrix4fv(0, 1, GL_FALSE, multiply(model_view_matrix, perspective_matrix))
-        else:
-            glUniformMatrix4fv(0, 1, GL_FALSE, perspective_matrix)
+        glUniformMatrix4fv(0, 1, GL_FALSE, multiply(model_view_matrix, perspective_matrix))
         glDrawArrays(GL_POINTS, 0, self.get_control_point_number())
 
     def gl_pick_control_point(self, model_view_matrix, perspective_matrix):

@@ -242,11 +242,11 @@ class OBJ:
                 else:
                     triangle.neighbor.append((None, -1))
 
-    def intersect(self, start_point, direction, model_view_matrix):
+    def intersect(self, start_point, direction):
         mint = 99999
         res = None
         for triangle in self._triangles:
-            t, p = triangle.intersect(start_point, direction, model_view_matrix)
+            t, p = triangle.intersect(start_point, direction)
             if p is not None and t < mint:
                 if t < mint:
                     mint = t

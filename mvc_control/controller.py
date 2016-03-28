@@ -132,12 +132,13 @@ class Controller(QObject):
 
     @pyqtSlot(int, int)
     def select_point(self, x: int, y: int):
-        start_point = np.mat([0, 0, 0], dtype='f4')
+        i = np.mat(self._model_view_matrix).I
+        start_point = np.mat([0, 0, 0, 1], dtype='f4') * i
         end_point_z = -4
         end_point_y = (self.window_size.h - y) / self.window_size.h * 2 - 1
         end_point_x = x / self.window_size.h * 2 - self.window_size.aspect
-        end_point = np.mat([end_point_x, end_point_y, end_point_z], dtype='f4')
-        self._gl_proxy.set_select_point(start_point, end_point - start_point, self._model_view_matrix)
+        end_point = np.mat([end_point_x, end_point_y, end_point_z, 1], dtype='f4') * i
+        self._gl_proxy.set_select_point(start_point, end_point - start_point)
         self.updateScene.emit()
 
     @pyqtSlot(int, int, int)

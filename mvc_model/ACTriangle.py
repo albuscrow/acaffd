@@ -377,18 +377,18 @@ class ACTriangle:
                 ctrl_point_index += 1
         return np.append(normalize(result), 0)
 
-    def intersect(self, start_point: np.mat, direction: np.mat, model_view_matrix):
-        position = [np.array(np.mat(x) * model_view_matrix)[0] for x in self._position]
+    def intersect(self, start_point: np.mat, direction: np.mat):
+        position = [x[:3] for x in self._position]
         E1 = np.mat(position[1] - position[0], dtype='f4')[:, :3]
         E2 = np.mat(position[2] - position[0], dtype='f4')[:, :3]
         try:
-            i = np.row_stack((-direction, E1, E2)).I
+            i = np.row_stack((-direction[0, :3], E1, E2)).I
         except LinAlgError:
             return None, None
-        T = start_point - np.mat(position[0][:3], dtype='f4')
+        T = start_point[0, :3] - np.mat(position[0], dtype='f4')
         t, u, v = np.array(np.dot(T, i))[0]
         if all([0 <= x <= 1 for x in [u, v, 1 - u - v]]) and t > 0:
-            return t, np.array((start_point + t * direction)[0])
+            return t, np.array((start_point[0, :3] + t * direction[0, :3])[0])
         else:
             return None, None
 

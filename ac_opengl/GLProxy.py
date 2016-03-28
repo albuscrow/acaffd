@@ -79,11 +79,10 @@ class GLProxy:
             region = ACRect(x1, y1, x2 - x1, y2 - y1)
             self._aux_controller.pick_control_point(region)
 
-    def set_select_point(self, start_point, direction, model_view_matrix):
-        intersect_point = self._model.intersect(start_point, direction, model_view_matrix)
+    def set_select_point(self, start_point, direction):
+        intersect_point = self._model.intersect(start_point, direction)
         if intersect_point is None:
             return
-        point = intersect_point - start_point
         self._aux_controller.add_direct_control_point(intersect_point)
 
     def move_control_points(self, x, y, z):
