@@ -30,8 +30,8 @@ class AuxController:
         self._control_point_position_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._b_spline_body_info_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)  # type: ACVBO
-        self._vao = -1  # type: int
-        self._visibility = True  # type: bool
+        self._vao_control_point = -1  # type: int
+        self._normal_control_point_visibility = False  # type: bool
         self._pick_region = None  # type: ACRect
         self._control_points_changed = True  # type: bool
         self._direct_control_point = []  # type:  list
@@ -47,8 +47,8 @@ class AuxController:
 
     def gl_init(self):
         # init vao
-        self._vao = glGenVertexArrays(1)
-        glBindVertexArray(self._vao)
+        self._vao_control_point = glGenVertexArrays(1)
+        glBindVertexArray(self._vao_control_point)
         self._control_point_position_vbo.as_array_buffer(0, 4, GL_FLOAT)
         glBindVertexArray(0)
 
@@ -56,7 +56,7 @@ class AuxController:
         self.async_upload_to_gpu()
 
     def async_upload_to_gpu(self):
-        self._control_point_position_vbo.async_update(self._b_spline_body.control_points)
+        self._control_point_position_vbo.async_update(self.get_control_point_data())
         self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
         self._b_spline_body_info_ubo.async_update(self._b_spline_body.get_info())
 
@@ -70,12 +70,10 @@ class AuxController:
         self._control_point_for_sample_ubo.gl_sync()
 
     def gl_draw(self, model_view_matrix: np.array, perspective_matrix: np.array):
-        if not self._visibility:
-            return
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_PROGRAM_POINT_SIZE)
         self._program.use()
-        glBindVertexArray(self._vao)
+        glBindVertexArray(self._vao_control_point)
         self.gl_pick_control_point(model_view_matrix, perspective_matrix)
         self.gl_sync_buffer_for_self()
         self.gl_draw_control_points(model_view_matrix, perspective_matrix)
@@ -83,46 +81,68 @@ class AuxController:
         glUseProgram(0)
 
     def gl_draw_control_points(self, model_view_matrix, perspective_matrix):
-        glUniformMatrix4fv(0, 1, GL_FALSE, multiply(model_view_matrix, perspective_matrix))
-        glDrawArrays(GL_POINTS, 0, self._b_spline_body.get_control_point_number())
+        # multiply1 = multiply(model_view_matrix, perspective_matrix)
+        temp = []
+        for t in self._b_spline_body.control_points.reshape((125, 4)):
+            t[3] = 1
+            temp.append(np.mat(t) * np.mat(model_view_matrix))
+        # self._control_point_position_vbo.async_update(np.array())
+        if self._normal_control_point_visibility:
+            glUniformMatrix4fv(0, 1, GL_FALSE, multiply(model_view_matrix, perspective_matrix))
+        else:
+            glUniformMatrix4fv(0, 1, GL_FALSE, perspective_matrix)
+        glDrawArrays(GL_POINTS, 0, self.get_control_point_number())
 
     def gl_pick_control_point(self, model_view_matrix, perspective_matrix):
-        if self._pick_region:
-            self._b_spline_body.reset_hit_record()
-            glSelectBuffer(1024)
-            glRenderMode(GL_SELECT)
-            glInitNames()
-            glPushName(0)
-            glMatrixMode(GL_PROJECTION)
-            glLoadIdentity()
-            w = max(10, self._pick_region.w)
-            h = max(10, self._pick_region.h)
-            gluPickMatrix((self._pick_region.x1 + self._pick_region.x2) / 2,
-                          (self._pick_region.y1 + self._pick_region.y2) / 2,
-                          w, h,
-                          glGetDoublev(GL_VIEWPORT))
-            glUniformMatrix4fv(0, 1, GL_FALSE, multiply(model_view_matrix,
-                                                        multiply(perspective_matrix,
-                                                                 glGetDoublev(GL_PROJECTION_MATRIX))))
-            for i in range(self._b_spline_body.get_control_point_number()):
-                glLoadName(i)
-                glDrawArrays(GL_POINTS, i, 1)
-            hit_info = glRenderMode(GL_RENDER)
-            for r in hit_info:
-                for select_name in r.names:
-                    self._b_spline_body.hit_point(select_name)
-            self._control_point_position_vbo.async_update(self._b_spline_body.control_points)
-            self._pick_region = None
+        if not self._pick_region:
+            return
+        self._b_spline_body.reset_hit_record()
+        glSelectBuffer(1024)
+        glRenderMode(GL_SELECT)
+        glInitNames()
+        glPushName(0)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        w = max(10, self._pick_region.w)
+        h = max(10, self._pick_region.h)
+        gluPickMatrix((self._pick_region.x1 + self._pick_region.x2) / 2,
+                      (self._pick_region.y1 + self._pick_region.y2) / 2,
+                      w, h,
+                      glGetDoublev(GL_VIEWPORT))
+        glUniformMatrix4fv(0, 1, GL_FALSE, multiply(model_view_matrix,
+                                                    multiply(perspective_matrix,
+                                                             glGetDoublev(GL_PROJECTION_MATRIX))))
+        for i in range(self._b_spline_body.get_control_point_number()):
+            glLoadName(i)
+            glDrawArrays(GL_POINTS, i, 1)
+        hit_info = glRenderMode(GL_RENDER)
+        for r in hit_info:
+            for select_name in r.names:
+                self._b_spline_body.hit_point(select_name)
+        self._control_point_position_vbo.async_update(self.get_control_point_data())
+        self._pick_region = None
 
     def pick_control_point(self, region: ACRect):
         self._pick_region = region
 
     def move_selected_control_points(self, xyz):
         self._b_spline_body.move([d / 10 for d in xyz])
-        self._control_point_position_vbo.async_update(self._b_spline_body.control_points)
+        self._control_point_position_vbo.async_update(self.get_control_point_data())
         self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
         self._control_points_changed = True
-        pass
+
+    def get_control_point_data(self):
+        if self._normal_control_point_visibility:
+            return self._b_spline_body.control_points
+        else:
+            return np.array([np.append(x, 1) for x in self._direct_control_point], dtype='f4')
+
+    def get_control_point_number(self):
+        if self._normal_control_point_visibility:
+            return self._b_spline_body.get_control_point_number()
+        else:
+            return len(self._direct_control_point)
+            # return 1
 
     @property
     def control_points_changed(self):
@@ -145,15 +165,17 @@ class AuxController:
 
     @property
     def visibility(self):
-        return self._visibility
+        return self._normal_control_point_visibility
 
     @visibility.setter
     def visibility(self, v):
-        self._visibility = v
+        self._normal_control_point_visibility = v
+        self._control_point_position_vbo.async_update(self.get_control_point_data())
 
     def add_direct_control_point(self, intersect_point):
         if intersect_point is not None:
-            self._direct_control_point.append(intersect_point)
+            self._direct_control_point = [intersect_point]
+            self._control_point_position_vbo.async_update(self.get_control_point_data())
 
     def clear_direct_control_point(self):
         self._direct_control_point.clear()

@@ -7,7 +7,7 @@ MouseArea {
     signal rightMoveDelta(int x, int y)
     signal leftMoveInfo(int x, int y, int x2, int y2)
     signal wheelMove(int key, int delta_y)
-    signal acRelease(int x, int y)
+    signal acLeftRelease(int x, int y)
     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
     onPressed: {
@@ -59,7 +59,9 @@ MouseArea {
         pressedKey = -1
     }
     onReleased: {
-        acRelease(mouse.x, mouse.y)
+        if (mouse.button == Qt.LeftButton) {
+            acLeftRelease(mouse.x, mouse.y)
+        }
     }
     onWheel: {
         wheelMove(pressedKey, wheel.angleDelta.y)

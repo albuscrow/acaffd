@@ -69,7 +69,7 @@ ApplicationWindow {
                     controller.select(x, y, x2, y2)
                 }
 
-                onAcRelease: {
+                onAcLeftRelease: {
                     controller.select_point(x, y)
                 }
 
