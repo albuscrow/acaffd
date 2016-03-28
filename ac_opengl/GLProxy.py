@@ -83,12 +83,12 @@ class GLProxy:
         intersect_point = self._model.intersect(start_point, direction)
         if intersect_point is None:
             return
+        print(intersect_point, intersect_point.shape)
         self._aux_controller.add_direct_control_point(intersect_point)
 
     def move_control_points(self, x, y, z):
-        if self._aux_controller.visibility:
-            self._aux_controller.move_selected_control_points([x, y, z])
-            self._deform_and_renderer_controller.need_deform = True
+        self._aux_controller.move_selected_control_points([x, y, z])
+        self._deform_and_renderer_controller.need_deform = True
 
     def change_tessellation_level(self, level):
         self._deform_and_renderer_controller.set_tessellation_factor(level)  # type: DeformAndDrawController

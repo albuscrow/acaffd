@@ -388,7 +388,7 @@ class ACTriangle:
         T = start_point[0, :3] - np.mat(position[0], dtype='f4')
         t, u, v = np.array(np.dot(T, i))[0]
         if all([0 <= x <= 1 for x in [u, v, 1 - u - v]]) and t > 0:
-            return t, np.array((start_point[0, :3] + t * direction[0, :3])[0])
+            return t, np.array((start_point[0, :3] + t * direction[0, :3]), dtype='f4').reshape(3,)
         else:
             return None, None
 
