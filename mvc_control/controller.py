@@ -130,6 +130,16 @@ class Controller(QObject):
         self._gl_proxy.set_select_region(x1, self.window_size.h - y2, x2, self.window_size.h - y1)
         self.updateScene.emit()
 
+    @pyqtSlot(int, int)
+    def select_point(self, x: int, y: int):
+        start_point = np.mat([0, 0, 0], dtype='f4')
+        end_point_z = -4
+        end_point_y = (self.window_size.h - y) / self.window_size.h * 2 - 1
+        end_point_x = x / self.window_size.h * 2 - self.window_size.aspect
+        end_point = np.mat([end_point_x, end_point_y, end_point_z], dtype='f4')
+        self._gl_proxy.set_select_point(start_point, end_point - start_point)
+        self.updateScene.emit()
+
     @pyqtSlot(int, int, int)
     def change_control_point_number(self, u: int, v: int, w: int):
         self._gl_proxy.change_control_point_number(u, v, w)
@@ -186,7 +196,7 @@ class Controller(QObject):
 
 def get_test_file_name():
     # todo
-    file_path = "res/3d_model/Mobile.obj"
+    # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
@@ -200,7 +210,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    # file_path = "res/3d_model/test_2_triangle.obj"
+    file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"

@@ -4,6 +4,8 @@ import numpy as np
 from functools import reduce
 from numbers import Number
 
+from numpy.linalg import LinAlgError
+
 from Constant import ZERO
 from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec
@@ -258,7 +260,7 @@ class ACTriangle:
 
         data.append(pn_normal)
         data.append(pn_normal_adjacent)
-        data.append(self.normalv4)
+        data.append(self.positionv4)
         data.append(np.append(self._parameter, [[0], [0], [0]], axis=1))
         data.append(is_sharp3_triangle_quality)
         return tuple(data)
@@ -375,15 +377,19 @@ class ACTriangle:
                 ctrl_point_index += 1
         return np.append(normalize(result), 0)
 
-    def intersect(self, start_point: np.mat, direction: np.mat) -> np.mat:
+    def intersect(self, start_point: np.mat, direction: np.mat):
         E1 = np.mat(self._position[1] - self._position[0], dtype='f4')[:, :3]
         E2 = np.mat(self._position[2] - self._position[0], dtype='f4')[:, :3]
+        try:
+            i = np.row_stack((-direction, E1, E2)).I
+        except LinAlgError:
+            return None, None
         T = start_point - np.mat(self._position[0][:3], dtype='f4')
-        t, u, v = np.array(np.dot(T, np.row_stack((-direction, E1, E2)).I))[0]
-        if all([0 <= x <= 1 for x in [u, v, 1 - u - v]]):
-            return start_point + t * direction
+        t, u, v = np.array(np.dot(T, i))[0]
+        if all([0 <= x <= 1 for x in [u, v, 1 - u - v]]) and t > 0:
+            return t, start_point + t * direction
         else:
-            return None
+            return None, None
 
     @property
     def id(self):
@@ -467,5 +473,5 @@ class ACTriangle:
 if __name__ == '__main__':
     t = ACTriangle(0)
     t.positionv3 = np.array([0, 0, 0, 1, 1, 0, 1, 0, 0], dtype='f4').reshape((3, 3))
-    tuv = t.intersect(np.mat([0, 0, 1], dtype='f4'), np.mat([0.3, 0.25, -1], dtype='f4'))
+    tuv = t.intersect(np.mat([-1, -1, 1], dtype='f4'), np.mat([1, 1, 0], dtype='f4'))
     print(tuv)

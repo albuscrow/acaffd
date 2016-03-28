@@ -7,6 +7,7 @@ MouseArea {
     signal rightMoveDelta(int x, int y)
     signal leftMoveInfo(int x, int y, int x2, int y2)
     signal wheelMove(int key, int delta_y)
+    signal acRelease(int x, int y)
     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
     onPressed: {
@@ -30,7 +31,7 @@ MouseArea {
         case Drag.XAndYAxis:
             if (pressedButtons & Qt.RightButton){
                 rightMoveDelta(mouse.x - last.x, mouse.y - last.y)
-            } else {
+            } else if(pressedButtons & Qt.LeftButton) {
                 leftMoveInfo(origin.x, origin.y, mouse.x, mouse.y)
             }
             break
@@ -56,6 +57,9 @@ MouseArea {
 
     Keys.onReleased: {
         pressedKey = -1
+    }
+    onReleased: {
+        acRelease(mouse.x, mouse.y)
     }
     onWheel: {
         wheelMove(pressedKey, wheel.angleDelta.y)

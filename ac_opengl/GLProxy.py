@@ -21,8 +21,10 @@ class GLProxy:
         self._previous_compute_controller = None  # type: PreviousComputeController
         self._deform_and_renderer_controller = None  # type: DeformAndDrawController
         self._debug_buffer = None  # type: ACVBO
+        self._model = None  # type: OBJ
 
     def change_model(self, model: OBJ):
+        self._model = model
         if self._embed_body_controller is None:
             self._embed_body_controller = BSplineBodyController(model.get_length_xyz())  # type: BSplineBodyController
         else:
@@ -82,6 +84,9 @@ class GLProxy:
             region = ACRect(x1, y1, x2 - x1, y2 - y1)
             self._embed_body_controller.pick_control_point(region)
 
+    def set_select_point(self, start_point, direction):
+        print(self._model.intersect(start_point, direction))
+
     def move_control_points(self, x, y, z):
         if self._embed_body_controller.visibility:
             self._embed_body_controller.move_selected_control_points([x, y, z])
@@ -115,3 +120,4 @@ class GLProxy:
 
     def set_show_position_diff(self, is_show):
         self._deform_and_renderer_controller.set_show_position_diff(is_show)
+

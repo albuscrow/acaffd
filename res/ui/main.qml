@@ -69,6 +69,10 @@ ApplicationWindow {
                     controller.select(x, y, x2, y2)
                 }
 
+                onAcRelease: {
+                    controller.select_point(x, y)
+                }
+
                 onWheelMove:{
                     var delta = delta_y / 120;
                     if (key == Qt.Key_X) {

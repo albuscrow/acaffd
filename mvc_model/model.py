@@ -114,6 +114,8 @@ class OBJ:
         self.original_triangle_number = self.original_index_number / 3
         self.original_vertex_number = len(self._vertex)
         self.original_normal_number = len(self._normal)
+        self._triangles = None  # type: list[ACTriangle]
+        self.reorganize()
 
     def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
         # 纪录该三角形的三个顶点
@@ -193,7 +195,7 @@ class OBJ:
         return np.array(self._adjacency, dtype=np.int32)
 
     def split(self, bspline: BSplineBody):
-        triangles = self.reorganize()
+        triangles = self._triangles
         data = []
         for t in triangles:
             t.gen_pn_triangle()
@@ -226,21 +228,30 @@ class OBJ:
         return len(triangles), np.array(data, ACTriangle.DATA_TYPE)
 
     def reorganize(self):
-        res = []  # type: list[ACTriangle]
+        self._triangles = []  # type: list[ACTriangle]
         for i, index in enumerate(zip(*([iter(self._index)] * 3))):
             t = ACTriangle(i)  # type: ACTriangle
             t.positionv4, t.normalv4, t.tex_coord = [np.array([lst[x] for x in index], dtype='f4') for lst in
                                                      [self._vertex, self._normal, self._tex_coord]]
-            res.append(t)
-        for i, triangle in enumerate(res):
+            self._triangles.append(t)
+        for i, triangle in enumerate(self._triangles):
             triangle.neighbor = []
             for j in self._adjacency[i]:
                 if j != -1:
-                    triangle.neighbor.append((res[j // 4], j % 4))
+                    triangle.neighbor.append((self._triangles[j // 4], j % 4))
                 else:
                     triangle.neighbor.append((None, -1))
-        return res
 
+    def intersect(self, start_point, direction):
+        mint = 99999
+        res = None
+        for triangle in self._triangles:
+            t, p = triangle.intersect(start_point, direction)
+            if p is not None:
+                if t < mint:
+                    mint = t
+                    res = p
+        return res
 
 if __name__ == '__main__':
     import numpy as np
@@ -273,6 +284,5 @@ if __name__ == '__main__':
     # print(SPLITED_TRIANGLE_SIZE)
 
     model = OBJ('../res/3d_model/test_2_triangle.obj')
-    model.reorganize()
     bsb = BSplineBody(2, 2, 2)
     model.split(bsb)
