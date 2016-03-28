@@ -375,6 +375,16 @@ class ACTriangle:
                 ctrl_point_index += 1
         return np.append(normalize(result), 0)
 
+    def intersect(self, start_point: np.mat, direction: np.mat) -> np.mat:
+        E1 = np.mat(self._position[1] - self._position[0], dtype='f4')[:, :3]
+        E2 = np.mat(self._position[2] - self._position[0], dtype='f4')[:, :3]
+        T = start_point - np.mat(self._position[0][:3], dtype='f4')
+        t, u, v = np.array(np.dot(T, np.row_stack((-direction, E1, E2)).I))[0]
+        if all([0 <= x <= 1 for x in [u, v, 1 - u - v]]):
+            return start_point + t * direction
+        else:
+            return None
+
     @property
     def id(self):
         return self._id
@@ -452,3 +462,10 @@ class ACTriangle:
     @pn_triangle_n.setter
     def pn_triangle_n(self, pn_triangle_n):
         self._pn_triangle_n = pn_triangle_n
+
+
+if __name__ == '__main__':
+    t = ACTriangle(0)
+    t.positionv3 = np.array([0, 0, 0, 1, 1, 0, 1, 0, 0], dtype='f4').reshape((3, 3))
+    tuv = t.intersect(np.mat([0, 0, 1], dtype='f4'), np.mat([0.3, 0.25, -1], dtype='f4'))
+    print(tuv)
