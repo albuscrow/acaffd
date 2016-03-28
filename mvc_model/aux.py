@@ -51,7 +51,7 @@ class BSplineBody:
 
     @property
     def control_points(self):
-        return np.array(self._ctrlPoints, dtype=np.float32)
+        return np.array([np.append(x, y) for x, y in zip(self._ctrlPoints.reshape((125, 3)), self._is_hit)], dtype='f4')
 
     @staticmethod
     def get_control_point_aux_list(length, control_point_number, order):

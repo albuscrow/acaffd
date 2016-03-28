@@ -12,7 +12,7 @@ def add_prefix(file_name: str):
     return 'ac_opengl/shader/renderer/' + file_name
 
 
-class BSplineBodyController:
+class AuxController:
     def __init__(self, size: list):
         # check input
         if len(size) != 3:
@@ -28,13 +28,13 @@ class BSplineBodyController:
             .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_prefix('aux.f.glsl')))  # type: ProgramWrap
         # init buffer
         self._control_point_position_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._control_point_color_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._b_spline_body_info_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)  # type: ACVBO
         self._vao = -1  # type: int
         self._visibility = True  # type: bool
         self._pick_region = None  # type: ACRect
         self._control_points_changed = True  # type: bool
+        self._direct_control_point = []  # type:  list
 
     def change_size(self, size):
         # check input
@@ -49,8 +49,7 @@ class BSplineBodyController:
         # init vao
         self._vao = glGenVertexArrays(1)
         glBindVertexArray(self._vao)
-        self._control_point_position_vbo.as_array_buffer(0, 3, GL_FLOAT)
-        self._control_point_color_vbo.as_array_buffer(1, 1, GL_FLOAT)
+        self._control_point_position_vbo.as_array_buffer(0, 4, GL_FLOAT)
         glBindVertexArray(0)
 
         # upload_to_gpu
@@ -58,13 +57,11 @@ class BSplineBodyController:
 
     def async_upload_to_gpu(self):
         self._control_point_position_vbo.async_update(self._b_spline_body.control_points)
-        self._control_point_color_vbo.async_update(self._b_spline_body.is_hit)
         self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
         self._b_spline_body_info_ubo.async_update(self._b_spline_body.get_info())
 
     def gl_sync_buffer_for_self(self):
         self._control_point_position_vbo.gl_sync()
-        self._control_point_color_vbo.gl_sync()
 
     def gl_sync_buffer_for_previous_computer(self):
         self._b_spline_body_info_ubo.gl_sync()
@@ -114,7 +111,7 @@ class BSplineBodyController:
             for r in hit_info:
                 for select_name in r.names:
                     self._b_spline_body.hit_point(select_name)
-            self._control_point_color_vbo.async_update(self._b_spline_body.is_hit)
+            self._control_point_position_vbo.async_update(self._b_spline_body.control_points)
             self._pick_region = None
 
     def pick_control_point(self, region: ACRect):
@@ -154,3 +151,9 @@ class BSplineBodyController:
     def visibility(self, v):
         self._visibility = v
 
+    def add_direct_control_point(self, intersect_point):
+        if intersect_point is not None:
+            self._direct_control_point.append(intersect_point)
+
+    def clear_direct_control_point(self):
+        self._direct_control_point.clear()

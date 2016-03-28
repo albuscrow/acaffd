@@ -1,4 +1,4 @@
-from mvc_control.BSplineBodyController import BSplineBodyController
+from mvc_control.AuxController import AuxController
 from mvc_control.PreviousComputeControllerCPU import PreviousComputeControllerCPU
 from mvc_control.PreviousComputeControllerGPU import PreviousComputeControllerGPU
 from mvc_control.DeformAndDrawController import DeformAndDrawController
@@ -17,7 +17,7 @@ else:
 
 class GLProxy:
     def __init__(self):
-        self._embed_body_controller = None  # type: BSplineBodyController
+        self._aux_controller = None  # type: AuxController
         self._previous_compute_controller = None  # type: PreviousComputeController
         self._deform_and_renderer_controller = None  # type: DeformAndDrawController
         self._debug_buffer = None  # type: ACVBO
@@ -25,36 +25,35 @@ class GLProxy:
 
     def change_model(self, model: OBJ):
         self._model = model
-        if self._embed_body_controller is None:
-            self._embed_body_controller = BSplineBodyController(model.get_length_xyz())  # type: BSplineBodyController
+        if self._aux_controller is None:
+            self._aux_controller = AuxController(model.get_length_xyz())  # type: AuxController
         else:
-            self._embed_body_controller.change_size(model.get_length_xyz())
+            self._aux_controller.change_size(model.get_length_xyz())
 
         if self._previous_compute_controller is None:
             if PreviousComputeController == PreviousComputeControllerCPU:
                 self._previous_compute_controller = PreviousComputeController(model,
-                                                                              self._embed_body_controller.b_spline_body)  # type: PreviousComputeController
+                                                                              self._aux_controller.b_spline_body)  # type: PreviousComputeController
             else:
                 self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
-
         else:
             self._previous_compute_controller.change_model(model)
 
         if self._deform_and_renderer_controller is not None:
-            self._deform_and_renderer_controller.cage_size = self._embed_body_controller.get_cage_size()
+            self._deform_and_renderer_controller.cage_size = self._aux_controller.get_cage_size()
 
     def draw(self, model_view_matrix, perspective_matrix):
         self._deform_and_renderer_controller.splited_triangle_number \
             = self._previous_compute_controller \
-            .gl_compute(self._embed_body_controller.gl_sync_buffer_for_previous_computer)
+            .gl_compute(self._aux_controller.gl_sync_buffer_for_previous_computer)
 
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
-                                                         self._embed_body_controller.gl_sync_buffer_for_deformation)
-        self._embed_body_controller.gl_draw(model_view_matrix, perspective_matrix)
+                                                         self._aux_controller.gl_sync_buffer_for_deformation)
+        self._aux_controller.gl_draw(model_view_matrix, perspective_matrix)
 
     def gl_init_global(self):
         glClearColor(1, 1, 1, 1)
-        self._embed_body_controller.gl_init()
+        self._aux_controller.gl_init()
 
         self._debug_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 14, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._debug_buffer.capacity = 2048
@@ -64,25 +63,27 @@ class GLProxy:
         self._previous_compute_controller.gl_init()
 
         self._previous_compute_controller.gl_compute(
-            self._embed_body_controller.gl_sync_buffer_for_previous_computer)
+            self._aux_controller.gl_sync_buffer_for_previous_computer)
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(
             self._previous_compute_controller.splited_triangle_number,
-            self._embed_body_controller.get_cage_size())
+            self._aux_controller.get_cage_size())
         self._deform_and_renderer_controller.gl_init()
 
     def set_select_region(self, x1, y1, x2, y2):
-        if self._embed_body_controller.visibility:
+        if self._aux_controller.visibility:
             region = ACRect(x1, y1, x2 - x1, y2 - y1)
-            self._embed_body_controller.pick_control_point(region)
+            self._aux_controller.pick_control_point(region)
 
     def set_select_point(self, start_point, direction):
-        print(self._model.intersect(start_point, direction))
+        intersect_point = self._model.intersect(start_point, direction)
+        print('set_select_point', intersect_point)
+        self._aux_controller.add_direct_control_point(intersect_point)
 
     def move_control_points(self, x, y, z):
-        if self._embed_body_controller.visibility:
-            self._embed_body_controller.move_selected_control_points([x, y, z])
+        if self._aux_controller.visibility:
+            self._aux_controller.move_selected_control_points([x, y, z])
             self._deform_and_renderer_controller.need_deform = True
 
     def change_tessellation_level(self, level):
@@ -90,8 +91,8 @@ class GLProxy:
         self._deform_and_renderer_controller.need_deform = True
 
     def change_control_point_number(self, u, v, w):
-        self._embed_body_controller.change_control_point_number(u, v, w)
-        self._deform_and_renderer_controller.cage_size = self._embed_body_controller.get_cage_size()
+        self._aux_controller.change_control_point_number(u, v, w)
+        self._deform_and_renderer_controller.cage_size = self._aux_controller.get_cage_size()
         self._previous_compute_controller.need_compute = True
         self._deform_and_renderer_controller.need_deform = True
 
@@ -100,7 +101,7 @@ class GLProxy:
             self._previous_compute_controller.split_factor = factor
 
     def set_control_point_visibility(self, v):
-        self._embed_body_controller.visibility = v
+        self._aux_controller.visibility = v
 
     def set_splited_edge_visibility(self, v):
         self._deform_and_renderer_controller.set_splited_edge_visibility(v)
