@@ -75,7 +75,7 @@ class GLProxy:
         self._deform_and_renderer_controller.gl_init()
 
     def set_select_region(self, x1, y1, x2, y2):
-        if self._aux_controller.visibility:
+        if self._aux_controller.is_normal_control_point_mode:
             region = ACRect(x1, y1, x2 - x1, y2 - y1)
             self._aux_controller.pick_control_point(region)
 
@@ -83,7 +83,6 @@ class GLProxy:
         intersect_point = self._model.intersect(start_point, direction)
         if intersect_point is None:
             return
-        print(intersect_point, intersect_point.shape)
         self._aux_controller.add_direct_control_point(intersect_point)
 
     def move_control_points(self, x, y, z):
@@ -105,7 +104,7 @@ class GLProxy:
             self._previous_compute_controller.split_factor = factor
 
     def set_control_point_visibility(self, v):
-        self._aux_controller.visibility = v
+        self._aux_controller.is_normal_control_point_mode = v
 
     def set_splited_edge_visibility(self, v):
         self._deform_and_renderer_controller.set_splited_edge_visibility(v)
@@ -118,3 +117,21 @@ class GLProxy:
 
     def set_show_position_diff(self, is_show):
         self._deform_and_renderer_controller.set_show_position_diff(is_show)
+
+    @property
+    def aux_controller(self):
+        return self._aux_controller
+
+    @property
+    def normal_control_mode(self):
+        return self._aux_controller.normal_control_mode
+
+    def clear_direct_control_point(self):
+        self._aux_controller.clear_direct_control_point()
+
+    def move_direct_control_point(self, direction):
+        self._aux_controller.move_direct_control_point(direction)
+        self._deform_and_renderer_controller.need_deform = True
+
+    def direct_control_point_selected(self):
+        return self._aux_controller.is_direct_control_point_selected()
