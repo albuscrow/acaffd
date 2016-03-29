@@ -125,6 +125,10 @@ class Controller(QObject):
     def set_show_position_diff_flag(self, is_show: bool):
         self._gl_proxy.set_show_position_diff(is_show)
 
+    @pyqtSlot(bool)
+    def set_show_control_point(self, is_show: bool):
+        self._gl_proxy.set_show_control_point(is_show)
+
     @pyqtSlot(int, int, int, int)
     def left_move(self, x1: int, y1: int, x2: int, y2: int):
         y1 = self.window_size.h - y1
@@ -224,7 +228,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    # file_path = "res/3d_model/test2.obj"
+    file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
     # file_path = "res/3d_model/star.obj"
@@ -234,7 +238,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    file_path = "res/3d_model/test_2_triangle.obj"
+    # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"

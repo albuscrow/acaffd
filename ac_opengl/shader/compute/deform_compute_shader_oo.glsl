@@ -59,6 +59,16 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
 };
 
 //output
+layout(std430, binding=15) buffer ControlPoint{
+    vec4[] controlPoint3point1parameter;
+};
+
+//output
+layout(std430, binding=16) buffer ControlPointIndex{
+    uint[] controlPointIndex;
+};
+
+//output
 layout(std430, binding=10) buffer ParameterInOriginalBuffer{
     vec4[] parameterInOriginal;
 };
@@ -79,6 +89,7 @@ layout(std430, binding=13) buffer RealNormal{
     vec4[] realNormal;
 };
 
+
 //debug
 layout(std430, binding=14) buffer OutputDebugBuffer{
     vec4[] myOutputBuffer;
@@ -98,6 +109,23 @@ const float Mr[370] = {
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3333333333333333, -1.5, 3.0, -0.8333333333333334,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
 };
+const float aux_control_parameter[10] = {
+   0,
+   1,2,
+   2,0,1,
+   0,1,2,0
+};
+
+const uvec3 aux_control_index[9] =
+{{1 ,2 ,0},
+{3 ,4 ,1},
+{2 ,1 ,4},
+{4 ,5 ,2},
+{6 ,7 ,3},
+{4 ,3 ,7},
+{7 ,8 ,4},
+{5 ,4 ,8},
+{8 ,9 ,5}};
 
 layout(location=0) uniform uint triangleNumber;
 layout(location=1) uniform uint vw;
@@ -185,6 +213,7 @@ void main() {
         vec3 delta = vec3(0);
         for (int i = 0; i < 6; ++i) {
             vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
+//            vec3 current_normal = sample_normals[normal_aux[i/2]];
             vec3 current_point = position[i/2].xyz;
             vec3 p = bezierPositionControlPoint[move_control_point[i]];
             vec3 result;
@@ -202,12 +231,30 @@ void main() {
             bezierPositionControlPoint[move_control_point[i]] = result;
         }
 
-        bezierPositionControlPoint[4] += delta / 6;
+        bezierPositionControlPoint[4] += delta / 4;
     }
 
     // 细分
     // 生成顶点数据
     uint point_index[100];
+    for (int i = 0; i < 10; ++i) {
+        uint point_offset = triangleIndex * 10 + i;
+        controlPoint3point1parameter[point_offset].xyz = bezierPositionControlPoint[i];
+        controlPoint3point1parameter[point_offset].w = aux_control_parameter[i];
+        point_index[i] = point_offset;
+    }
+
+    // 生成index数据
+    for (int i = 0; i < 9; ++i) {
+        uvec3 index = aux_control_index[i];
+        uint index_offset = triangleIndex * 9 + i;
+        for (int j = 0; j < 3; ++j) {
+            controlPointIndex[index_offset * 3 + j] = point_index[index[j]];
+        }
+    }
+
+    // 细分
+    // 生成顶点数据
     for (int i = 0; i < tessellatedParameterLength; ++i) {
         vec3 pointParameter = tessellatedParameter[i].xyz;
         uint point_offset = triangleIndex * tessellatedParameterLength + i;

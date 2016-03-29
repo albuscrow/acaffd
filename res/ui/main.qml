@@ -225,6 +225,14 @@ ApplicationWindow {
                     }
 
                     CheckBox {
+                        text: qsTr("显示控制顶点")
+                        checked: false
+                        onClicked: {
+                            controller.set_show_control_point(checked)
+                        }
+                    }
+
+                    CheckBox {
                         text: qsTr("调整控制定点")
                         checked: true
                         onClicked: {
