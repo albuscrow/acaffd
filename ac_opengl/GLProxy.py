@@ -118,6 +118,9 @@ class GLProxy:
     def set_show_position_diff(self, is_show):
         self._deform_and_renderer_controller.set_show_position_diff(is_show)
 
+    def set_adjust_control_point(self, is_adjust):
+        self._deform_and_renderer_controller.set_adjust_control_point(is_adjust)
+
     @property
     def aux_controller(self):
         return self._aux_controller
@@ -135,3 +138,5 @@ class GLProxy:
 
     def direct_control_point_selected(self):
         return self._aux_controller.is_direct_control_point_selected()
+
+

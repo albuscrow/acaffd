@@ -105,6 +105,7 @@ layout(location=2) uniform uint w;
 layout(location=3) uniform vec3 stride;
 layout(location=4) uniform uint tessellatedParameterLength;
 layout(location=5) uniform uint tessellateIndexLength;
+layout(location=6) uniform int adjust_control_point;
 
 layout(std140, binding=2) uniform TessellatedParameter{
     uniform vec4[66] tessellatedParameter;
@@ -176,30 +177,33 @@ void main() {
         currentTriangle.normal_adj[i].xyz = sample_bspline_normal_fast(current_normal_spi);
     }
 
-    uint oppo_point_index[6] =    {2,1,0,2,1,0};
-    uint move_control_point[6] =  {2,1,3,7,8,5};
-    uint is_sharp_index[6] = {0,1,1,2,2,0};
-    vec3 delta = vec3(0);
-    for (int i = 0; i < 6; ++i) {
-        vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
-        vec3 current_point = position[i/2].xyz;
-        vec3 p = bezierPositionControlPoint[move_control_point[i]];
-        vec3 result;
-        if (currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i]] > 0) {
-            SamplePointInfo spi = currentTriangle.samplePoint[normal_aux[i/2]];
-            spi.sample_point_original_normal = currentTriangle.adjacency_normal[i];
-            vec3 adj_normal = sample_bspline_normal_fast(spi);
-            vec3 n_ave = cross(current_normal, adj_normal);
-            n_ave = normalize(n_ave);
-            result = current_point + dot(p - current_point, n_ave) * n_ave;
-        } else {
-            result = p - dot((p - current_point), current_normal) * current_normal;
+    if (adjust_control_point > 0) {
+        //调整控制顶点
+        uint oppo_point_index[6] =    {2,1,0,2,1,0};
+        uint move_control_point[6] =  {2,1,3,7,8,5};
+        uint is_sharp_index[6] = {0,1,1,2,2,0};
+        vec3 delta = vec3(0);
+        for (int i = 0; i < 6; ++i) {
+            vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
+            vec3 current_point = position[i/2].xyz;
+            vec3 p = bezierPositionControlPoint[move_control_point[i]];
+            vec3 result;
+            if (currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i]] > 0) {
+                SamplePointInfo spi = currentTriangle.samplePoint[normal_aux[i/2]];
+                spi.sample_point_original_normal = currentTriangle.adjacency_normal[i];
+                vec3 adj_normal = sample_bspline_normal_fast(spi);
+                vec3 n_ave = cross(current_normal, adj_normal);
+                n_ave = normalize(n_ave);
+                result = current_point + dot(p - current_point, n_ave) * n_ave;
+            } else {
+                result = p - dot((p - current_point), current_normal) * current_normal;
+            }
+            delta += (result - p);
+            bezierPositionControlPoint[move_control_point[i]] = result;
         }
-        delta += (result - p);
-        bezierPositionControlPoint[move_control_point[i]] = result;
-    }
 
-    bezierPositionControlPoint[4] += delta / 3;
+        bezierPositionControlPoint[4] += delta / 6;
+    }
 
     // 细分
     // 生成顶点数据

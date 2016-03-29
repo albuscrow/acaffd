@@ -24,6 +24,7 @@ class DeformComputeShader(ProgramWrap):
         self.update_uniform_triangle_number()
         self.update_uniform_about_b_spline()
         self.update_uniform_about_tessellation()
+        self.update_uniform_about_adjust_control_point_flag()
 
     def update_uniform_triangle_number(self):
         glProgramUniform1ui(self._gl_program_name, 0, int(self._controller.splited_triangle_number))
@@ -45,6 +46,9 @@ class DeformComputeShader(ProgramWrap):
         glProgramUniform3f(self._gl_program_name, 3, 1 / self._controller.cage_size[0],
                            1 / self._controller.cage_size[1],
                            1 / self._controller.cage_size[2])
+
+    def update_uniform_about_adjust_control_point_flag(self):
+        glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.adjust_control_point else -1)
 
 
 class ModelRendererShader(ProgramWrap):
@@ -97,6 +101,9 @@ class DeformAndDrawController:
 
         self._need_update_position_diff_flag = True
         self._show_position_diff = False
+
+        self._need_update_adjust_control_point_flag = True
+        self._adjust_control_point = True
 
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -184,6 +191,9 @@ class DeformAndDrawController:
         if self._splited_triangle_number_changed:
             self._deform_program.update_uniform_triangle_number()
             self._splited_triangle_number_changed = False
+        if self._need_update_adjust_control_point_flag:
+            self._deform_program.update_uniform_about_adjust_control_point_flag()
+            self._need_update_adjust_control_point_flag = False
         glDispatchCompute(*self.group_size)
         self._need_deform = False
         glUseProgram(0)
@@ -309,6 +319,10 @@ class DeformAndDrawController:
     def show_position_diff(self):
         return self._show_position_diff
 
+    @property
+    def adjust_control_point(self):
+        return self._adjust_control_point
+
     def set_show_normal_diff(self, v):
         self._show_normal_diff = v
         self._need_update_normal_diff_flag = True
@@ -324,6 +338,11 @@ class DeformAndDrawController:
     def set_show_triangle_quality(self, v):
         self._show_quality = v
         self._need_update_triangle_quality_flag = True
+
+    def set_adjust_control_point(self, v):
+        self._adjust_control_point = v
+        self._need_update_adjust_control_point_flag = True
+        self._need_deform = True
 
     @need_deform.setter
     def need_deform(self, value):

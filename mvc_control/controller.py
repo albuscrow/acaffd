@@ -118,6 +118,10 @@ class Controller(QObject):
         self._gl_proxy.set_show_normal_diff(is_show)
 
     @pyqtSlot(bool)
+    def set_adjust_control_point(self, is_adjust: bool):
+        self._gl_proxy.set_adjust_control_point(is_adjust)
+
+    @pyqtSlot(bool)
     def set_show_position_diff_flag(self, is_show: bool):
         self._gl_proxy.set_show_position_diff(is_show)
 
