@@ -51,7 +51,7 @@ class BSplineBody:
 
     @property
     def control_points(self):
-        return np.array(self._ctrlPoints, dtype=np.float32)
+        return np.array([np.append(x, y) for x, y in zip(self._ctrlPoints.reshape((125, 3)), self._is_hit)], dtype='f4')
 
     @staticmethod
     def get_control_point_aux_list(length, control_point_number, order):
@@ -151,13 +151,13 @@ class BSplineBody:
         self.init_data()
 
     def move_dffd(self, parameter, displacement):
+        self._ctrlPoints = self._control_points_backup.copy()
         displacement = np.asarray(displacement, dtype=np.float32)
         Rs = np.zeros((*self._control_point_number,), dtype=np.float32)
         aux = 0
         for ijk in product(*[range(x) for x in self._control_point_number]):
             Rs[ijk] = self.R(parameter, ijk)
             aux += Rs[ijk] ** 2
-
         for i, j, k in product(*[range(x) for x in self._control_point_number]):
             k_aux = displacement * Rs[i, j, k] / aux
             self._ctrlPoints[i, j, k] += k_aux
@@ -166,7 +166,8 @@ class BSplineBody:
         return reduce(lambda p, x: p * x, [self.B(knots, order, i, para) for knots, order, i, para in
                                            zip(self._knots, self._order, ijk, parameter)], 1)
 
-    def B(self, knots, order, i, t):
+    @staticmethod
+    def B(knots, order, i, t):
         temp = [0] * order
         # k = 1
         for index in range(i, i + order):

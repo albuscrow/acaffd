@@ -66,7 +66,11 @@ ApplicationWindow {
                     }
                 }
                 onLeftMoveInfo: {
-                    controller.select(x, y, x2, y2)
+                    controller.left_move(x, y, x2, y2)
+                }
+
+                onAcLeftRelease: {
+                    controller.cancel_direct_control_point(x, y)
                 }
 
                 onWheelMove:{

@@ -43,6 +43,8 @@ class ACVBO:
         return self._buffer_name
 
     def gl_sync(self):
+        if len(self) == 0:
+            return
         if not self._is_bind:
             glBindBufferBase(self._target, self._binding_point, self.buffer_name)
             self._is_bind = True
@@ -61,8 +63,8 @@ class ACVBO:
         return vbo_array
 
     def __len__(self) -> int:
-        if self._capacity <= 0:
-            raise Exception("capacity error")
+        if self._capacity < 0:
+            raise Exception("capacity error:", self._capacity)
         return self._capacity
 
     def as_array_buffer(self, location, size, data_type: int):

@@ -122,12 +122,42 @@ class Controller(QObject):
         self._gl_proxy.set_show_position_diff(is_show)
 
     @pyqtSlot(int, int, int, int)
+    def left_move(self, x1: int, y1: int, x2: int, y2: int):
+        y1 = self.window_size.h - y1
+        y2 = self.window_size.h - y2
+        if self._gl_proxy.normal_control_mode:
+            x1 = min(x1, x2)
+            x2 = max(x1, x2)
+            y1 = min(y1, y2)
+            y2 = max(y1, y2)
+            self._gl_proxy.set_select_region(x1, y2, x2, y1)
+        else:
+            i = np.mat(self._model_view_matrix).I
+            if self._gl_proxy.direct_control_point_selected():
+                direction = np.mat([x2 - x1, y2 - y1, 0, 0], dtype='f4') * i
+                self._gl_proxy.move_direct_control_point(np.array(direction, dtype='f4').reshape(4,)[:3])
+            else:
+                start_point = np.mat([0, 0, 0, 1], dtype='f4') * i
+                end_point_z = -4
+                end_point_y = y2 / self.window_size.h * 2 - 1
+                end_point_x = x2 / self.window_size.h * 2 - self.window_size.aspect
+                end_point = np.mat([end_point_x, end_point_y, end_point_z, 1], dtype='f4') * i
+                self._gl_proxy.set_select_point(start_point, end_point - start_point)
+
+        self.updateScene.emit()
+
+    @pyqtSlot(int, int, int, int)
     def select(self, x1: int, y1: int, x2: int, y2: int):
         x1 = min(x1, x2)
         x2 = max(x1, x2)
         y1 = min(y1, y2)
         y2 = max(y1, y2)
         self._gl_proxy.set_select_region(x1, self.window_size.h - y2, x2, self.window_size.h - y1)
+        self.updateScene.emit()
+
+    @pyqtSlot()
+    def cancel_direct_control_point(self):
+        self._gl_proxy.clear_direct_control_point()
         self.updateScene.emit()
 
     @pyqtSlot(int, int, int)
@@ -186,7 +216,7 @@ class Controller(QObject):
 
 def get_test_file_name():
     # todo
-    file_path = "res/3d_model/Mobile.obj"
+    # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
@@ -200,7 +230,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    # file_path = "res/3d_model/test_2_triangle.obj"
+    file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"

@@ -4,6 +4,8 @@ import numpy as np
 from functools import reduce
 from numbers import Number
 
+from numpy.linalg import LinAlgError
+
 from Constant import ZERO
 from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec
@@ -258,7 +260,7 @@ class ACTriangle:
 
         data.append(pn_normal)
         data.append(pn_normal_adjacent)
-        data.append(self.normalv4)
+        data.append(self.positionv4)
         data.append(np.append(self._parameter, [[0], [0], [0]], axis=1))
         data.append(is_sharp3_triangle_quality)
         return tuple(data)
@@ -375,6 +377,21 @@ class ACTriangle:
                 ctrl_point_index += 1
         return np.append(normalize(result), 0)
 
+    def intersect(self, start_point: np.mat, direction: np.mat):
+        position = [x[:3] for x in self._position]
+        E1 = np.mat(position[1] - position[0], dtype='f4')[:, :3]
+        E2 = np.mat(position[2] - position[0], dtype='f4')[:, :3]
+        try:
+            i = np.row_stack((-direction[0, :3], E1, E2)).I
+        except LinAlgError:
+            return None, None
+        T = start_point[0, :3] - np.mat(position[0], dtype='f4')
+        t, u, v = np.array(np.dot(T, i))[0]
+        if all([0 <= x <= 1 for x in [u, v, 1 - u - v]]) and t > 0:
+            return t, np.array((start_point[0, :3] + t * direction[0, :3]), dtype='f4').reshape(3,)
+        else:
+            return None, None
+
     @property
     def id(self):
         return self._id
@@ -452,3 +469,10 @@ class ACTriangle:
     @pn_triangle_n.setter
     def pn_triangle_n(self, pn_triangle_n):
         self._pn_triangle_n = pn_triangle_n
+
+
+if __name__ == '__main__':
+    t = ACTriangle(0)
+    t.positionv3 = np.array([0, 0, 0, 1, 1, 0, 1, 0, 0], dtype='f4').reshape((3, 3))
+    tuv = t.intersect(np.mat([-1, -1, 1], dtype='f4'), np.mat([1, 1, 0], dtype='f4'))
+    print(tuv)
