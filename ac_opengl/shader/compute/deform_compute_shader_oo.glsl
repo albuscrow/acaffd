@@ -246,6 +246,7 @@ void main() {
 
     for (int i = 0; i < 3; ++i) {
         positionSplitedTriangle[triangleIndex * 3 + i].xyz = position[i];
+        positionSplitedTriangle[triangleIndex * 3 + i].w = 1;
         normalSplitedTriangle[triangleIndex * 3 + i] = currentTriangle.normal_adj[i];
     }
 

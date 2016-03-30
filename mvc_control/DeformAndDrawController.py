@@ -139,6 +139,11 @@ class DeformAndDrawController:
             .add_shader(
             ShaderWrap(GL_FRAGMENT_SHADER, add_renderer_prefix('control_points.f.glsl')))  # type: ProgramWrap
 
+        self._renderer_normal_program = ProgramWrap() \
+            .add_shader(ShaderWrap(GL_VERTEX_SHADER, add_renderer_prefix('normal.v.glsl'))) \
+            .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_renderer_prefix('normal.f.glsl'))) \
+            .add_shader(ShaderWrap(GL_GEOMETRY_SHADER, add_renderer_prefix('normal.g.glsl')))  # type: ProgramWrap
+
     def gl_init(self):
         self._model_vao = glGenVertexArrays(1)
         glBindVertexArray(self._model_vao)
@@ -261,15 +266,14 @@ class DeformAndDrawController:
         if self._need_update_position_diff_flag:
             self._renderer_program.update_uniform_about_position_diff()
             self._need_update_position_diff_flag = False
-        # common bind
-        wvp_matrix = multiply(model_view_matrix, perspective_matrix)
-        glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
-        glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
+        # common bind
+        wvp_matrix = multiply(model_view_matrix, perspective_matrix)
+        glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
+        glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
         glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
         glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
@@ -284,6 +288,15 @@ class DeformAndDrawController:
             glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
             glBindVertexArray(0)
             glUseProgram(0)
+
+        glBindVertexArray(self._show_normal_vao)
+        self._renderer_normal_program.use()
+        glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
+        glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
+        number = int(self.splited_triangle_number * 3)
+        glDrawArrays(GL_TRIANGLES, 0, number)
+        glUseProgram(0)
+        glBindVertexArray(0)
 
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)

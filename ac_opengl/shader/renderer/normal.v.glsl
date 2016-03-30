@@ -5,11 +5,10 @@ layout(location=1) uniform mat4 wv_matrix;
 layout(location=0) in vec4 vertice;
 layout(location=1) in vec4 normal;
 
-out vec3 varying_normal;
-in VS_OUT {
+out VS_OUT {
     vec3 normal;
 } gs_out;
 void main() {
     gl_Position = wvp_matrix * vertice;
-    gs_out.normal = normalize(vec3(wv_matrix * real_normal));
+    gs_out.normal = normalize(vec3(wv_matrix * normal));
 }
