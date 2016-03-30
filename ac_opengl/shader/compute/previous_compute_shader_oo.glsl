@@ -348,6 +348,11 @@ void main() {
             st.samplePoint[j] = getBSplineInfo(original_normal, original_position, j);
         }
 
+        uint aux3[3] = {1, 2, 0};
+        for (int j = 0; j < 3; ++j) {
+            st.parameter_in_original[aux3[i]].z = st.is_sharp3_triangle_quality1[j];
+        }
+
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }

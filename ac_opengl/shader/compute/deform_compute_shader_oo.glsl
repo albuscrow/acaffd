@@ -70,7 +70,7 @@ layout(std430, binding=16) buffer ControlPointIndex{
 
 //output
 layout(std430, binding=10) buffer ParameterInOriginalBuffer{
-    vec4[] parameterInOriginal;
+    vec4[] parameterInOriginal3_triangle_quality1;
 };
 
 //output
@@ -205,11 +205,11 @@ void main() {
         currentTriangle.normal_adj[i].xyz = sample_bspline_normal_fast(current_normal_spi);
     }
 
+    uint is_sharp_index[6] = {0,1,1,2,2,0};
     if (adjust_control_point > 0) {
         //调整控制顶点
         uint oppo_point_index[6] =    {2,1,0,2,1,0};
         uint move_control_point[6] =  {2,1,3,7,8,5};
-        uint is_sharp_index[6] = {0,1,1,2,2,0};
         vec3 delta = vec3(0);
         for (int i = 0; i < 6; ++i) {
             vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
@@ -253,15 +253,28 @@ void main() {
         }
     }
 
+    vec4 temp_sharp_parameter[3];
+    for (int i = 0; i < 3; ++i) {
+        if (currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i * 2]] > 0
+         || currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i * 2 + 1]] > 0) {
+            temp_sharp_parameter[i] = vec4(0);
+            temp_sharp_parameter[i][i] = 1;
+        } else {
+            temp_sharp_parameter[i] = vec4(0.3333333, 0.3333333, 0.3333333, 0);
+        }
+    }
+
     // 细分
     // 生成顶点数据
     for (int i = 0; i < tessellatedParameterLength; ++i) {
         vec3 pointParameter = tessellatedParameter[i].xyz;
         uint point_offset = triangleIndex * tessellatedParameterLength + i;
         parameterInSplit[point_offset] = tessellatedParameter[i];
-        parameterInOriginal[point_offset] =
+        parameterInSplit[point_offset].zw =
+            getTessellatedSplitParameter(temp_sharp_parameter, tessellatedParameter[i]).xy;
+        parameterInOriginal3_triangle_quality1[point_offset] =
             getTessellatedSplitParameter(currentTriangle.parameter_in_original, tessellatedParameter[i]);
-        parameterInOriginal[point_offset][3] = currentTriangle.is_sharp3_triangle_quality1[3] / 255f;
+        parameterInOriginal3_triangle_quality1[point_offset][3] = currentTriangle.is_sharp3_triangle_quality1[3] / 255f;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         // get background data
@@ -297,10 +310,10 @@ float power(float b, int n) {
 }
 
 
-vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter){
+vec4 getTessellatedSplitParameter(vec4[3] parameterInOriginal, vec4 tessellatedParameter){
     vec4 res = vec4(0);
     for (int i = 0; i < 3; ++i) {
-        res += split_parameter[i] * tessellatedParameter[i];
+        res += parameterInOriginal[i] * tessellatedParameter[i];
     }
     return res;
 }
