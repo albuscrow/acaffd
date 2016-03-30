@@ -239,6 +239,14 @@ ApplicationWindow {
                             controller.set_adjust_control_point(checked)
                         }
                     }
+
+                    CheckBox {
+                        text: qsTr("显示PN法向")
+                        checked: false
+                        onClicked: {
+                            controller.set_show_normal(checked)
+                        }
+                    }
                 }
             }
         }

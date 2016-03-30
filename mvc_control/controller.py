@@ -129,16 +129,18 @@ class Controller(QObject):
     def set_show_control_point(self, is_show: bool):
         self._gl_proxy.set_show_control_point(is_show)
 
+    @pyqtSlot(bool)
+    def set_show_normal(self, is_show: bool):
+        self._gl_proxy.set_show_normal(is_show)
+
     @pyqtSlot(int, int, int, int)
     def left_move(self, x1: int, y1: int, x2: int, y2: int):
         y1 = self.window_size.h - y1
         y2 = self.window_size.h - y2
         if self._gl_proxy.normal_control_mode:
-            x1 = min(x1, x2)
-            x2 = max(x1, x2)
-            y1 = min(y1, y2)
-            y2 = max(y1, y2)
-            self._gl_proxy.set_select_region(x1, y2, x2, y1)
+            x1, x2 = min(x1, x2), max(x1, x2)
+            y1, y2 = min(y1, y2), max(y1, y2)
+            self._gl_proxy.set_select_region(x1, y1, x2, y2)
         else:
             i = np.mat(self._model_view_matrix).I
             if self._gl_proxy.direct_control_point_selected():

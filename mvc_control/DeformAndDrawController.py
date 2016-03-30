@@ -107,6 +107,8 @@ class DeformAndDrawController:
 
         self._show_control_point = False
 
+        self._show_normal = False
+
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -276,7 +278,7 @@ class DeformAndDrawController:
         glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
         glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
-        # glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
+        glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
         glBindVertexArray(0)
         glUseProgram(0)
 
@@ -289,14 +291,15 @@ class DeformAndDrawController:
             glBindVertexArray(0)
             glUseProgram(0)
 
-        glBindVertexArray(self._show_normal_vao)
-        self._renderer_normal_program.use()
-        glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
-        glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
-        number = int(self.splited_triangle_number * 3)
-        glDrawArrays(GL_TRIANGLES, 0, number)
-        glUseProgram(0)
-        glBindVertexArray(0)
+        if self._show_normal:
+            glBindVertexArray(self._show_normal_vao)
+            self._renderer_normal_program.use()
+            glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
+            glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
+            number = int(self.splited_triangle_number * 3)
+            glDrawArrays(GL_TRIANGLES, 0, number)
+            glUseProgram(0)
+            glBindVertexArray(0)
 
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
@@ -437,3 +440,11 @@ class DeformAndDrawController:
     @show_control_point.setter
     def show_control_point(self, is_show):
         self._show_control_point = is_show
+
+    @property
+    def show_normal(self):
+        return self._show_normal
+
+    @show_normal.setter
+    def show_normal(self, is_show):
+        self._show_normal = is_show
