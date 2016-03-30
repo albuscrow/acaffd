@@ -276,7 +276,7 @@ class DeformAndDrawController:
         glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
         glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
-        glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
+        # glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
         glBindVertexArray(0)
         glUseProgram(0)
 
