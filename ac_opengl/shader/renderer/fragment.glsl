@@ -6,18 +6,30 @@ layout(location=5) uniform int show_normal_diff;
 layout(location=6) uniform int show_position_diff;
 in vec3 varying_normal;
 in vec4 varying_parameter_in_original3_triangle_quality1;
-in vec3 varying_parameter_in_splited_triangle;
+in vec4 varying_parameter_in_splited_triangle;
 in vec3 varying_diff_normal;
 in vec3 varying_diff_position;
 out vec4 color;
 
 void main() {
     if (show_splited_edge > 0) {
-        if (any(lessThan(varying_parameter_in_original3_triangle_quality1.xyz, vec3(0.01)))) {
+        vec3 temp;
+        temp.xy = varying_parameter_in_splited_triangle.zw;
+        temp.z = 1 - temp.x - temp.y;
+        if (any(lessThan(temp, vec3(0.01)))) {
+            color = vec4(0,0,1,1);
+            return;
+        }
+        temp.xy = varying_parameter_in_original3_triangle_quality1.xy;
+        temp.z = 1 - temp.x - temp.y;
+        if (any(lessThan(temp, vec3(0.01)))) {
             color = vec4(1,0,0,1);
             return;
         }
-        if (any(lessThan(varying_parameter_in_splited_triangle, vec3(0.01)))) {
+
+        temp.xy = varying_parameter_in_splited_triangle.xy;
+        temp.z = 1 - temp.x - temp.y;
+        if (any(lessThan(temp, vec3(0.01)))) {
             color = vec4(0,1,0,1);
             return;
         }

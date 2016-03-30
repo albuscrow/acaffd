@@ -165,6 +165,7 @@ class AuxController:
 
     def clear_direct_control_point(self):
         self._direct_control_point.clear()
+        self._b_spline_body.save_control_point_position()
         self._control_point_position_vbo.async_update(self.get_control_point_data())
 
     @property

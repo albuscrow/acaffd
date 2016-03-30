@@ -228,10 +228,6 @@ void main() {
     interNumberU = uint(controlPointNumU - orderU + 1);
     interNumberV = uint(controlPointNumV - orderV + 1);
     interNumberW = uint(controlPointNumW - orderW + 1);
-    // get current original tirangle index
-    original_index[0] = originalIndex[triangleIndex * 3];
-    original_index[1] = originalIndex[triangleIndex * 3 + 1];
-    original_index[2] = originalIndex[triangleIndex * 3 + 2];
 
     for (int i = 0; i < 3; ++i) {
         if (adjacencyBuffer[triangleIndex * 3 + i] == -1) {
@@ -243,13 +239,12 @@ void main() {
         }
     }
 
-    point[0] = vec3(originalVertex[original_index[0]]);
-    point[1] = vec3(originalVertex[original_index[1]]);
-    point[2] = vec3(originalVertex[original_index[2]]);
-
-    normal[0] = vec3(originalNormal[original_index[0]]);
-    normal[1] = vec3(originalNormal[original_index[1]]);
-    normal[2] = vec3(originalNormal[original_index[2]]);
+    // get current original tirangle index
+    for (int i = 0; i < 3; ++i) {
+        original_index[i] = originalIndex[triangleIndex * 3 + i];
+        point[i] = vec3(originalVertex[original_index[i]]);
+        normal[i] = vec3(originalNormal[original_index[i]]);
+    }
 
     // 生成pn-triangle
     genPNTriangle();
@@ -351,6 +346,11 @@ void main() {
 
         for (int j = 0; j < 37; ++j) {
             st.samplePoint[j] = getBSplineInfo(original_normal, original_position, j);
+        }
+
+        uint aux3[3] = {1, 2, 0};
+        for (int j = 0; j < 3; ++j) {
+            st.parameter_in_original[aux3[i]].z = st.is_sharp3_triangle_quality1[j];
         }
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;

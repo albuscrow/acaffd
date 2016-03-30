@@ -59,8 +59,28 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
 };
 
 //output
+layout(std430, binding=15) buffer ControlPoint{
+    vec4[] controlPoint3point1parameter;
+};
+
+//output
+layout(std430, binding=16) buffer ControlPointIndex{
+    uint[] controlPointIndex;
+};
+
+//output
+layout(std430, binding=17) buffer PositionSplitedTriangle{
+    vec4[] positionSplitedTriangle;
+};
+
+//output
+layout(std430, binding=18) buffer NormalSplitedTriangle{
+    vec4[] normalSplitedTriangle;
+};
+
+//output
 layout(std430, binding=10) buffer ParameterInOriginalBuffer{
-    vec4[] parameterInOriginal;
+    vec4[] parameterInOriginal3_triangle_quality1;
 };
 
 //output
@@ -78,6 +98,7 @@ layout(std430, binding=12) buffer RealPosition{
 layout(std430, binding=13) buffer RealNormal{
     vec4[] realNormal;
 };
+
 
 //debug
 layout(std430, binding=14) buffer OutputDebugBuffer{
@@ -98,6 +119,23 @@ const float Mr[370] = {
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3333333333333333, -1.5, 3.0, -0.8333333333333334,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
 };
+const float aux_control_parameter[10] = {
+   0,
+   1,2,
+   2,0,1,
+   0,1,2,0
+};
+
+const uvec3 aux_control_index[9] =
+{{1 ,2 ,0},
+{3 ,4 ,1},
+{2 ,1 ,4},
+{4 ,5 ,2},
+{6 ,7 ,3},
+{4 ,3 ,7},
+{7 ,8 ,4},
+{5 ,4 ,8},
+{8 ,9 ,5}};
 
 layout(location=0) uniform uint triangleNumber;
 layout(location=1) uniform uint vw;
@@ -177,14 +215,15 @@ void main() {
         currentTriangle.normal_adj[i].xyz = sample_bspline_normal_fast(current_normal_spi);
     }
 
+    uint is_sharp_index[6] = {0,1,1,2,2,0};
     if (adjust_control_point > 0) {
         //调整控制顶点
         uint oppo_point_index[6] =    {2,1,0,2,1,0};
         uint move_control_point[6] =  {2,1,3,7,8,5};
-        uint is_sharp_index[6] = {0,1,1,2,2,0};
         vec3 delta = vec3(0);
         for (int i = 0; i < 6; ++i) {
             vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
+//            vec3 current_normal = sample_normals[normal_aux[i/2]];
             vec3 current_point = position[i/2].xyz;
             vec3 p = bezierPositionControlPoint[move_control_point[i]];
             vec3 result;
@@ -202,19 +241,56 @@ void main() {
             bezierPositionControlPoint[move_control_point[i]] = result;
         }
 
-        bezierPositionControlPoint[4] += delta / 6;
+        bezierPositionControlPoint[4] += delta / 4;
+    }
+
+    for (int i = 0; i < 3; ++i) {
+        positionSplitedTriangle[triangleIndex * 3 + i].xyz = position[i];
+        positionSplitedTriangle[triangleIndex * 3 + i].w = 1;
+        normalSplitedTriangle[triangleIndex * 3 + i] = currentTriangle.normal_adj[i];
     }
 
     // 细分
     // 生成顶点数据
     uint point_index[100];
+    for (int i = 0; i < 10; ++i) {
+        uint point_offset = triangleIndex * 10 + i;
+        controlPoint3point1parameter[point_offset].xyz = bezierPositionControlPoint[i];
+        controlPoint3point1parameter[point_offset].w = aux_control_parameter[i];
+        point_index[i] = point_offset;
+    }
+
+    // 生成index数据
+    for (int i = 0; i < 9; ++i) {
+        uvec3 index = aux_control_index[i];
+        uint index_offset = triangleIndex * 9 + i;
+        for (int j = 0; j < 3; ++j) {
+            controlPointIndex[index_offset * 3 + j] = point_index[index[j]];
+        }
+    }
+
+    vec4 temp_sharp_parameter[3];
+    for (int i = 0; i < 3; ++i) {
+        if (currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i * 2]] > 0
+         || currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i * 2 + 1]] > 0) {
+            temp_sharp_parameter[i] = vec4(0);
+            temp_sharp_parameter[i][i] = 1;
+        } else {
+            temp_sharp_parameter[i] = vec4(0.3333333, 0.3333333, 0.3333333, 0);
+        }
+    }
+
+    // 细分
+    // 生成顶点数据
     for (int i = 0; i < tessellatedParameterLength; ++i) {
         vec3 pointParameter = tessellatedParameter[i].xyz;
         uint point_offset = triangleIndex * tessellatedParameterLength + i;
         parameterInSplit[point_offset] = tessellatedParameter[i];
-        parameterInOriginal[point_offset] =
+        parameterInSplit[point_offset].zw =
+            getTessellatedSplitParameter(temp_sharp_parameter, tessellatedParameter[i]).xy;
+        parameterInOriginal3_triangle_quality1[point_offset] =
             getTessellatedSplitParameter(currentTriangle.parameter_in_original, tessellatedParameter[i]);
-        parameterInOriginal[point_offset][3] = currentTriangle.is_sharp3_triangle_quality1[3] / 255f;
+        parameterInOriginal3_triangle_quality1[point_offset][3] = currentTriangle.is_sharp3_triangle_quality1[3] / 255f;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         // get background data
@@ -250,10 +326,10 @@ float power(float b, int n) {
 }
 
 
-vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter){
+vec4 getTessellatedSplitParameter(vec4[3] parameterInOriginal, vec4 tessellatedParameter){
     vec4 res = vec4(0);
     for (int i = 0; i < 3; ++i) {
-        res += split_parameter[i] * tessellatedParameter[i];
+        res += parameterInOriginal[i] * tessellatedParameter[i];
     }
     return res;
 }
@@ -373,7 +449,6 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
 
     vec4 n = spi.sample_point_original_normal;
 
-    //todo should modify when spline body modify
     vec3 result = vec3(1);
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
     float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
@@ -393,10 +468,7 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
     result.z = n.x * J_bar_star_T_0 * stride[0] + n.y * J_bar_star_T_1 * stride[1] + n.z * J_bar_star_T_2 * stride[2];
 
-//todo mark
     return normalize(result);
-//    return result;
-
 }
 vec3 sample_bspline_position_fast(SamplePointInfo spi) {
 

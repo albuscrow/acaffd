@@ -125,16 +125,22 @@ class Controller(QObject):
     def set_show_position_diff_flag(self, is_show: bool):
         self._gl_proxy.set_show_position_diff(is_show)
 
+    @pyqtSlot(bool)
+    def set_show_control_point(self, is_show: bool):
+        self._gl_proxy.set_show_control_point(is_show)
+
+    @pyqtSlot(bool)
+    def set_show_normal(self, is_show: bool):
+        self._gl_proxy.set_show_normal(is_show)
+
     @pyqtSlot(int, int, int, int)
     def left_move(self, x1: int, y1: int, x2: int, y2: int):
         y1 = self.window_size.h - y1
         y2 = self.window_size.h - y2
         if self._gl_proxy.normal_control_mode:
-            x1 = min(x1, x2)
-            x2 = max(x1, x2)
-            y1 = min(y1, y2)
-            y2 = max(y1, y2)
-            self._gl_proxy.set_select_region(x1, y2, x2, y1)
+            x1, x2 = min(x1, x2), max(x1, x2)
+            y1, y2 = min(y1, y2), max(y1, y2)
+            self._gl_proxy.set_select_region(x1, y1, x2, y2)
         else:
             i = np.mat(self._model_view_matrix).I
             if self._gl_proxy.direct_control_point_selected():
@@ -224,17 +230,16 @@ def get_test_file_name():
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    # file_path = "res/3d_model/test2.obj"
+    file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
     # file_path = "res/3d_model/star.obj"
     # file_path = "res/3d_model/legoDog.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/test_2_triangle_plain.obj"
-    # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    file_path = "res/3d_model/test_2_triangle.obj"
+    # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"

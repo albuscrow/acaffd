@@ -216,6 +216,9 @@ class BSplineBody:
         cage_t = [x - y for x, y in zip(temp, left_knot_index)]
         return cage_t + [0], [x + y - 1 for x, y in zip(left_knot_index, self._order)] + [0]
 
+    def save_control_point_position(self):
+        self._control_points_backup = self._ctrlPoints.copy()
+
 
 def aux_multiply(value, v, result):
     result[0] += value * v[0]
