@@ -69,6 +69,16 @@ layout(std430, binding=16) buffer ControlPointIndex{
 };
 
 //output
+layout(std430, binding=17) buffer PositionSplitedTriangle{
+    vec4[] positionSplitedTriangle;
+};
+
+//output
+layout(std430, binding=18) buffer NormalSplitedTriangle{
+    vec4[] normalSplitedTriangle;
+};
+
+//output
 layout(std430, binding=10) buffer ParameterInOriginalBuffer{
     vec4[] parameterInOriginal3_triangle_quality1;
 };
@@ -232,6 +242,11 @@ void main() {
         }
 
         bezierPositionControlPoint[4] += delta / 4;
+    }
+
+    for (int i = 0; i < 3; ++i) {
+        positionSplitedTriangle[triangleIndex * 3 + i].xyz = position[i];
+        normalSplitedTriangle[triangleIndex * 3 + i] = currentTriangle.normal_adj[i];
     }
 
     // 细分
@@ -433,7 +448,6 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
 
     vec4 n = spi.sample_point_original_normal;
 
-    //todo should modify when spline body modify
     vec3 result = vec3(1);
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
     float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
@@ -453,10 +467,7 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
     result.z = n.x * J_bar_star_T_0 * stride[0] + n.y * J_bar_star_T_1 * stride[1] + n.z * J_bar_star_T_2 * stride[2];
 
-//todo mark
     return normalize(result);
-//    return result;
-
 }
 vec3 sample_bspline_position_fast(SamplePointInfo spi) {
 
