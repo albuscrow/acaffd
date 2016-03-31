@@ -28,10 +28,10 @@ class PreviousComputeControllerCPU:
     def gl_compute(self, operator) -> int:
         operator()
         if not self._need_recompute:
-            return self._splited_triangle_number
+            return self._splited_triangle_number, False
         self._splited_triangle_number = self.compute_cpu()
         self._need_recompute = False
-        return self._splited_triangle_number
+        return self._splited_triangle_number, True
 
     @property
     def need_compute(self):
@@ -48,6 +48,14 @@ class PreviousComputeControllerCPU:
     @property
     def splited_triangle_number(self):
         return self._splited_triangle_number
+
+    @property
+    def b_spline_body(self):
+        return self._b_spline_body
+
+    @b_spline_body.setter
+    def b_spline_body(self, b_spline_body):
+        self._b_spline_body = b_spline_body
 
     def compute_cpu(self) -> int:
         number, data = self._model.split(self._b_spline_body)  # type: np.array

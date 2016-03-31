@@ -41,15 +41,15 @@ class GLProxy:
                 self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
         else:
             self._previous_compute_controller.change_model(model)
+            self._previous_compute_controller.b_spline_body = self._aux_controller.b_spline_body
 
         if self._deform_and_renderer_controller is not None:
             self._deform_and_renderer_controller.cage_size = self._aux_controller.get_cage_size()
 
     def draw(self, model_view_matrix, perspective_matrix):
-        self._deform_and_renderer_controller.splited_triangle_number \
-            = self._previous_compute_controller \
+        number, need_deform = self._previous_compute_controller \
             .gl_compute(self._aux_controller.gl_sync_buffer_for_previous_computer)
-
+        self._deform_and_renderer_controller.set_number_and_need_deform(number, need_deform)
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
                                                          self._aux_controller.gl_sync_buffer_for_deformation)
         self._aux_controller.gl_draw(model_view_matrix, perspective_matrix)
@@ -70,7 +70,6 @@ class GLProxy:
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(
-            self._previous_compute_controller.splited_triangle_number,
             self._aux_controller.get_cage_size())
         self._deform_and_renderer_controller.gl_init()
 
@@ -144,5 +143,3 @@ class GLProxy:
 
     def direct_control_point_selected(self):
         return self._aux_controller.is_direct_control_point_selected()
-
-

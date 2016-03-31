@@ -43,9 +43,6 @@ class DeformComputeShader(ProgramWrap):
         glProgramUniform1ui(self._gl_program_name, 1,
                             int(self._controller.cage_size[1] * self._controller.cage_size[2]))
         glProgramUniform1ui(self._gl_program_name, 2, int(self._controller.cage_size[2]))
-        glProgramUniform3f(self._gl_program_name, 3, 1 / self._controller.cage_size[0],
-                           1 / self._controller.cage_size[1],
-                           1 / self._controller.cage_size[2])
 
     def update_uniform_about_adjust_control_point_flag(self):
         glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.adjust_control_point else -1)
@@ -74,8 +71,8 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, triangle_number: int, cage_size: list):
-        self._splited_triangle_number = triangle_number
+    def __init__(self, cage_size: list):
+        self._splited_triangle_number = -1
         self._cage_size = cage_size  # type: list
 
         self._tessellation_level = -1  # type: int
@@ -308,14 +305,12 @@ class DeformAndDrawController:
     def splited_triangle_number(self):
         return self._splited_triangle_number
 
-    @splited_triangle_number.setter
-    def splited_triangle_number(self, number: int):
-        if number == self._splited_triangle_number:
-            return
-        self._splited_triangle_number = number
-        self.gl_async_update_buffer_for_self()
-        self._splited_triangle_number_changed = True
-        self._need_deform = True
+    def set_number_and_need_deform(self, number: int, need_deform: bool):
+        self._need_deform = (self._need_deform or need_deform or number != self._splited_triangle_number)
+        if number != self._splited_triangle_number:
+            self._splited_triangle_number = number
+            self.gl_async_update_buffer_for_self()
+            self._splited_triangle_number_changed = True
 
     @property
     def splited_triangle_number_changed(self):
