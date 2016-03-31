@@ -49,6 +49,14 @@ class PreviousComputeControllerCPU:
     def splited_triangle_number(self):
         return self._splited_triangle_number
 
+    @property
+    def b_spline_body(self):
+        return self._b_spline_body
+
+    @b_spline_body.setter
+    def b_spline_body(self, b_spline_body):
+        self._b_spline_body = b_spline_body
+
     def compute_cpu(self) -> int:
         number, data = self._model.split(self._b_spline_body)  # type: np.array
         self._splited_triangle_ssbo.async_update(data)

@@ -306,7 +306,7 @@ class DeformAndDrawController:
         return self._splited_triangle_number
 
     def set_number_and_need_deform(self, number: int, need_deform: bool):
-        self._need_deform = (need_deform or number != self._splited_triangle_number)
+        self._need_deform = (self._need_deform or need_deform or number != self._splited_triangle_number)
         if number != self._splited_triangle_number:
             self._splited_triangle_number = number
             self.gl_async_update_buffer_for_self()

@@ -41,10 +41,10 @@ class GLProxy:
                 self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
         else:
             self._previous_compute_controller.change_model(model)
+            self._previous_compute_controller.b_spline_body = self._aux_controller.b_spline_body
 
         if self._deform_and_renderer_controller is not None:
             self._deform_and_renderer_controller.cage_size = self._aux_controller.get_cage_size()
-            # self._deform_and_renderer_controller.need_deform = True
 
     def draw(self, model_view_matrix, perspective_matrix):
         number, need_deform = self._previous_compute_controller \
