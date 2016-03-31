@@ -401,6 +401,123 @@ vec3 sample_helper(SamplePointInfo spi, float[4] un, float[4] vn, float[4] wn){
     return result;
 }
 
+vec3 sample_helperu(SamplePointInfo spi, float[4] un, float[4] vn, float[4] wn){
+    uint uli = spi.knot_left_index.x;
+    uint vli = spi.knot_left_index.y;
+    uint wli = spi.knot_left_index.z;
+    //todo
+    uint controlPointOffset = ((uli - 2) * vw + (vli - 2) * w + (wli - 2)) * 27;
+
+    vec3 tempcp2[4][4];
+    for (int i = 0; i < 3; ++i){
+        for (int j = 0; j < 3; ++j){
+            tempcp2[i][j] = vec3(0.0f);
+            for (int k = 0; k < 3; ++k) {
+                vec4 cp = newControlPoints[controlPointOffset + i * 9 + j * 3 + k];
+                tempcp2[i][j].x += cp.x * wn[k];
+                tempcp2[i][j].y += cp.y * wn[k];
+                tempcp2[i][j].z += cp.z * wn[k];
+            }
+        }
+    }
+
+    vec3 tempcp1[4];
+    for (int i = 0; i < 3; ++i) {
+        tempcp1[i] = vec3(0.0);
+        for (int j = 0; j < 3; ++j) {
+            tempcp1[i].x += tempcp2[i][j].x * vn[j];
+            tempcp1[i].y += tempcp2[i][j].y * vn[j];
+            tempcp1[i].z += tempcp2[i][j].z * vn[j];
+        }
+    }
+
+    vec3 result = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result.x += tempcp1[i].x * un[i];
+        result.y += tempcp1[i].y * un[i];
+        result.z += tempcp1[i].z * un[i];
+    }
+    return result;
+}
+
+vec3 sample_helperv(SamplePointInfo spi, float[4] un, float[4] vn, float[4] wn){
+    uint uli = spi.knot_left_index.x;
+    uint vli = spi.knot_left_index.y;
+    uint wli = spi.knot_left_index.z;
+    //todo
+    uint controlPointOffset = ((uli - 2) * vw + (vli - 2) * w + (wli - 2)) * 27;
+
+    vec3 tempcp2[4][4];
+    for (int j = 0; j < 3; ++j){
+        for (int k = 0; k < 3; ++k) {
+            tempcp2[j][k] = vec3(0.0f);
+            for (int i = 0; i < 3; ++i){
+                vec4 cp = newControlPoints[controlPointOffset + i * 9 + j * 3 + k];
+                tempcp2[j][k].x += cp.x * un[i];
+                tempcp2[j][k].y += cp.y * un[i];
+                tempcp2[j][k].z += cp.z * un[i];
+            }
+        }
+    }
+
+    vec3 tempcp1[4];
+    for (int i = 0; i < 3; ++i) {
+        tempcp1[i] = vec3(0.0);
+        for (int j = 0; j < 3; ++j) {
+            tempcp1[i].x += tempcp2[i][j].x * wn[j];
+            tempcp1[i].y += tempcp2[i][j].y * wn[j];
+            tempcp1[i].z += tempcp2[i][j].z * wn[j];
+        }
+    }
+
+    vec3 result = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result.x += tempcp1[i].x * vn[i];
+        result.y += tempcp1[i].y * vn[i];
+        result.z += tempcp1[i].z * vn[i];
+    }
+    return result;
+}
+
+vec3 sample_helperw(SamplePointInfo spi, float[4] un, float[4] vn, float[4] wn){
+    uint uli = spi.knot_left_index.x;
+    uint vli = spi.knot_left_index.y;
+    uint wli = spi.knot_left_index.z;
+    //todo
+    uint controlPointOffset = ((uli - 2) * vw + (vli - 2) * w + (wli - 2)) * 27;
+
+    vec3 tempcp2[4][4];
+    for (int k = 0; k < 3; ++k) {
+        for (int i = 0; i < 3; ++i){
+            tempcp2[k][i] = vec3(0.0f);
+            for (int j = 0; j < 3; ++j){
+                vec4 cp = newControlPoints[controlPointOffset + i * 9 + j * 3 + k];
+                tempcp2[k][i].x += cp.x * vn[j];
+                tempcp2[k][i].y += cp.y * vn[j];
+                tempcp2[k][i].z += cp.z * vn[j];
+            }
+        }
+    }
+
+    vec3 tempcp1[4];
+    for (int i = 0; i < 3; ++i) {
+        tempcp1[i] = vec3(0.0);
+        for (int j = 0; j < 3; ++j) {
+            tempcp1[i].x += tempcp2[i][j].x * un[j];
+            tempcp1[i].y += tempcp2[i][j].y * un[j];
+            tempcp1[i].z += tempcp2[i][j].z * un[j];
+        }
+    }
+
+    vec3 result = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result.x += tempcp1[i].x * wn[i];
+        result.y += tempcp1[i].y * wn[i];
+        result.z += tempcp1[i].z * wn[i];
+    }
+    return result;
+}
+
 vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     float u = spi.parameter.x;
     float v = spi.parameter.y;
@@ -412,23 +529,11 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     un[2] = u * u;
     un[3] = u * un[2];
 
-    float un_[4];
-    un_[0] = 0;
-    un_[1] = 1;
-    un_[2] = 2 * u;
-    un_[3] = 3 * u * u;
-
     float vn[4];
     vn[0]= 1;
     vn[1] = v;
     vn[2] = v * v;
     vn[3] = v * vn[2];
-
-    float vn_[4];
-    vn_[0] = 0;
-    vn_[1] = 1;
-    vn_[2] = 2 * v;
-    vn_[3] = 3 * v * v;
 
     float wn[4];
     wn[0] = 1;
@@ -436,15 +541,29 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     wn[2] = w * w;
     wn[3] = w * wn[2];
 
+    float un_[4];
+    un_[0] = 0;
+    un_[1] = 1;
+    un_[2] = 2 * u;
+    un_[3] = 3 * u * u;
+
+
+    float vn_[4];
+    vn_[0] = 0;
+    vn_[1] = 1;
+    vn_[2] = 2 * v;
+    vn_[3] = 3 * v * v;
+
+
     float wn_[4];
     wn_[0] = 0;
     wn_[1] = 1;
     wn_[2] = 2 * w;
     wn_[3] = 3 * w * w;
 
-    vec3 fu = sample_helper(spi, un_, vn, wn);
-    vec3 fv = sample_helper(spi, un, vn_, wn);
-    vec3 fw = sample_helper(spi, un, vn, wn_);
+    vec3 fu = sample_helperw(spi, un_, vn, wn);
+    vec3 fv = sample_helperw(spi, un, vn_, wn);
+    vec3 fw = sample_helperw(spi, un, vn, wn_);
 
 
     vec4 n = spi.sample_point_original_normal;
@@ -454,19 +573,19 @@ vec3 sample_bspline_normal_fast(SamplePointInfo spi) {
     float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
     float J_bar_star_T_1 = fw.y * fu.z - fu.y * fw.z;
     float J_bar_star_T_2 = fu.y * fv.z - fv.y * fu.z;
-    result.x = n.x * J_bar_star_T_0 * stride[0] + n.y * J_bar_star_T_1 * stride[1] + n.z * J_bar_star_T_2 * stride[2];
+    result.x = n.x * J_bar_star_T_0 * stride[0] * lengthU + n.y * J_bar_star_T_1 * stride[1] * lengthV + n.z * J_bar_star_T_2 * stride[2] * lengthW;
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第二行三个元素
     J_bar_star_T_0 = fv.z * fw.x - fw.z * fv.x;
     J_bar_star_T_1 = fw.z * fu.x - fu.z * fw.x;
     J_bar_star_T_2 = fu.z * fv.x - fv.z * fu.x;
-    result.y = n.x * J_bar_star_T_0 * stride[0] + n.y * J_bar_star_T_1 * stride[1] + n.z * J_bar_star_T_2 * stride[2];
+    result.y = n.x * J_bar_star_T_0 * stride[0] * lengthU + n.y * J_bar_star_T_1 * stride[1] * lengthV + n.z * J_bar_star_T_2 * stride[2] * lengthW;
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第三行三个元素
     J_bar_star_T_0 = fv.x * fw.y - fw.x * fv.y;
     J_bar_star_T_1 = fw.x * fu.y - fu.x * fw.y;
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
-    result.z = n.x * J_bar_star_T_0 * stride[0] + n.y * J_bar_star_T_1 * stride[1] + n.z * J_bar_star_T_2 * stride[2];
+    result.z = n.x * J_bar_star_T_0 * stride[0] * lengthU + n.y * J_bar_star_T_1 * stride[1] * lengthV + n.z * J_bar_star_T_2 * stride[2] * lengthW;
 
     return normalize(result);
 }

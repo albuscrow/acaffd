@@ -575,7 +575,6 @@ void genPNTriangle(){
     PNTriangleN[1] = genPNControlNormal(point[0], point[1], normal[0], normal[1]);
     PNTriangleN[4] = genPNControlNormal(point[1], point[2], normal[1], normal[2]);
     PNTriangleN[2] = genPNControlNormal(point[2], point[0], normal[2], normal[0]);
-
 }
 
 // uvw 为 1 2 3分别代表u v w
