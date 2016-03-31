@@ -12,6 +12,10 @@ def add_prefix(file_name: str):
     return 'ac_opengl/shader/renderer/' + file_name
 
 
+def add_compute_prefix(file_name: str):
+    return 'ac_opengl/shader/compute/' + file_name
+
+
 class AuxController:
     def __init__(self, size: list):
         # check input
@@ -24,8 +28,9 @@ class AuxController:
         self._b_spline_body = BSplineBody(*size)  # type: BSplineBody
 
         # init shader program
-        self._program = ProgramWrap().add_shader(ShaderWrap(GL_VERTEX_SHADER, add_prefix('aux.v.glsl'))) \
+        self._renderer_program = ProgramWrap().add_shader(ShaderWrap(GL_VERTEX_SHADER, add_prefix('aux.v.glsl'))) \
             .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_prefix('aux.f.glsl')))  # type: ProgramWrap
+
         # init buffer
         self._control_point_position_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -35,6 +40,13 @@ class AuxController:
         self._pick_region = None  # type: ACRect
         self._control_points_changed = True  # type: bool
         self._direct_control_point = []  # type:  list
+
+        # init compute select point shader program
+        self._select_point_program = ProgramWrap() \
+            .add_shader(ShaderWrap(GL_COMPUTE_SHADER, add_compute_prefix('select_point.glsl')))
+        self._intersect_result_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 19, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._need_select_point = False
+        self._select_argument = None
 
     def change_size(self, size):
         # check input
@@ -72,13 +84,14 @@ class AuxController:
     def gl_draw(self, model_view_matrix: np.array, perspective_matrix: np.array):
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_PROGRAM_POINT_SIZE)
-        self._program.use()
+        self._renderer_program.use()
         glBindVertexArray(self._vao_control_point)
         self.gl_pick_control_point(model_view_matrix, perspective_matrix)
         self.gl_sync_buffer_for_self()
         self.gl_draw_control_points(model_view_matrix, perspective_matrix)
         glBindVertexArray(0)
         glUseProgram(0)
+        self.gl_select_point_gpu()
 
     def gl_draw_control_points(self, model_view_matrix, perspective_matrix):
         glUniformMatrix4fv(0, 1, GL_FALSE, multiply(model_view_matrix, perspective_matrix))
@@ -186,3 +199,34 @@ class AuxController:
 
     def is_direct_control_point_selected(self):
         return len(self._direct_control_point) != 0
+
+    def gl_select_point_gpu(self):
+        if not self._need_select_point:
+            return
+        start_point, direction, triangle_number = self._select_argument
+        self._intersect_result_vbo.gl_sync()
+        self._select_point_program.use()
+        glUniform1ui(0, int(triangle_number))
+        glUniform3f(1, start_point[0], start_point[1], start_point[2])
+        glUniform3f(2, direction[0], direction[1], direction[2])
+        glDispatchCompute(*self.group_size)
+        res = self._intersect_result_vbo.get_value(ctypes.c_float, (triangle_number, 4))
+        closet = res[0]
+        for r in res:
+            if r[3] < 0:
+                continue
+            if r[3] > closet[3]:
+                closet = r
+        self._need_select_point = False
+        if closet[3] > 0:
+            self.add_direct_control_point(np.array(closet[:3], dtype='f4'))
+
+    def select_point_gpu(self, start_point, direction, triangle_number):
+        self._need_select_point = True
+        self._intersect_result_vbo.capacity = triangle_number * 16
+        self._select_argument = [np.array(start_point).reshape((4,))[:3], np.array(direction).reshape((4,))[:3],
+                                 triangle_number]
+
+    @property
+    def group_size(self):
+        return [int(self._select_argument[2] / 512 + 1), 1, 1]

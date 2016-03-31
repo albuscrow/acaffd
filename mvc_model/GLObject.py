@@ -26,6 +26,8 @@ class ACVBO:
 
     @capacity.setter
     def capacity(self, capacity: int):
+        if self._capacity == capacity:
+            return
         self._capacity = int(capacity)
         self._dirty = True
 
