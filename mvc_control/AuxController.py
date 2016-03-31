@@ -211,14 +211,15 @@ class AuxController:
         glUniform3f(2, direction[0], direction[1], direction[2])
         glDispatchCompute(*self.group_size)
         res = self._intersect_result_vbo.get_value(ctypes.c_float, (triangle_number, 4))
+        closet = res[0]
         for r in res:
-            print(r)
+            if r[3] < 0:
+                continue
+            if r[3] > closet[3]:
+                closet = r
         self._need_select_point = False
-        # todo
-        # intersect_point = self._model.intersect(start_point, direction)
-        # if intersect_point is None:
-        #     return
-        # self.add_direct_control_point(intersect_point)
+        if closet[3] > 0:
+            self.add_direct_control_point(np.array(closet[:3], dtype='f4'))
 
     def select_point_gpu(self, start_point, direction, triangle_number):
         self._need_select_point = True

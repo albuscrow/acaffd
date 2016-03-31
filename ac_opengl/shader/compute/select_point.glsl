@@ -41,12 +41,11 @@ void main() {
         mat3 im = inverse(m);
         vec3 T = startPoint - position[0];
         vec3 tuv = im * T;
-        if (tuv[0] < 0) {
+        if (tuv[0] < 0 || tuv[1] > 1 || tuv[1] < 0 || tuv[2] > 1 || tuv[2] < 0) {
             selectedPoint[triangleIndex] = vec4(0,0,0,-1);
         } else {
             selectedPoint[triangleIndex].xyz = startPoint + tuv[0] * direction;
             selectedPoint[triangleIndex].w = tuv[0];
         }
     }
-//    selectedPoint[triangleIndex].xyz = position[1];
 }
