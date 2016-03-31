@@ -79,10 +79,9 @@ class GLProxy:
             self._aux_controller.pick_control_point(region)
 
     def set_select_point(self, start_point, direction):
-        intersect_point = self._model.intersect(start_point, direction)
-        if intersect_point is None:
-            return
-        self._aux_controller.add_direct_control_point(intersect_point)
+        self._aux_controller.select_point_gpu(start_point, direction,
+                                              self._previous_compute_controller.splited_triangle_number *
+                                              self._deform_and_renderer_controller.tessellated_triangle_number_pre_splited_triangle)
 
     def move_control_points(self, x, y, z):
         self._aux_controller.move_selected_control_points([x, y, z])
