@@ -11,7 +11,7 @@ ApplicationWindow {
     FileDialog {
         id: fileDialog
         title: "Please choose a file"
-        folder: "/home/ac/code/c++/dashi/OBJ/"
+        folder: "/home/ac/code/python/affd/res/3d_model"
         nameFilters: [ "Model files (*.obj)", "All files (*)" ]
         visible: false
         onAccepted: {

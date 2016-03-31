@@ -28,10 +28,10 @@ class PreviousComputeControllerCPU:
     def gl_compute(self, operator) -> int:
         operator()
         if not self._need_recompute:
-            return self._splited_triangle_number
+            return self._splited_triangle_number, False
         self._splited_triangle_number = self.compute_cpu()
         self._need_recompute = False
-        return self._splited_triangle_number
+        return self._splited_triangle_number, True
 
     @property
     def need_compute(self):

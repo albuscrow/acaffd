@@ -115,7 +115,7 @@ class PreviousComputeControllerGPU:
 
     def gl_compute(self, operator) -> int:
         if not self._need_recompute:
-            return self._splited_triangle_number
+            return self._splited_triangle_number, False
         self.gl_sync()
         if self._need_update_split_factor:
             self.gl_set_split_factor()
@@ -127,7 +127,7 @@ class PreviousComputeControllerGPU:
         glUseProgram(0)
         self._splited_triangle_number = self.get_splited_triangles_number()
         self._need_recompute = False
-        return self._splited_triangle_number
+        return self._splited_triangle_number, True
 
     @property
     def need_compute(self):
