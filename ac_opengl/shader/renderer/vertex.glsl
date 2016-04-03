@@ -17,6 +17,7 @@ out vec3 varying_diff_position;
 out vec3 varying_position;
 void main() {
     gl_Position = wvp_matrix * vertice;
+//    gl_Position = wvp_matrix * real_position;
     varying_position = gl_Position.xyz;
     varying_normal.xyz = normalize(vec3(wv_matrix * normal));
     varying_parameter_in_original3_triangle_quality1 = parameter_in_original3_triangle_quality1;

@@ -21,14 +21,18 @@ struct SamplePointInfo {
     vec4 sample_point_original_normal;
     uvec4 knot_left_index;
 };
+
 struct SplitedTriangle {
     SamplePointInfo samplePoint[37];
     vec4 normal_adj[3];
     vec4 adjacency_normal[6];
     vec4 original_position[3];
     vec4 parameter_in_original[3];
-    int is_sharp3_triangle_quality1[4];
+    int is_sharp[3];
+    float triangle_quality;
+    uint original_triangle_index;
 };
+
 //input
 layout(std430, binding=5) buffer TriangleBuffer{
     SplitedTriangle[] input_triangles;
@@ -76,6 +80,11 @@ layout(std430, binding=17) buffer PositionSplitedTriangle{
 //output
 layout(std430, binding=18) buffer NormalSplitedTriangle{
     vec4[] normalSplitedTriangle;
+};
+
+//input
+layout(std430, binding=19) buffer PNTrianglePShareBuffer{
+    vec3[] PNTriangleP_shared;
 };
 
 //output
@@ -160,6 +169,7 @@ vec3 sample_bspline_normal_fast(SamplePointInfo bsi);
 vec3 bezierPositionControlPoint[10];
 vec3 bezierNormalControlPoint[10];
 vec4 getPosition(vec3 parameter);
+vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
 vec4 getNormal(vec3 parameter);
 vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter);
 // uvw 为 1 2 3分别代表u v w
@@ -226,7 +236,7 @@ void main() {
             vec3 current_point = position[i/2].xyz;
             vec3 p = bezierPositionControlPoint[move_control_point[i]];
             vec3 result;
-            if (currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i]] > 0) {
+            if (currentTriangle.is_sharp[is_sharp_index[i]] > 0) {
                 SamplePointInfo spi = currentTriangle.samplePoint[normal_aux[i/2]];
                 spi.sample_point_original_normal = currentTriangle.adjacency_normal[i];
                 vec3 adj_normal = sample_bspline_normal_fast(spi);
@@ -270,8 +280,8 @@ void main() {
 
     vec4 temp_sharp_parameter[3];
     for (int i = 0; i < 3; ++i) {
-        if (currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i * 2]] > 0
-         || currentTriangle.is_sharp3_triangle_quality1[is_sharp_index[i * 2 + 1]] > 0) {
+        if (currentTriangle.is_sharp[is_sharp_index[i * 2]] > 0
+         || currentTriangle.is_sharp[is_sharp_index[i * 2 + 1]] > 0) {
             temp_sharp_parameter[i] = vec4(0);
             temp_sharp_parameter[i][i] = 1;
         } else {
@@ -289,12 +299,14 @@ void main() {
             getTessellatedSplitParameter(temp_sharp_parameter, tessellatedParameter[i]).xy;
         parameterInOriginal3_triangle_quality1[point_offset] =
             getTessellatedSplitParameter(currentTriangle.parameter_in_original, tessellatedParameter[i]);
-        parameterInOriginal3_triangle_quality1[point_offset][3] = currentTriangle.is_sharp3_triangle_quality1[3] / 255f;
+        parameterInOriginal3_triangle_quality1[point_offset][3] = currentTriangle.triangle_quality;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         // get background data
         SamplePointInfo spi = getBSplineInfo(original_normal, original_position, pointParameter);
-        realPosition[point_offset] = vec4(sample_bspline_position_fast(spi), 1);
+        realPosition[point_offset].xyz = getPositionInOriginalPNTriangle(parameterInOriginal3_triangle_quality1[point_offset].xyz, currentTriangle.original_triangle_index);
+        realPosition[point_offset].w = 1;
+//        realPosition[point_offset] = vec4(sample_bspline_position_fast(spi), 1);
         realNormal[point_offset] = vec4(sample_bspline_normal_fast(spi), 0);
         point_index[i] = point_offset;
     }
@@ -555,5 +567,21 @@ SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_positio
     result.parameter = vec4(u, v, w, 0);
     result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
 
+    return result;
+}
+
+// 根据 parameter 获得PNTriangle中的位置
+vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_index) {
+    vec3 result = vec3(0);
+    int ctrlPointIndex = 0;
+    int offset = int(original_triangle_index * 10);
+    for (int i = 3; i >=0; --i) {
+        for (int j = 3 - i; j >= 0; --j) {
+            int k = 3 - i - j;
+            float n = 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
+                    / factorial(i) / factorial(j) / factorial(k);
+            result += PNTriangleP_shared[offset + ctrlPointIndex ++] * n;
+        }
+    }
     return result;
 }

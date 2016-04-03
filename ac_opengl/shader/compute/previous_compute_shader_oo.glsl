@@ -38,8 +38,13 @@ layout(std430, binding=3) buffer AdjacencyBuffer{
 };
 
 //share
-layout(std430, binding=4) buffer PNTriangleNShareBuffer{
+coherent layout(std430, binding=4) buffer PNTriangleNShareBuffer{
     vec3[] PNTriangleN_shared;
+};
+
+//output
+layout(std430, binding=19) buffer PNTrianglePShareBuffer{
+    vec3[] PNTriangleP_shared;
 };
 
 struct SamplePointInfo {
@@ -54,7 +59,9 @@ struct SplitedTriangle {
     vec4 adjacency_normal[6];
     vec4 original_position[3];
     vec4 parameter_in_original[3];
-    int is_sharp3_triangle_quality1[4];
+    int is_sharp[3];
+    float triangle_quality;
+    uint original_triangle_index;
 };
 
 
@@ -252,26 +259,15 @@ void main() {
         PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
     }
     memoryBarrierBuffer();
+    for (int i = 0; i < 10; ++i) {
+        PNTriangleP_shared[triangleIndex * 10  + i] = PNTriangleP[i];
+    }
 
     // 获取pattern
     uint splitIndexOffset;
     uint subTriangleNumber;
     getSplitePattern(splitIndexOffset, subTriangleNumber);
 
-
-//    vec4 new_position[100];
-//    vec4 new_normal_adj[100];
-//    vec4 new_normal_org[100];
-//    vec3 new_parameter[100];
-//    uint new_edgeInfo[100];
-//    // 生成顶点数据
-//    for (int i = 0; i < pointNumber; ++i) {
-//        new_parameter[i] = splitParameter[splitParameterOffset + i];
-//        new_position[i] = getPosition(new_parameter[i]);
-//        new_normal_adj[i] = getNormalAdj(new_parameter[i]);
-//        new_normal_org[i] = getNormalOrg(new_parameter[i]);
-//        new_edgeInfo[i] = splitParameterEdgeInfo[splitParameterOffset + i];
-//    }
 
     //生成分割三角形
     uint aux1[6] = {5,0,1,2,3,4};
@@ -307,19 +303,19 @@ void main() {
         for (int j = 0; j < 3; ++j) {
             int currentEdge = adjacency_triangle_index_edge[j];
             if (currentEdge == -1 ) {
-                st.is_sharp3_triangle_quality1[j] = -1;
+                st.is_sharp[j] = -1;
             } else {
                 int adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
                 if (adjacency_triangle_index_ == -1) {
-                    st.is_sharp3_triangle_quality1[j] = -1;
+                    st.is_sharp[j] = -1;
                 } else {
-                    st.is_sharp3_triangle_quality1[j] = -1;
+                    st.is_sharp[j] = -1;
                     for (int k = 0; k < 2; ++k) {
                         int index = j * 2 + k;
                         vec3 adjacency_parameter = translate_parameter(st.parameter_in_original[aux2[index]].xyz, currentEdge);
                         st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
                         if (! all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4))) {
-                            st.is_sharp3_triangle_quality1[j] = 1;
+                            st.is_sharp[j] = 1;
                         }
                     }
                 }
@@ -341,17 +337,13 @@ void main() {
         float perimeter = l[0] + l[1] + l[2];
         float double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2;
         float radius = double_area / perimeter;
-        st.is_sharp3_triangle_quality1[3] = int(radius / max(l[0], max(l[1], l[2])) * 3.4 * 255);
+        st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
 
 
         for (int j = 0; j < 37; ++j) {
             st.samplePoint[j] = getBSplineInfo(original_normal, original_position, j);
         }
-
-        uint aux3[3] = {1, 2, 0};
-        for (int j = 0; j < 3; ++j) {
-            st.parameter_in_original[aux3[i]].z = st.is_sharp3_triangle_quality1[j];
-        }
+        st.original_triangle_index = triangleIndex;
 
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
