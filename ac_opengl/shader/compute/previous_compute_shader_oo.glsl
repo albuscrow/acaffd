@@ -1,23 +1,5 @@
 #version 450
 //input
-layout(std140, binding=0) uniform BSplineBodyInfo{
-    uniform float orderU;
-    uniform float orderV;
-    uniform float orderW;
-
-    uniform float controlPointNumU;
-    uniform float controlPointNumV;
-    uniform float controlPointNumW;
-
-    uniform float lengthU;
-    uniform float lengthV;
-    uniform float lengthW;
-    uniform float minU;
-    uniform float minV;
-    uniform float minW;
-};
-
-//input
 layout(std430, binding=0) buffer OriginalVertexBuffer{
     vec4[] originalVertex;
 };
@@ -96,11 +78,6 @@ vec3 normal[3];
 // switch
 uvec3 parameterSwitch;
 
-// 代表三个方向B spline body的区间数
-uint interNumberU;
-uint interNumberV;
-uint interNumberW;
-
 const vec3 ZERO3 = vec3(0.000001);
 const float ZERO = 0.000001;
 const vec4 ZERO4 = vec4(0.000001);
@@ -132,14 +109,6 @@ const uint splitParameterChangeAux[3][3] =
    splitParameterChangeAux[i][j]表示从当前三角形的parameter转到邻接三角形,不变的那个分量,另外两个分量交换值
 **/
 
-const uint splitParameterEdgeInfo[10] = {
-6,
-4,2,
-4,0,2,
-5,1,1,3};
-
-
-
 // 生成PN-Triangle
 void genPNTriangle();
 
@@ -162,12 +131,8 @@ vec4 changeParameter(vec4 parameter);
 // 根据三角形形状，取得splite pattern
 void getSplitePattern(out uint indexOffset, out uint triangleNumber);
 
-// 生成切割后的子三角形
-SplitedTriangle genSubSplitedTriangle();
-
 // 转化parameter
 vec3 translate_parameter(vec3 parameter, uint edgeNo);
-
 
 uint triangleIndex;
 void main() {
@@ -176,12 +141,7 @@ void main() {
         return;
     }
 
-
     // 初始化全局变量
-    interNumberU = uint(controlPointNumU - orderU + 1);
-    interNumberV = uint(controlPointNumV - orderV + 1);
-    interNumberW = uint(controlPointNumW - orderW + 1);
-
     for (int i = 0; i < 3; ++i) {
         if (adjacencyBuffer[triangleIndex * 3 + i] == -1) {
             adjacency_triangle_index[i] = -1;
@@ -494,42 +454,6 @@ void genPNTriangle(){
     PNTriangleN[1] = genPNControlNormal(point[0], point[1], normal[0], normal[1]);
     PNTriangleN[4] = genPNControlNormal(point[1], point[2], normal[1], normal[2]);
     PNTriangleN[2] = genPNControlNormal(point[2], point[0], normal[2], normal[0]);
-}
-
-// uvw 为 1 2 3分别代表u v w
-float getBSplineInfoU(float t, out uint leftIndex){
-    float step = lengthU / float(interNumberU);
-    float temp = (t - minU) / step;
-    leftIndex = uint(temp);
-    if (leftIndex >= interNumberU) {
-        leftIndex -= 1;
-    }
-    t = temp - leftIndex;
-    leftIndex += uint(orderU - 1);
-    return t;
-}
-float getBSplineInfoV(float t, out uint leftIndex){
-    float step = lengthV / float(interNumberV);
-    float temp = (t - minV) / step;
-    leftIndex = uint(temp);
-    if (leftIndex >= interNumberV) {
-        leftIndex -= 1;
-    }
-    t = temp - leftIndex;
-    leftIndex += uint(orderV - 1);
-    return t;
-}
-
-float getBSplineInfoW(float t, out uint leftIndex){
-    float step = lengthW / float(interNumberW);
-    float temp = (t - minW) / step;
-    leftIndex = uint(temp);
-    if (leftIndex >= interNumberW) {
-        leftIndex -= 1;
-    }
-    t = temp - leftIndex;
-    leftIndex += uint(orderW - 1);
-    return t;
 }
 
 vec3 translate_parameter(vec3 parameter, uint edgeNo) {

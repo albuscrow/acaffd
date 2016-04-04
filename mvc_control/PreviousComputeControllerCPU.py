@@ -25,8 +25,7 @@ class PreviousComputeControllerCPU:
     def gl_init(self):
         pass
 
-    def gl_compute(self, operator) -> int:
-        operator()
+    def gl_compute(self) -> int:
         if not self._need_recompute:
             return self._splited_triangle_number, False
         self._splited_triangle_number = self.compute_cpu()

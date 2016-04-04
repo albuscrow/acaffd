@@ -80,6 +80,7 @@ class AuxController:
 
     def gl_sync_buffer_for_deformation(self):
         self._control_point_for_sample_ubo.gl_sync()
+        self._b_spline_body_info_ubo.gl_sync()
 
     def gl_draw(self, model_view_matrix: np.array, perspective_matrix: np.array):
         glEnable(GL_DEPTH_TEST)

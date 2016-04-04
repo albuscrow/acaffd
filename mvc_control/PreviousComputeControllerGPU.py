@@ -117,14 +117,13 @@ class PreviousComputeControllerGPU:
         self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
         self._splited_triangle_ssbo.gl_sync()
 
-    def gl_compute(self, operator) -> int:
+    def gl_compute(self) -> int:
         if not self._need_recompute:
             return self._splited_triangle_number, False
         self.gl_sync()
         if self._need_update_split_factor:
             self.gl_set_split_factor()
             self._need_update_split_factor = False
-        operator()
         self._program.use()
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
