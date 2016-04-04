@@ -1,0 +1,62 @@
+# 3ds Max Wavefront OBJ Exporter v0.94b - (c)2007 guruware
+# File Created: 01.06.2012 17:09:23
+
+newmtl SNALSKIN
+	Ns 70.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 1.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	#Ka 0.0000 0.0000 0.0000
+	#Kd 0.8314 0.8078 0.6510
+	#Ks 1.0000 1.0000 1.0000
+	#Ka 0.9000 0.9000 0.9000
+	Ka 0.7000 0.7000 0.7000
+	Kd 0.7000 0.7000 0.7000
+	Ks 0.8000 0.8000 0.8000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka Snalskin.jpg
+	map_Kd Snalskin.jpg
+	map_bump Snalskin.jpg
+	bump Snalskin.jpg
+	map_refl LAKEREM.jpg
+
+newmtl SNALHORN
+	Ns 70.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 1.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	#Ka 0.0000 0.0000 0.0000
+	#Kd 0.8314 0.8078 0.6510
+	#Ks 1.0000 1.0000 1.0000
+	Ka 0.7000 0.7000 0.7000
+	Kd 0.7000 0.7000 0.7000
+	Ks 0.8000 0.8000 0.8000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka SNALHORN.jpg
+	map_Kd SNALHORN.jpg
+	map_bump SNALHORN.jpg
+	bump SNALHORN.jpg
+	map_refl LAKEREM.jpg
+
+newmtl SNALCONC
+	Ns 40.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 1.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	#Ka 0.0000 0.0000 0.0000
+	#Kd 0.5529 0.3098 0.1451
+	#Ks 0.9000 0.9000 0.9000
+	Ka 0.7000 0.7000 0.7000
+	Kd 1.0000 1.0000 1.0000
+	Ks 0.8000 0.8000 0.8000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka SNALCNC2.jpg
+	map_Kd SNALCNC2.jpg
+	map_bump SNALCNC2.jpg
+	bump SNALCNC2.jpg

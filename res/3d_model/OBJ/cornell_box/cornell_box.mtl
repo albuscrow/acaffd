@@ -1,0 +1,49 @@
+#
+# Wavefront material file
+# Converted by Meshlab Group
+#
+
+newmtl up
+Ka 0.200000 0.200000 0.200000
+Kd 0.835294 0.537255 0.290196
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd up.jpg
+
+newmtl center
+Ka 0.200000 0.200000 0.200000
+Kd 0.835294 0.537255 0.290196
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd center.bmp
+
+newmtl down
+Ka 0.200000 0.200000 0.200000
+Kd 0.835294 0.537255 0.290196
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd down.png
+
+newmtl right
+Ka 0.200000 0.200000 0.200000
+Kd 0.835294 0.537255 0.290196
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd right.jpg
+
+newmtl left
+Ka 0.200000 0.200000 0.200000
+Kd 0.835294 0.537255 0.290196
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd left.jpg

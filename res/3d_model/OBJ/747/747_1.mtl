@@ -1,0 +1,118 @@
+# 
+# Wavefront material file
+# Converted by the DEEP Exploration  Deep Exploration 5.7 5.7.0.4228 Release
+# Right Hemisphere, LTD
+# http://www.righthemisphere.com/
+# 
+
+newmtl BLACK_TRIM
+Ka 0.290196 0.290196 0.290196
+Kd 0 0 0
+Ks 1 1 1
+illum 2
+Ns 78.7932
+map_Kd 
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 
+
+newmtl EXHAUST_PORTS
+Ka 0.290196 0.290196 0.290196
+Kd 0 0 0
+Ks 1 1 1
+illum 2
+Ns 78.7932
+map_Kd 
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 
+
+newmtl LOGO___STRIPE
+Ka 0.290196 0.290196 0.290196
+Kd 0 0.145098 0.309804
+Ks 1 1 1
+illum 2
+Ns 337.794
+map_Kd
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 
+
+newmtl MAIN_FUSELAGE
+Ka 0.290196 0.290196 0.290196
+Kd 0.678431 0.678431 0.678431
+Ks 1 1 1
+illum 2
+Ns 337.794
+map_Kd 
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 
+
+newmtl RUDDER
+Ka 0.290196 0.290196 0.290196
+Kd 0.388235 0.388235 0.388235
+Ks 1 1 1
+illum 2
+Ns 337.794
+map_Kd
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 
+
+newmtl UPPER_STRIPE_VST
+Ka 0.290196 0.290196 0.290196
+Kd 0.388235 0.388235 0.388235
+Ks 1 1 1
+illum 2
+Ns 337.794
+map_Kd 
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 
+
+newmtl WING_BOX_AND_LIF
+Ka 0.290196 0.290196 0.290196
+Kd 0.152941 0.152941 0.152941
+Ks 1 1 1
+illum 2
+Ns 337.794
+map_Kd 
+map_bump 
+bump 
+map_opacity 
+map_d 
+refl 
+map_kS 
+map_kA 
+map_Ns 

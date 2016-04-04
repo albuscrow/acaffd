@@ -1,0 +1,14 @@
+# 
+# Wavefront material file
+# Converted by the DEEP Exploration  Deep Exploration 6.3 x64 6.3.3.8069
+# Right Hemisphere, LTD
+# http://www.righthemisphere.com/
+# 
+
+newmtl colormap
+Ka 0.717647 0.392157 0.12549
+Kd 0.717647 0.392157 0.12549
+Ks 0.300000 0.300000 0.30000
+illum 2
+Ns 42.2243
+map_Kd colormap.jpg
