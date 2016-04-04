@@ -2,9 +2,9 @@
 
 //input
 layout(std140, binding=0) uniform BSplineBodyInfo{
-    uniform float BSplineBodyOrder[3];
-    uniform float BSplineBodyControlPointNum[3];
-    uniform float BSplineBodyLength[3];
+    uniform vec3 BSplineBodyOrder;
+    uniform vec3 BSplineBodyControlPointNum;
+    uniform vec3 BSplineBodyLength;
 };
 
 struct SamplePoint {
@@ -227,10 +227,11 @@ void main() {
     }
 
     for (int i = 0; i < 3; ++i) {
-        BSplineBodyIntervalNumber[i] = float(BSplineBodyControlPointNum[i] - BSplineBodyOrder[i] + 1);
+        BSplineBodyIntervalNumber[i] = BSplineBodyControlPointNum[i] - BSplineBodyOrder[i] + 1;
         BSplineBodyMinParameter[i] = -BSplineBodyLength[i] / 2;
         BSplineBodyStep[i] = BSplineBodyLength[i] / BSplineBodyIntervalNumber[i];
     }
+
 
     currentTriangle = input_triangles[triangleIndex];
     // 计算采样点
@@ -241,7 +242,6 @@ void main() {
 
     uint vertexIndexInSamplePoint[3] = {0,21,27};
     SamplePoint samplePointForNormal[3];
-    vec3 pn_normal[3];
     for (int i = 0; i < 3; ++i) {
         samplePointForNormal[i] = samplePoint[vertexIndexInSamplePoint[i]];
         samplePointForNormal[i].normal = currentTriangle.pn_normal[i].xyz;
@@ -540,6 +540,7 @@ void sampleFast(inout SamplePoint samplePoint) {
 void getSamplePointHelper(inout SamplePoint samplePoint) {
     for (int i = 0; i < 3; ++i) {
         float temp = (samplePoint.position[i] - BSplineBodyMinParameter[i]) / BSplineBodyStep[i];
+
         samplePoint.knot_left_index[i] = uint(temp);
         if (samplePoint.knot_left_index[i] >= BSplineBodyIntervalNumber[i]) {
             samplePoint.knot_left_index[i] -= 1;
@@ -569,11 +570,13 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
     for (int i = 0; i < 3; ++i) {
         result.position += (currentTriangle.pn_position[i] * parameter[i]).xyz;
     }
+
     result.normal = vec3(0);
     for (int i = 0; i < 3; ++i) {
         result.normal += (currentTriangle.original_normal[i] * parameter[i]).xyz;
     }
     getSamplePointHelper(result);
+
     return result;
 }
 
