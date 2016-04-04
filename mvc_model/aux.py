@@ -99,10 +99,9 @@ class BSplineBody:
 
     def get_info(self):
         return np.array(
-            [*self._order,
-             *self._control_point_number,
-             *self._size,
-             *self.min_parameter], dtype='float32')
+            [*self._order, 0,
+             *self._control_point_number, 0,
+             *self._size, 0], dtype='float32')
 
     def get_control_point_for_sample(self):
         # uvw三个方向的区间数

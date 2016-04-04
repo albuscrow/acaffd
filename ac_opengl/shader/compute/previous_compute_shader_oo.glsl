@@ -47,19 +47,13 @@ layout(std430, binding=19) buffer PNTrianglePShareBuffer{
     vec3[] PNTriangleP_shared;
 };
 
-struct SamplePointInfo {
-    vec4 parameter;
-    vec4 sample_point_original_normal;
-    uvec4 knot_left_index;
-};
 
 struct SplitedTriangle {
-    SamplePointInfo samplePoint[37];
-    vec4 normal_adj[3];
-    vec4 adjacency_normal[6];
-    vec4 original_position[3];
+    vec4 pn_position[3];
+    vec4 pn_normal[3];
+    vec4 original_normal[3];
+    vec4 adjacency_pn_normal3_is_sharp1[6];
     vec4 parameter_in_original[3];
-    int is_sharp[3];
     float triangle_quality;
     uint original_triangle_index;
 };
@@ -119,53 +113,8 @@ layout(std430, binding=9) buffer SplitedData{
 };
 const int max_split_factor = 0;
 const uint look_up_table_for_i[0] = {0};
-////////////////////////////////////////////////
 
-//todo 改成可以由程序输入的
 layout(location=0) uniform float split_factor;
-
-const vec3 sampleParameter[37] = {
-    {1.000000, 0.000000, 0.000000},
-
-    {0.833333, 0.166667, 0.000000},
-    {0.833333, 0.000000, 0.166667},
-
-    {0.666667, 0.333333, 0.000000},
-    {0.666667, 0.166667, 0.166667},
-    {0.666667, 0.000000, 0.333333},
-
-    {0.500000, 0.500000, 0.000000},
-    {0.500000, 0.333333, 0.166667},
-    {0.500000, 0.166667, 0.333333},
-    {0.500000, 0.000000, 0.500000},
-
-    {0.333333, 0.666667, 0.000000},
-    {0.333333, 0.500000, 0.166667},
-    {0.333333, 0.333333, 0.333333},
-    {0.333333, 0.166667, 0.500000},
-    {0.333333, 0.000000, 0.666667},
-
-    {0.166667, 0.833333, 0.000000},
-    {0.166667, 0.666667, 0.166667},
-    {0.166667, 0.500000, 0.333333},
-    {0.166667, 0.333333, 0.500000},
-    {0.166667, 0.166667, 0.666667},
-    {0.166667, 0.000000, 0.833333},
-
-    {0.000000, 1.000000, 0.000000},
-    {0.000000, 0.833333, 0.166667},
-    {0.000000, 0.666667, 0.333333},
-    {0.000000, 0.500000, 0.500000},
-    {0.000000, 0.333333, 0.666667},
-    {0.000000, 0.166667, 0.833333},
-    {0.000000, 0.000000, 1.000000},
-
-    {1,0,0},
-    {0.6667, 0.3333, 0}, {0.6667, 0, 0.3333},
-    {0.3333, 0.6667, 0}, /*{0.3333, 0.3333, 0.3333},*/ {0.3333, 0, 0.6667},
-    {0, 1, 0}, {0, 0.6667, 0.3333}, {0, 0.3333, 0.6667}, {0, 0, 1}
-};
-
 
 const int splitParameterEdgeInfoAux[5] = {-1,2,0,-2,1};
 
@@ -195,7 +144,7 @@ const uint splitParameterEdgeInfo[10] = {
 void genPNTriangle();
 
 // 根据 parameter 获得PNTriangle中的法向
-vec4 getNormalAdj(vec3 parameter);
+vec4 getPNNormal(vec3 parameter);
 
 // 根据 parameter 获得普通插值法向
 vec3 getNormalOrg(vec3 parameter);
@@ -204,14 +153,11 @@ vec3 getNormalOrg(vec3 parameter);
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_);
 
 // 根据 parameter 获得PNTriangle中的位置
-vec3 getPosition(vec3 parameter);
+vec3 getPNPosition(vec3 parameter);
 
 uint getEdgeInfo(vec3 parameter);
 
-vec3 changeParameter(vec3 parameter);
-
-// 根据在整个bspline体中的参数求该采样点的相关信息
-SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_position, int index);
+vec4 changeParameter(vec4 parameter);
 
 // 根据三角形形状，取得splite pattern
 void getSplitePattern(out uint indexOffset, out uint triangleNumber);
@@ -270,24 +216,16 @@ void main() {
 
 
     //生成分割三角形
-    uint aux1[6] = {5,0,1,2,3,4};
-    uint aux2[6] = {2,0,0,1,1,2};
+    uint adjacency_normal_index_to_edge_index[6] = {0,1,1,2,2,0};
     for (uint i = splitIndexOffset; i < splitIndexOffset + subTriangleNumber; ++i) {
         uvec4 index = splitIndex[i];
         SplitedTriangle st;
 
         for (int i = 0; i < 3; ++i) {
-            st.parameter_in_original[i].xyz = changeParameter(splitParameter[index[i]].xyz);
-        }
-
-
-        vec3[3] original_normal;
-        for (int i = 0; i < 3; ++i) {
-            original_normal[i] = getNormalOrg(st.parameter_in_original[i].xyz);
-        }
-
-        for (int i = 0; i < 3; ++i) {
-            st.normal_adj[i] = getNormalAdj(st.parameter_in_original[i].xyz);
+            st.parameter_in_original[i] = changeParameter(splitParameter[index[i]]);
+            st.pn_position[i] = vec4(getPNPosition(st.parameter_in_original[i].xyz), 1);
+            st.pn_normal[i] = getPNNormal(st.parameter_in_original[i].xyz);
+            st.original_normal[i].xyz = getNormalOrg(st.parameter_in_original[i].xyz);
         }
 
         uint edgeInfo[3];
@@ -300,36 +238,31 @@ void main() {
         adjacency_triangle_index_edge[1] = splitParameterEdgeInfoAux[edgeInfo[0] & edgeInfo[1]];
         adjacency_triangle_index_edge[2] = splitParameterEdgeInfoAux[edgeInfo[1] & edgeInfo[2]];
 
-        for (int j = 0; j < 3; ++j) {
-            int currentEdge = adjacency_triangle_index_edge[j];
-            if (currentEdge == -1 ) {
-                st.is_sharp[j] = -1;
-            } else {
-                int adjacency_triangle_index_ = adjacency_triangle_index[currentEdge];
-                if (adjacency_triangle_index_ == -1) {
-                    st.is_sharp[j] = -1;
-                } else {
-                    st.is_sharp[j] = -1;
-                    for (int k = 0; k < 2; ++k) {
-                        int index = j * 2 + k;
-                        vec3 adjacency_parameter = translate_parameter(st.parameter_in_original[aux2[index]].xyz, currentEdge);
-                        st.adjacency_normal[aux1[index]] = getAdjacencyNormalPN(adjacency_parameter, adjacency_triangle_index_);
-                        if (! all(lessThan(abs(st.adjacency_normal[aux1[index]] - st.normal_adj[aux2[index]]), ZERO4))) {
-                            st.is_sharp[j] = 1;
-                        }
-                    }
-                }
+        for (int j = 0; j < 6; ++j) {
+            int currentEdge = adjacency_triangle_index_edge[adjacency_normal_index_to_edge_index[j]];
+            int current_adjacency_triangle_index = -1;
+            if (currentEdge != -1) {
+                current_adjacency_triangle_index = adjacency_triangle_index[currentEdge];
             }
+
+            if (current_adjacency_triangle_index != -1) {
+                vec3 adjacency_parameter = translate_parameter(st.parameter_in_original[j / 2].xyz, currentEdge);
+                st.adjacency_pn_normal3_is_sharp1[j] = getAdjacencyNormalPN(adjacency_parameter, current_adjacency_triangle_index);
+                if (! all(lessThan(abs(st.adjacency_pn_normal3_is_sharp1[j] - st.pn_normal[j / 2]), ZERO4))) {
+                    st.adjacency_pn_normal3_is_sharp1[j].w = 1;
+                } else {
+                    st.adjacency_pn_normal3_is_sharp1[j].w = -1;
+                }
+            } else {
+                st.adjacency_pn_normal3_is_sharp1[j].w = -1;
+            }
+
         }
-        vec3[3] original_position;
-        for (int i = 0; i < 3; ++i) {
-            original_position[i] = getPosition(st.parameter_in_original[i].xyz);
-            st.original_position[i].xyz = original_position[i];
-        }
+
         vec3 t[3];
-        t[0] = original_position[0] - original_position[1];
-        t[1] = original_position[1] - original_position[2];
-        t[2] = original_position[2] - original_position[0];
+        for (int i = 0; i < 3; ++i) {
+            t[i] = (st.pn_position[i] - st.pn_position[int(mod((i + 1), 3))]).xyz;
+        }
         vec3 l;
         for (int i = 0; i < 3; ++i) {
             l[i] = sqrt(t[i].x * t[i].x + t[i].y * t[i].y + t[i].z * t[i].z);
@@ -338,13 +271,7 @@ void main() {
         float double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2;
         float radius = double_area / perimeter;
         st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
-
-
-        for (int j = 0; j < 37; ++j) {
-            st.samplePoint[j] = getBSplineInfo(original_normal, original_position, j);
-        }
         st.original_triangle_index = triangleIndex;
-
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }
@@ -367,7 +294,7 @@ float power(float b, int n) {
 
 
 // 根据 parameter 获得PNTriangle中的法向
-vec4 getNormalAdj(vec3 parameter) {
+vec4 getPNNormal(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
     //todo
@@ -406,7 +333,7 @@ vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
 }
 
 // 根据 parameter 获得PNTriangle中的位置
-vec3 getPosition(vec3 parameter) {
+vec3 getPNPosition(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
     for (int i = 3; i >=0; --i) {
@@ -605,31 +532,6 @@ float getBSplineInfoW(float t, out uint leftIndex){
     return t;
 }
 
-SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_position, int index) {
-    vec3 uvw = sampleParameter[index];
-    vec3 parameter = vec3(0);
-    for (int i = 0; i < 3; ++i) {
-        parameter +=  original_position[i] * uvw[i];
-    }
-
-    SamplePointInfo result;
-
-    result.sample_point_original_normal = vec4(0);
-    for (int i = 0; i < 3; ++i) {
-        result.sample_point_original_normal.xyz += original_normal[i] * uvw[i];
-    }
-
-    uint knot_left_index_u, knot_left_index_v, knot_left_index_w;
-    float u = getBSplineInfoU(parameter.x, knot_left_index_u);
-    float v = getBSplineInfoV(parameter.y, knot_left_index_v);
-    float w = getBSplineInfoW(parameter.z, knot_left_index_w);
-
-    result.parameter = vec4(u, v, w, 0);
-    result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
-
-    return result;
-}
-
 vec3 translate_parameter(vec3 parameter, uint edgeNo) {
     uint unchange = splitParameterChangeAux[edgeNo][adjacency_triangle_edge[edgeNo]];
     if (unchange == 0) {
@@ -655,24 +557,24 @@ uint getEdgeInfo(vec3 parameter) {
     return result;
 }
 
-vec3 changeParameter(vec3 parameter) {
+vec4 changeParameter(vec4 parameter) {
     if (parameterSwitch.x == 0) {
         if (parameterSwitch.y == 1) {
-            return parameter.xyz;
+            return parameter.xyzw;
         } else {
-            return parameter.xzy;
+            return parameter.xzyw;
         }
     } else if (parameterSwitch.x == 1){
         if (parameterSwitch.y == 2) {
-            return parameter.yzx; //special
+            return parameter.yzxw; //special
         } else {
-            return parameter.yxz;
+            return parameter.yxzw;
         }
     } else {
         if (parameterSwitch.y == 0) {
-            return parameter.zxy; //special
+            return parameter.zxyw; //special
         } else {
-            return parameter.zyx;
+            return parameter.zyxw;
         }
     }
 }

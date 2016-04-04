@@ -34,7 +34,7 @@ class OBJ:
             # point 到 由该point构成的三角形index map, 这里的三角形index由该三角形的第一个顶点的self.index中的位置决定。
             aux_point_map = {}
 
-            f_store = []
+            f_store = set()
             with open(file_path, 'r') as file:
                 for l in file:
                     l = l.strip()
@@ -55,7 +55,7 @@ class OBJ:
                     elif first_token == 'vt':
                         temp_tex_coords.append(list(map(float, tokens)))
                     elif first_token == 'f':
-                        f_store.append(tokens)
+                        f_store.add(' '.join(tokens))
                     elif first_token == 'vp':
                         logging.warning("this feature(vp) in wavefront .obj is not implement, ignore")
                         # raise Exception()
@@ -67,7 +67,8 @@ class OBJ:
                         logging.warning("this feature(mtllib) in wavefront .obj is not implement, ignore")
                         # raise Exception()
                         # self.mtl = self.Material(tokens[0])
-                for tokens in f_store:
+                for l in f_store:
+                    tokens = l.split()
                     if len(tokens) in (3, 4):
                         self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
                                         tokens[:3])
@@ -154,7 +155,7 @@ class OBJ:
             triangle_index_set = aux_point_map[current_vertex_index] & aux_point_map[prev_vertex_index]
             common_triangle_number = len(triangle_index_set)
             if common_triangle_number == 1:
-                triangle_index = triangle_index_set.pop()
+                triangle_index = triangle_index_set.pop()[0]
                 temp = temp_vertices[prev_vertex_index]
                 for j in range(3):
                     if self._vertex[self._index[triangle_index * 3 + j]] == temp:
@@ -162,14 +163,15 @@ class OBJ:
                         self._adjacency[-1][i] = triangle_index * 4 + j
                         break
             elif common_triangle_number >= 2:
-                raise Exception('3 or more triangle adjacency with the same edge')
+                print(triangle_index_set, tokens)
+                raise Exception('3 or more triangle adjacency with the same edge, number is', common_triangle_number)
 
         # 将当前三角形加入到aux_point_map中
         for vertex_index in point_indexes:
             # 判断当前位置（position）为顶点的三角形有没有纪录
             if vertex_index not in aux_point_map:
                 aux_point_map[vertex_index] = set()
-            aux_point_map[vertex_index].add(current_triangle_index)
+            aux_point_map[vertex_index].add((current_triangle_index, ' '.join(tokens)))
 
     @staticmethod
     def find_max_min(max_x, min_x, new_x):

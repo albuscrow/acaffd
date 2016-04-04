@@ -13,6 +13,6 @@ void main() {
         //w == 1
         varying_parameter = vec3(0,1,0);
     } else {
-        varying_parameter = vec3(0,0,0.5);
+        varying_parameter = vec3(0,0,1);
     }
 }

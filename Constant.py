@@ -20,33 +20,17 @@ CONTROL_POINT_TRIANGLE_NUMBER = 9
 
 SHOW_NORMAL_POINT_NUMBER_PER_TRIANGLE = 3
 
-# struct SamplePointInfo {
-#     vec4 parameter;          16
-#     vec4 original_normal;    16
-#     uvec4 knot_left_index;   16
-# };
-#
-# struct SplitedTriangle {
-#     SamplePointInfo samplePoint[37];  48 * 37
-#     vec4 adjacency_normal[6];         16 * 6
-#     vec4 original_normal[3];          16 * 3
-#     vec4 original_position[3];        16 * 3
-#     bool need_adj[6];                 1 * 6
-# };
 
-# struct SamplePointInfo {
-#     vec4 parameter;
-#     vec4 sample_point_original_normal;
-#     uvec4 knot_left_index;
-# };
-# struct SplitedTriangle {
-#     SamplePointInfo samplePoint[37];
-#     vec4 normal_adj[3];
-#     vec4 adjacency_normal[6];
-#     vec4 original_normal[3];
-#     vec4 original_position[3];
-#     bool need_adj[6];
-# };
-SPLITED_TRIANGLE_SIZE = 48 * 37 + 15 * 16 + 16
+#struct SplitedTriangle {
+#    vec4 pn_position[3];
+#    vec4 pn_normal[3];
+#    vec4 original_normal[3];
+#    vec4 adjacency_pn_normal3_is_sharp1[6];
+#    vec4 parameter_in_original[3];
+#    float triangle_quality;
+#    uint original_triangle_index;
+#};
+
+SPLITED_TRIANGLE_SIZE = 304
 
 ZERO = 0.00001
