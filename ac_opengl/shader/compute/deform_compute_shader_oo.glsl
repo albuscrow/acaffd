@@ -34,6 +34,11 @@ struct SplitedTriangle {
 };
 
 //input
+coherent layout(std430, binding=4) buffer PNTriangleNShareBuffer{
+    vec3[] PNTriangleN_shared;
+};
+
+//input
 layout(std430, binding=5) buffer TriangleBuffer{
     SplitedTriangle[] input_triangles;
 };
@@ -170,6 +175,7 @@ vec3 bezierPositionControlPoint[10];
 vec3 bezierNormalControlPoint[10];
 vec4 getPosition(vec3 parameter);
 vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
+vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
 vec4 getNormal(vec3 parameter);
 vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter);
 // uvw 为 1 2 3分别代表u v w
@@ -177,6 +183,7 @@ float getBSplineInfoU(float t, out uint leftIndex);
 float getBSplineInfoV(float t, out uint leftIndex);
 float getBSplineInfoW(float t, out uint leftIndex);
 SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_position, vec3 uvw);
+SamplePointInfo getBSplineInfo(vec3 original_normal, vec3 parameter);
 
 // 代表三个方向B spline body的区间数
 uint interNumberU;
@@ -229,7 +236,7 @@ void main() {
         //调整控制顶点
         uint oppo_point_index[6] =    {2,1,0,2,1,0};
         uint move_control_point[6] =  {2,1,3,7,8,5};
-        vec3 delta = vec3(0);
+        vec3 E = vec3(0);
         for (int i = 0; i < 6; ++i) {
             vec3 current_normal = currentTriangle.normal_adj[i/2].xyz;
 //            vec3 current_normal = sample_normals[normal_aux[i/2]];
@@ -241,16 +248,17 @@ void main() {
                 spi.sample_point_original_normal = currentTriangle.adjacency_normal[i];
                 vec3 adj_normal = sample_bspline_normal_fast(spi);
                 vec3 n_ave = cross(current_normal, adj_normal);
-                n_ave = normalize(n_ave);
+//                n_ave = normalize(n_ave);
                 result = current_point + dot(p - current_point, n_ave) * n_ave;
             } else {
                 result = p - dot((p - current_point), current_normal) * current_normal;
             }
-            delta += (result - p);
             bezierPositionControlPoint[move_control_point[i]] = result;
+            E += result;
         }
-
-        bezierPositionControlPoint[4] += delta / 4;
+        E /= 6;
+        vec3 V = (bezierPositionControlPoint[0] + bezierPositionControlPoint[6] + bezierPositionControlPoint[9]) / 3;
+        bezierPositionControlPoint[4] = E + (E - V) / 2;
     }
 
     for (int i = 0; i < 3; ++i) {
@@ -303,10 +311,11 @@ void main() {
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         // get background data
-        SamplePointInfo spi = getBSplineInfo(original_normal, original_position, pointParameter);
-        realPosition[point_offset].xyz = getPositionInOriginalPNTriangle(parameterInOriginal3_triangle_quality1[point_offset].xyz, currentTriangle.original_triangle_index);
-        realPosition[point_offset].w = 1;
-//        realPosition[point_offset] = vec4(sample_bspline_position_fast(spi), 1);
+        SamplePointInfo spi = getBSplineInfo(getNormalInOriginalPNTriangle(parameterInOriginal3_triangle_quality1[point_offset].xyz,
+                                                                             currentTriangle.original_triangle_index),
+                                             getPositionInOriginalPNTriangle(parameterInOriginal3_triangle_quality1[point_offset].xyz,
+                                                                             currentTriangle.original_triangle_index));
+        realPosition[point_offset] = vec4(sample_bspline_position_fast(spi), 1);
         realNormal[point_offset] = vec4(sample_bspline_normal_fast(spi), 0);
         point_index[i] = point_offset;
     }
@@ -546,6 +555,18 @@ float getBSplineInfoW(float t, out uint leftIndex){
     return t;
 }
 
+SamplePointInfo getBSplineInfo(vec3 original_normal, vec3 parameter) {
+    SamplePointInfo result;
+    result.sample_point_original_normal.xyz = original_normal;
+    uint knot_left_index_u, knot_left_index_v, knot_left_index_w;
+    float u = getBSplineInfoU(parameter.x, knot_left_index_u);
+    float v = getBSplineInfoV(parameter.y, knot_left_index_v);
+    float w = getBSplineInfoW(parameter.z, knot_left_index_w);
+    result.parameter = vec4(u, v, w, 0);
+    result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
+    return result;
+}
+
 SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_position, vec3 uvw) {
     vec3 parameter = vec3(0);
     for (int i = 0; i < 3; ++i) {
@@ -567,6 +588,22 @@ SamplePointInfo getBSplineInfo(vec3[3] original_normal, vec3[3] original_positio
     result.parameter = vec4(u, v, w, 0);
     result.knot_left_index = uvec4(knot_left_index_u, knot_left_index_v, knot_left_index_w, 0);
 
+    return result;
+}
+
+// 根据 parameter 获得PNTriangle中的法向
+vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint original_triangle_index) {
+    vec3 result = vec3(0);
+    int ctrlPointIndex = 0;
+    int offset = int(original_triangle_index * 6);
+    for (int i = 2; i >=0; --i) {
+        for (int j = 2 - i; j >= 0; --j) {
+            int k = 2 - i - j;
+            float n = 2.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
+                    / factorial(i) / factorial(j) / factorial(k);
+            result += PNTriangleN_shared[offset + ctrlPointIndex ++] * n;
+        }
+    }
     return result;
 }
 

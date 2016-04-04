@@ -106,6 +106,10 @@ class Controller(QObject):
         self._gl_proxy.set_control_point_visibility(is_show)
 
     @pyqtSlot(bool)
+    def set_show_real(self, is_show: bool):
+        self._gl_proxy.set_show_real(is_show)
+
+    @pyqtSlot(bool)
     def set_splited_edge_visibility(self, is_show: bool):
         self._gl_proxy.set_splited_edge_visibility(is_show)
 

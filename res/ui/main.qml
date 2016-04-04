@@ -247,6 +247,14 @@ ApplicationWindow {
                             controller.set_show_normal(checked)
                         }
                     }
+
+                    CheckBox {
+                        text: qsTr("显示上采样直接变形结果")
+                        checked: false
+                        onClicked: {
+                            controller.set_show_real(checked)
+                        }
+                    }
                 }
             }
         }

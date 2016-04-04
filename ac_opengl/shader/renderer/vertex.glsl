@@ -1,6 +1,7 @@
 #version 450
 layout(location=0) uniform mat4 wvp_matrix;
 layout(location=1) uniform mat4 wv_matrix;
+layout(location=7) uniform int show_real;
 
 layout(location=0) in vec4 vertice;
 layout(location=1) in vec4 normal;
@@ -16,10 +17,14 @@ out vec3 varying_diff_normal;
 out vec3 varying_diff_position;
 out vec3 varying_position;
 void main() {
-    gl_Position = wvp_matrix * vertice;
-//    gl_Position = wvp_matrix * real_position;
+    if (show_real > 0) {
+        gl_Position = wvp_matrix * real_position;
+        varying_normal.xyz = normalize(vec3(wv_matrix * real_normal));
+    } else {
+        gl_Position = wvp_matrix * vertice;
+        varying_normal.xyz = normalize(vec3(wv_matrix * normal));
+    }
     varying_position = gl_Position.xyz;
-    varying_normal.xyz = normalize(vec3(wv_matrix * normal));
     varying_parameter_in_original3_triangle_quality1 = parameter_in_original3_triangle_quality1;
     varying_parameter_in_splited_triangle = parameter_in_splited_edge;
     varying_diff_normal = abs((real_normal - normal).xyz);

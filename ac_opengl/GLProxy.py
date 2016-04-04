@@ -142,3 +142,6 @@ class GLProxy:
 
     def direct_control_point_selected(self):
         return self._aux_controller.is_direct_control_point_selected()
+
+    def set_show_real(self, is_show):
+        self._deform_and_renderer_controller.set_show_real(is_show)

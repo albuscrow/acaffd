@@ -69,6 +69,9 @@ class ModelRendererShader(ProgramWrap):
     def update_uniform_about_position_diff(self):
         glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.show_position_diff else -1)
 
+    def update_uniform_about_real(self):
+        glProgramUniform1i(self._gl_program_name, 7, 1 if self._controller.show_real else -1)
+
 
 class DeformAndDrawController:
     def __init__(self, cage_size: list):
@@ -105,6 +108,9 @@ class DeformAndDrawController:
         self._show_control_point = False
 
         self._show_normal = False
+
+        self._need_update_show_real_flag = True
+        self._show_real = False
 
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -266,6 +272,10 @@ class DeformAndDrawController:
             self._renderer_program.update_uniform_about_position_diff()
             self._need_update_position_diff_flag = False
 
+        if self._need_update_show_real_flag:
+            self._renderer_program.update_uniform_about_real()
+            self._need_update_show_real_flag = False
+
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -409,6 +419,10 @@ class DeformAndDrawController:
         self._show_quality = v
         self._need_update_triangle_quality_flag = True
 
+    def set_show_real(self, is_show):
+        self._show_real = is_show
+        self._need_update_show_real_flag = True
+
     def set_adjust_control_point(self, v):
         self._adjust_control_point = v
         self._need_update_adjust_control_point_flag = True
@@ -443,3 +457,7 @@ class DeformAndDrawController:
     @show_normal.setter
     def show_normal(self, is_show):
         self._show_normal = is_show
+
+    @property
+    def show_real(self):
+        return self._show_real
