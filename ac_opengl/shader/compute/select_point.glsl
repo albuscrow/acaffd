@@ -10,7 +10,7 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
 };
 
 //output
-layout(std430, binding=19) buffer selectResult{
+layout(std430, binding=20) buffer selectResult{
     vec4[] selectedPoint;
 };
 

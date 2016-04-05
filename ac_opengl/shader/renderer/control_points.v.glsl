@@ -5,7 +5,6 @@ layout(location = 0) uniform mat4 wvp_matrix;
 
 void main() {
     gl_Position = wvp_matrix * vec4(vertice_parameter3_info1.xyz, 1);
-    gl_Position.y -= 0.05;
     if (vertice_parameter3_info1.w < 0.5f) {
         //w == 0
         varying_parameter = vec3(1,0,0);

@@ -47,8 +47,7 @@ class GLProxy:
             self._deform_and_renderer_controller.cage_size = self._aux_controller.get_cage_size()
 
     def draw(self, model_view_matrix, perspective_matrix):
-        number, need_deform = self._previous_compute_controller \
-            .gl_compute(self._aux_controller.gl_sync_buffer_for_previous_computer)
+        number, need_deform = self._previous_compute_controller.gl_compute()
         self._deform_and_renderer_controller.set_number_and_need_deform(number, need_deform)
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
                                                          self._aux_controller.gl_sync_buffer_for_deformation)
@@ -65,8 +64,7 @@ class GLProxy:
         # init previous compute shader
         self._previous_compute_controller.gl_init()
 
-        self._previous_compute_controller.gl_compute(
-            self._aux_controller.gl_sync_buffer_for_previous_computer)
+        self._previous_compute_controller.gl_compute()
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(

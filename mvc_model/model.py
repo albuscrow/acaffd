@@ -197,13 +197,15 @@ class OBJ:
         return np.array(self._adjacency, dtype=np.int32)
 
     def split(self, bspline: BSplineBody):
-        triangles = self._triangles
-        data = []
-        for t in triangles:
-            t.gen_pn_triangle()
+        pnp_data = []
+        pnn_data = []
+        for t in self._triangles:
+            pnp, pnn = t.gen_pn_triangle()
+            pnp_data.append(np.hstack((pnp, [[0]] * 10)))
+            pnn_data.append(np.hstack((pnn, [[0]] * 6)))
 
         polygons = []
-        for t in triangles:
+        for t in self._triangles:
             polygons.append(ACPoly(t))
 
         split_line = bspline.get_split_line()
@@ -225,9 +227,14 @@ class OBJ:
         for p in polygons:  # type: ACPoly
             triangles += p.to_triangle()
 
+        triangle_data = []
         for t in triangles:
-            data.append(t.as_element_for_shader(bspline))
-        return len(triangles), np.array(data, ACTriangle.DATA_TYPE)
+            triangle = t.as_element_for_shader()
+            triangle_data.append(triangle)
+        return len(triangle_data), \
+               np.array(triangle_data, ACTriangle.DATA_TYPE), \
+               np.array(pnp_data, dtype='f4'),\
+               np.array(pnn_data, dtype='f4')
 
     def reorganize(self):
         self._triangles = []  # type: list[ACTriangle]

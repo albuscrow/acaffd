@@ -44,7 +44,7 @@ class AuxController:
         # init compute select point shader program
         self._select_point_program = ProgramWrap() \
             .add_shader(ShaderWrap(GL_COMPUTE_SHADER, add_compute_prefix('select_point.glsl')))
-        self._intersect_result_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 19, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._intersect_result_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 20, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._need_select_point = False
         self._select_argument = None
 
@@ -80,6 +80,7 @@ class AuxController:
 
     def gl_sync_buffer_for_deformation(self):
         self._control_point_for_sample_ubo.gl_sync()
+        self._b_spline_body_info_ubo.gl_sync()
 
     def gl_draw(self, model_view_matrix: np.array, perspective_matrix: np.array):
         glEnable(GL_DEPTH_TEST)

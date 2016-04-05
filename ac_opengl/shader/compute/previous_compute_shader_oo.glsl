@@ -1,23 +1,5 @@
 #version 450
 //input
-layout(std140, binding=0) uniform BSplineBodyInfo{
-    uniform float orderU;
-    uniform float orderV;
-    uniform float orderW;
-
-    uniform float controlPointNumU;
-    uniform float controlPointNumV;
-    uniform float controlPointNumW;
-
-    uniform float lengthU;
-    uniform float lengthV;
-    uniform float lengthW;
-    uniform float minU;
-    uniform float minV;
-    uniform float minW;
-};
-
-//input
 layout(std430, binding=0) buffer OriginalVertexBuffer{
     vec4[] originalVertex;
 };
@@ -38,7 +20,7 @@ layout(std430, binding=3) buffer AdjacencyBuffer{
 };
 
 //share
-coherent layout(std430, binding=4) buffer PNTriangleNShareBuffer{
+layout(std430, binding=4) buffer PNTriangleNShareBuffer{
     vec3[] PNTriangleN_shared;
 };
 
@@ -52,10 +34,10 @@ struct SplitedTriangle {
     vec4 pn_position[3];
     vec4 pn_normal[3];
     vec4 original_normal[3];
-    vec4 adjacency_pn_normal3_is_sharp1[6];
+    vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original[3];
+    ivec4 adjacency_triangle_index3_original_triangle_index1;
     float triangle_quality;
-    uint original_triangle_index;
 };
 
 
@@ -96,11 +78,6 @@ vec3 normal[3];
 // switch
 uvec3 parameterSwitch;
 
-// 代表三个方向B spline body的区间数
-uint interNumberU;
-uint interNumberV;
-uint interNumberW;
-
 const vec3 ZERO3 = vec3(0.000001);
 const float ZERO = 0.000001;
 const vec4 ZERO4 = vec4(0.000001);
@@ -132,19 +109,11 @@ const uint splitParameterChangeAux[3][3] =
    splitParameterChangeAux[i][j]表示从当前三角形的parameter转到邻接三角形,不变的那个分量,另外两个分量交换值
 **/
 
-const uint splitParameterEdgeInfo[10] = {
-6,
-4,2,
-4,0,2,
-5,1,1,3};
-
-
-
 // 生成PN-Triangle
 void genPNTriangle();
 
 // 根据 parameter 获得PNTriangle中的法向
-vec4 getPNNormal(vec3 parameter);
+vec3 getPNNormal(vec3 parameter);
 
 // 根据 parameter 获得普通插值法向
 vec3 getNormalOrg(vec3 parameter);
@@ -162,12 +131,8 @@ vec4 changeParameter(vec4 parameter);
 // 根据三角形形状，取得splite pattern
 void getSplitePattern(out uint indexOffset, out uint triangleNumber);
 
-// 生成切割后的子三角形
-SplitedTriangle genSubSplitedTriangle();
-
 // 转化parameter
 vec3 translate_parameter(vec3 parameter, uint edgeNo);
-
 
 uint triangleIndex;
 void main() {
@@ -176,12 +141,7 @@ void main() {
         return;
     }
 
-
     // 初始化全局变量
-    interNumberU = uint(controlPointNumU - orderU + 1);
-    interNumberV = uint(controlPointNumV - orderV + 1);
-    interNumberW = uint(controlPointNumW - orderW + 1);
-
     for (int i = 0; i < 3; ++i) {
         if (adjacencyBuffer[triangleIndex * 3 + i] == -1) {
             adjacency_triangle_index[i] = -1;
@@ -204,7 +164,6 @@ void main() {
     for (int i = 0; i < 6; ++i) {
         PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
     }
-    memoryBarrierBuffer();
     for (int i = 0; i < 10; ++i) {
         PNTriangleP_shared[triangleIndex * 10  + i] = PNTriangleP[i];
     }
@@ -216,7 +175,7 @@ void main() {
 
 
     //生成分割三角形
-    uint adjacency_normal_index_to_edge_index[6] = {0,1,1,2,2,0};
+    uint adjacency_normal_index_aux[6] = {5,0,1,2,3,4};
     for (uint i = splitIndexOffset; i < splitIndexOffset + subTriangleNumber; ++i) {
         uvec4 index = splitIndex[i];
         SplitedTriangle st;
@@ -224,7 +183,7 @@ void main() {
         for (int i = 0; i < 3; ++i) {
             st.parameter_in_original[i] = changeParameter(splitParameter[index[i]]);
             st.pn_position[i] = vec4(getPNPosition(st.parameter_in_original[i].xyz), 1);
-            st.pn_normal[i] = getPNNormal(st.parameter_in_original[i].xyz);
+            st.pn_normal[i].xyz = getPNNormal(st.parameter_in_original[i].xyz);
             st.original_normal[i].xyz = getNormalOrg(st.parameter_in_original[i].xyz);
         }
 
@@ -238,25 +197,20 @@ void main() {
         adjacency_triangle_index_edge[1] = splitParameterEdgeInfoAux[edgeInfo[0] & edgeInfo[1]];
         adjacency_triangle_index_edge[2] = splitParameterEdgeInfoAux[edgeInfo[1] & edgeInfo[2]];
 
-        for (int j = 0; j < 6; ++j) {
-            int currentEdge = adjacency_triangle_index_edge[adjacency_normal_index_to_edge_index[j]];
+        for (int j = 0; j < 3; ++j) {
+            int currentEdge = adjacency_triangle_index_edge[j];
             int current_adjacency_triangle_index = -1;
             if (currentEdge != -1) {
                 current_adjacency_triangle_index = adjacency_triangle_index[currentEdge];
             }
 
+            st.adjacency_triangle_index3_original_triangle_index1[j] = current_adjacency_triangle_index;
             if (current_adjacency_triangle_index != -1) {
-                vec3 adjacency_parameter = translate_parameter(st.parameter_in_original[j / 2].xyz, currentEdge);
-                st.adjacency_pn_normal3_is_sharp1[j] = getAdjacencyNormalPN(adjacency_parameter, current_adjacency_triangle_index);
-                if (! all(lessThan(abs(st.adjacency_pn_normal3_is_sharp1[j] - st.pn_normal[j / 2]), ZERO4))) {
-                    st.adjacency_pn_normal3_is_sharp1[j].w = 1;
-                } else {
-                    st.adjacency_pn_normal3_is_sharp1[j].w = -1;
+                for (int k = 0; k < 2; ++k) {
+                    uint temp = adjacency_normal_index_aux[j * 2 + k];
+                    st.adjacency_pn_normal_parameter[temp].xyz = translate_parameter(st.parameter_in_original[temp / 2].xyz, currentEdge);
                 }
-            } else {
-                st.adjacency_pn_normal3_is_sharp1[j].w = -1;
             }
-
         }
 
         vec3 t[3];
@@ -271,7 +225,7 @@ void main() {
         float double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2;
         float radius = double_area / perimeter;
         st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
-        st.original_triangle_index = triangleIndex;
+        st.adjacency_triangle_index3_original_triangle_index1[3] = int(triangleIndex);
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }
@@ -294,10 +248,9 @@ float power(float b, int n) {
 
 
 // 根据 parameter 获得PNTriangle中的法向
-vec4 getPNNormal(vec3 parameter) {
+vec3 getPNNormal(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
-    //todo
     for (int i = 2; i >=0; --i) {
         for (int j = 2 - i; j >= 0; --j) {
             int k = 2 - i - j;
@@ -306,7 +259,7 @@ vec4 getPNNormal(vec3 parameter) {
             result += PNTriangleN[ctrlPointIndex ++] * n;
         }
     }
-    return vec4(normalize(result), 0);
+    return normalize(result);
 }
 
 vec3 getNormalOrg(vec3 parameter) {
@@ -494,42 +447,6 @@ void genPNTriangle(){
     PNTriangleN[1] = genPNControlNormal(point[0], point[1], normal[0], normal[1]);
     PNTriangleN[4] = genPNControlNormal(point[1], point[2], normal[1], normal[2]);
     PNTriangleN[2] = genPNControlNormal(point[2], point[0], normal[2], normal[0]);
-}
-
-// uvw 为 1 2 3分别代表u v w
-float getBSplineInfoU(float t, out uint leftIndex){
-    float step = lengthU / float(interNumberU);
-    float temp = (t - minU) / step;
-    leftIndex = uint(temp);
-    if (leftIndex >= interNumberU) {
-        leftIndex -= 1;
-    }
-    t = temp - leftIndex;
-    leftIndex += uint(orderU - 1);
-    return t;
-}
-float getBSplineInfoV(float t, out uint leftIndex){
-    float step = lengthV / float(interNumberV);
-    float temp = (t - minV) / step;
-    leftIndex = uint(temp);
-    if (leftIndex >= interNumberV) {
-        leftIndex -= 1;
-    }
-    t = temp - leftIndex;
-    leftIndex += uint(orderV - 1);
-    return t;
-}
-
-float getBSplineInfoW(float t, out uint leftIndex){
-    float step = lengthW / float(interNumberW);
-    float temp = (t - minW) / step;
-    leftIndex = uint(temp);
-    if (leftIndex >= interNumberW) {
-        leftIndex -= 1;
-    }
-    t = temp - leftIndex;
-    leftIndex += uint(orderW - 1);
-    return t;
 }
 
 vec3 translate_parameter(vec3 parameter, uint edgeNo) {

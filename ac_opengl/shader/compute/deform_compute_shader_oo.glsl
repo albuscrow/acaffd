@@ -17,10 +17,10 @@ struct SplitedTriangle {
     vec4 pn_position[3];
     vec4 pn_normal[3];
     vec4 original_normal[3];
-    vec4 adjacency_pn_normal3_is_sharp1[6];
+    vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original[3];
+    ivec4 adjacency_triangle_index3_original_triangle_index1;
     float triangle_quality;
-    uint original_triangle_index;
 };
 
 //input
@@ -108,7 +108,7 @@ layout(std430, binding=14) buffer OutputDebugBuffer{
 };
 
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
-
+const vec3 ZERO3 = vec3(0.000001);
 const float Mr[370] = {
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.8333333333333334, 3.0, 0.0, -1.5, 0.0, 0.3333333333333333, 0.0, 0.0, 0.0,
@@ -198,8 +198,6 @@ layout(std140, binding=3) uniform TessellateIndex{
     uniform uvec4[100] tessellateIndex;
 };
 
-const vec3 ZERO3 = vec3(0.0001, 0.0001, 0.0001);
-
 vec3 bezierPositionControlPoint[10];
 vec3 bezierNormalControlPoint[10];
 vec4 getPosition(vec3 parameter);
@@ -254,7 +252,6 @@ void main() {
 
     for (int i = 0; i < 3; ++i) {
         currentTriangle.pn_position[i].xyz = samplePoint[vertexIndexInSamplePoint[i]].position;
-        currentTriangle.pn_normal[i].xyz = samplePoint[vertexIndexInSamplePoint[i]].normal;
     }
 
     // 计算Bezier曲面片控制顶点
@@ -267,22 +264,44 @@ void main() {
         }
     }
 
+    vec4 temp_sharp_parameter[3] = currentTriangle.parameter_in_original;
+    for (int i = 0; i < 3; ++i) {
+        temp_sharp_parameter[i].w = 0;
+    }
+//    for (int i = 0; i < 3; ++i) {
+//        if (currentTriangle.adjacency_triangle_index3_original_triangle_index1[i] >= 0) {
+//            temp_sharp_parameter[i] = vec4(0);
+//            temp_sharp_parameter[i][i] = 1;
+//        } else {
+//            temp_sharp_parameter[i] = vec4(0.3333333, 0.3333333, 0.3333333, 0);
+//        }
+//    }
+
     if (adjust_control_point > 0) {
         //调整控制顶点
         uint move_control_point[6] =  {2,1,3,7,8,5};
+        uint adjacency_normal_index_to_edge_index[6] = {0,1,1,2,2,0};
         vec3 E = vec3(0);
         for (int i = 0; i < 6; ++i) {
             vec3 currentNormal = currentTriangle.pn_normal[i / 2].xyz;
             vec3 currentPosition = currentTriangle.pn_position[i / 2].xyz;
             vec3 controlPoint = bezierPositionControlPoint[move_control_point[i]];
             vec3 result;
-            if (currentTriangle.adjacency_pn_normal3_is_sharp1[i].w > 0) {
-                samplePointForNormal[i / 2].normal = currentTriangle.adjacency_pn_normal3_is_sharp1[i].xyz;
+            if (currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]] > 0) {
+                samplePointForNormal[i / 2].normal =
+                    getNormalInOriginalPNTriangle(currentTriangle.adjacency_pn_normal_parameter[i].xyz,
+                        currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]]);
                 vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
-                vec3 n_ave = cross(currentNormal, adj_normal);
-                result = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;
+                if (! all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
+                    vec3 n_ave = cross(currentNormal, adj_normal);
+                    result = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;
+                    ++ temp_sharp_parameter[i / 2].w;
+                } else {
+                    currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]] = -1;
+                    result = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
+                }
             } else {
-                result = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
+                result = controlPoint - dot(controlPoint - currentPosition, currentNormal) * currentNormal;
             }
             bezierPositionControlPoint[move_control_point[i]] = result;
             E += result;
@@ -293,8 +312,14 @@ void main() {
     }
 
     for (int i = 0; i < 3; ++i) {
+        if (temp_sharp_parameter[i].w <= 0) {
+            temp_sharp_parameter[i] = vec4(0.333, 0.333, 0.333, 0);
+        }
+    }
+
+    for (int i = 0; i < 3; ++i) {
         positionSplitedTriangle[triangleIndex * 3 + i] = currentTriangle.pn_position[i];
-        normalSplitedTriangle[triangleIndex * 3 + i] =  currentTriangle.pn_position[i];
+        normalSplitedTriangle[triangleIndex * 3 + i] =  currentTriangle.pn_normal[i];
     }
 
     // 细分
@@ -316,17 +341,6 @@ void main() {
         }
     }
 
-    vec4 temp_sharp_parameter[3];
-    int aux[6] = {5,0,1,2,3,4};
-    for (int i = 0; i < 3; ++i) {
-        if (currentTriangle.adjacency_pn_normal3_is_sharp1[aux[i * 2]].w > 0
-         || currentTriangle.adjacency_pn_normal3_is_sharp1[aux[i * 2 + 1]].w > 0) {
-            temp_sharp_parameter[i] = vec4(0);
-            temp_sharp_parameter[i][i] = 1;
-        } else {
-            temp_sharp_parameter[i] = vec4(0.3333333, 0.3333333, 0.3333333, 0);
-        }
-    }
 
     // 细分
     // 生成顶点数据
@@ -344,8 +358,8 @@ void main() {
         // get background data
         vec3 temp = parameterInOriginal3_triangle_quality1[point_offset].xyz;
         SamplePoint sp;
-        sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.original_triangle_index);
-        sp.normal = getNormalInOriginalPNTriangle(temp, currentTriangle.original_triangle_index);
+        sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
+        sp.normal = getNormalInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
         getSamplePointHelper(sp);
         sampleFast(sp);
         realPosition[point_offset] = vec4(sp.position, 1);
@@ -581,19 +595,18 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
 }
 
 // 根据 parameter 获得PNTriangle中的法向
-vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint original_triangle_index) {
+vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint triangle_index) {
     vec3 result = vec3(0);
-    int ctrlPointIndex = 0;
-    int offset = int(original_triangle_index * 6);
+    uint ctrlPointIndex = triangle_index * 6;
     for (int i = 2; i >=0; --i) {
         for (int j = 2 - i; j >= 0; --j) {
             int k = 2 - i - j;
             float n = 2.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
                     / factorial(i) / factorial(j) / factorial(k);
-            result += PNTriangleN_shared[offset + ctrlPointIndex ++] * n;
+            result += PNTriangleN_shared[ctrlPointIndex ++] * n;
         }
     }
-    return result;
+    return normalize(result);
 }
 
 // 根据 parameter 获得PNTriangle中的位置
@@ -611,3 +624,4 @@ vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_inde
     }
     return result;
 }
+
