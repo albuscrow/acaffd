@@ -20,7 +20,7 @@ layout(std430, binding=3) buffer AdjacencyBuffer{
 };
 
 //share
-coherent layout(std430, binding=4) buffer PNTriangleNShareBuffer{
+layout(std430, binding=4) buffer PNTriangleNShareBuffer{
     vec3[] PNTriangleN_shared;
 };
 
@@ -34,8 +34,9 @@ struct SplitedTriangle {
     vec4 pn_position[3];
     vec4 pn_normal[3];
     vec4 original_normal[3];
-    vec4 adjacency_pn_normal3_is_sharp1[6];
+    vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original[3];
+    int adjacency_triangle_index_for_pn_normal[6];
     float triangle_quality;
     uint original_triangle_index;
 };
@@ -164,7 +165,6 @@ void main() {
     for (int i = 0; i < 6; ++i) {
         PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
     }
-    memoryBarrierBuffer();
     for (int i = 0; i < 10; ++i) {
         PNTriangleP_shared[triangleIndex * 10  + i] = PNTriangleP[i];
     }
@@ -205,17 +205,19 @@ void main() {
                 current_adjacency_triangle_index = adjacency_triangle_index[currentEdge];
             }
 
+            st.adjacency_triangle_index_for_pn_normal[j] = current_adjacency_triangle_index;
             if (current_adjacency_triangle_index != -1) {
-                vec3 adjacency_parameter = translate_parameter(st.parameter_in_original[j / 2].xyz, currentEdge);
-                st.adjacency_pn_normal3_is_sharp1[j] = getAdjacencyNormalPN(adjacency_parameter, current_adjacency_triangle_index);
-                if (! all(lessThan(abs(st.adjacency_pn_normal3_is_sharp1[j] - st.pn_normal[j / 2]), ZERO4))) {
-                    st.adjacency_pn_normal3_is_sharp1[j].w = 1;
-                } else {
-                    st.adjacency_pn_normal3_is_sharp1[j].w = -1;
-                }
-            } else {
-                st.adjacency_pn_normal3_is_sharp1[j].w = -1;
+                st.adjacency_pn_normal_parameter[j].xyz = translate_parameter(st.parameter_in_original[j / 2].xyz, currentEdge);
+//                st.adjacency_pn_normal_parameter[j].xyz = getAdjacencyNormalPN(adjacency_parameter, current_adjacency_triangle_index);
+//                if (! all(lessThan(abs(st.adjacency_pn_normal3_is_sharp1[j] - st.pn_normal[j / 2]), ZERO4))) {
+//                    st.adjacency_pn_normal3_is_sharp1[j].w = 1;
+//                } else {
+//                    st.adjacency_pn_normal3_is_sharp1[j].w = -1;
+//                }
             }
+//             else {
+//                st.adjacency_pn_normal3_is_sharp1[j].w = -1;
+//            }
 
         }
 
