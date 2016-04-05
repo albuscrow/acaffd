@@ -201,9 +201,8 @@ class OBJ:
         pnn_data = []
         for t in self._triangles:
             pnp, pnn = t.gen_pn_triangle()
-            pnp_data.append(pnp)
-            pnn_data.append(pnn)
-        # todo padding
+            pnp_data.append(np.hstack((pnp, [[0]] * 10)))
+            pnn_data.append(np.hstack((pnn, [[0]] * 6)))
 
         polygons = []
         for t in self._triangles:
@@ -230,7 +229,7 @@ class OBJ:
 
         triangle_data = []
         for t in triangles:
-            triangle = t.as_element_for_shader(bspline)
+            triangle = t.as_element_for_shader()
             triangle_data.append(triangle)
         return len(triangle_data), \
                np.array(triangle_data, ACTriangle.DATA_TYPE), \

@@ -27,6 +27,7 @@ void main() {
     varying_position = gl_Position.xyz;
     varying_parameter_in_original3_triangle_quality1 = parameter_in_original3_triangle_quality1;
     varying_parameter_in_splited_triangle = parameter_in_splited_edge;
+    varying_parameter_in_splited_triangle.zw = ;
     varying_diff_normal = abs((real_normal - normal).xyz);
     varying_diff_position = abs((real_position - vertice).xyz * 100);
 }

@@ -157,7 +157,7 @@ class ACPoly:
         res = []
         c, pre = self._points[:2]
         for p in self._points[2:]:
-            t = ACTriangle(-1)
+            t = ACTriangle(self._triangle.id)
             ps = [c, pre, p]
             t.positionv3 = np.array([p.position for p in ps], dtype='f4')
             t.normalv3 = np.array([normalize(p.normal) for p in ps], dtype='f4')
@@ -188,15 +188,22 @@ class ACPoly:
 
 
 class ACTriangle:
-    DATA_TYPE = [('samplePoint', [('parameter', '4f4'),
-                                  ('sample_point_original_normal', '4f4'),
-                                  ('knot_left_index', '4u4')], 37),
-                 ('normal_adj', '4f4', 3),
-                 ('adjacency_normal', '4f4', 6),
+
+    #vec4 pn_position[3];
+    #vec4 pn_normal[3];
+    #vec4 original_normal[3];
+    #vec4 adjacency_pn_normal_parameter[6];
+    #vec4 parameter_in_original[3];
+    #ivec4 adjacency_triangle_index3_original_triangle_index1;
+    #float triangle_quality;
+
+    DATA_TYPE = [('pn_position', '4f4', 3),
+                 ('pn_normal', '4f4', 3),
                  ('original_normal', '4f4', 3),
-                 ('original_position', '4f4', 3),
-                 ('need_adj', '4i4'),
-                 ]
+                 ('adjacency_pn_normal_parameter', '4f4', 6),
+                 ('parameter_in_original', '4f4', 3),
+                 ('adjacency_triangle_index3_original_triangle_index1', 'i4', 4),
+                 ('triangle_quality_and_padding', 'f', 4)]
 
     def __init__(self, i):
         self._id = i
@@ -211,21 +218,18 @@ class ACTriangle:
     def __str__(self):
         return ','.join([str(x.id if x else None) + '-' + str(y) for x, y in self._neighbor])
 
-    def as_element_for_shader(self, b_spline_body: BSplineBody) -> list:
-        data = []
+    def as_element_for_shader(self) -> list:
 
         pn_position = [self.get_position_in_pn_triangle(x) for x in self._parameter]
         self.positionv4 = np.array(pn_position, dtype='f4')
 
-        sample_points = []
-        for pattern in SAMPLE_PATTERN:
-            sample_points.append(self.get_sample_point(pattern, b_spline_body))
-        data.append(sample_points)
         # v4
         pn_normal = [self.get_normal_in_pn_triangle(x) for x in self._parameter]
         # v4
         pn_normal_adjacent = np.zeros((6, 4), dtype='f4')
+        pn_normal_parameter_adjacent = np.zeros((6, 4), dtype='f4')
         is_sharp3_triangle_quality = []
+        adjacency_triangle_index3_original_triangle_index1 = np.zeros((4,), dtype='i4')
         aux1 = [2, 0, 0, 1, 1, 2]
         aux2 = [5, 0, 1, 2, 3, 4]
         occupy_edge_info = [ACTriangle.occupy_edge(p) for p in self.parameter]
@@ -235,12 +239,15 @@ class ACTriangle:
             if original_edge_info[i] == -1:
                 # 是内部三角形
                 is_sharp3_triangle_quality.append(-1)
+                adjacency_triangle_index3_original_triangle_index1[i] = -1
             else:
                 if self.neighbor[original_edge_info[i]][0] is None:
                     # 没有邻接三角形
                     is_sharp3_triangle_quality.append(-1)
+                    adjacency_triangle_index3_original_triangle_index1[i] = -1
                 else:
                     is_sharp3_triangle_quality.append(-1)
+                    adjacency_triangle_index3_original_triangle_index1[i] = -1
                     for j in range(2):
                         index = i * 2 + j
                         adjacent_parameter = self.transform_parameter(self._parameter[aux1[index]],
@@ -248,21 +255,28 @@ class ACTriangle:
                         adjacent_normal = self.neighbor[original_edge_info[i]][0] \
                             .get_normal_in_pn_triangle(adjacent_parameter)
                         pn_normal_adjacent[aux2[index]] = adjacent_normal
+                        pn_normal_parameter_adjacent[aux2[index]] = np.append(adjacent_parameter, 0)
                         if not equal_vec(adjacent_normal, pn_normal[aux1[index]]):
+                            print(adjacent_normal - pn_normal[aux1[index]])
                             is_sharp3_triangle_quality[-1] = 1
+                            adjacency_triangle_index3_original_triangle_index1[i] = self.neighbor[original_edge_info[i]][0].id
 
+        adjacency_triangle_index3_original_triangle_index1[3] = self._id
         t = [self.positionv3[i - 1] - self.positionv3[i] for i in [1, 2, 0]]
         l = [sqrt(sum([y * y for y in x])) for x in t]
         perimeter = sum(l)
         double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2
         radius = double_area / perimeter
-        is_sharp3_triangle_quality.append(int(radius / max(l[0], max(l[1], l[2])) * 3.4 * 255))
-
+        triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4
+        is_sharp3_triangle_quality.append(triangle_quality)
+        data = []
+        data.append(pn_position)
         data.append(pn_normal)
-        data.append(pn_normal_adjacent)
-        data.append(self.positionv4)
-        data.append(np.append(self._parameter, [[0], [0], [0]], axis=1))
-        data.append(is_sharp3_triangle_quality)
+        data.append(self.normalv4)
+        data.append(pn_normal_parameter_adjacent)
+        data.append(np.hstack((self.parameter, [[0], [0], [0]])))
+        data.append(adjacency_triangle_index3_original_triangle_index1)
+        data.append([triangle_quality, 0, 0, 0])
         return tuple(data)
 
     @staticmethod
