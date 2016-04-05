@@ -157,6 +157,7 @@ class Controller(QObject):
                 end_point_x = x2 / self.window_size.h * 2 - self.window_size.aspect
                 end_point = np.mat([end_point_x, end_point_y, end_point_z, 1], dtype='f4') * i
                 self._gl_proxy.set_select_point(start_point, end_point - start_point)
+
         self.updateScene.emit()
 
     @pyqtSlot()
@@ -233,10 +234,10 @@ def get_test_file_name():
     # file_path = "res/3d_model/test_2_triangle_plain.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
-    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
-    file_path = "res/3d_model/snail.obj"
+    # file_path = "res/3d_model/snail.obj"
     return file_path
