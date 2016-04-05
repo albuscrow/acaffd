@@ -36,9 +36,8 @@ struct SplitedTriangle {
     vec4 original_normal[3];
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original[3];
-    int adjacency_triangle_index_for_pn_normal[6];
+    ivec4 adjacency_triangle_index3_original_triangle_index1;
     float triangle_quality;
-    uint original_triangle_index;
 };
 
 
@@ -114,7 +113,7 @@ const uint splitParameterChangeAux[3][3] =
 void genPNTriangle();
 
 // 根据 parameter 获得PNTriangle中的法向
-vec4 getPNNormal(vec3 parameter);
+vec3 getPNNormal(vec3 parameter);
 
 // 根据 parameter 获得普通插值法向
 vec3 getNormalOrg(vec3 parameter);
@@ -176,7 +175,7 @@ void main() {
 
 
     //生成分割三角形
-    uint adjacency_normal_index_to_edge_index[6] = {0,1,1,2,2,0};
+    uint adjacency_normal_index_aux[6] = {5,0,1,2,3,4};
     for (uint i = splitIndexOffset; i < splitIndexOffset + subTriangleNumber; ++i) {
         uvec4 index = splitIndex[i];
         SplitedTriangle st;
@@ -184,7 +183,7 @@ void main() {
         for (int i = 0; i < 3; ++i) {
             st.parameter_in_original[i] = changeParameter(splitParameter[index[i]]);
             st.pn_position[i] = vec4(getPNPosition(st.parameter_in_original[i].xyz), 1);
-            st.pn_normal[i] = getPNNormal(st.parameter_in_original[i].xyz);
+            st.pn_normal[i].xyz = getPNNormal(st.parameter_in_original[i].xyz);
             st.original_normal[i].xyz = getNormalOrg(st.parameter_in_original[i].xyz);
         }
 
@@ -198,27 +197,20 @@ void main() {
         adjacency_triangle_index_edge[1] = splitParameterEdgeInfoAux[edgeInfo[0] & edgeInfo[1]];
         adjacency_triangle_index_edge[2] = splitParameterEdgeInfoAux[edgeInfo[1] & edgeInfo[2]];
 
-        for (int j = 0; j < 6; ++j) {
-            int currentEdge = adjacency_triangle_index_edge[adjacency_normal_index_to_edge_index[j]];
+        for (int j = 0; j < 3; ++j) {
+            int currentEdge = adjacency_triangle_index_edge[j];
             int current_adjacency_triangle_index = -1;
             if (currentEdge != -1) {
                 current_adjacency_triangle_index = adjacency_triangle_index[currentEdge];
             }
 
-            st.adjacency_triangle_index_for_pn_normal[j] = current_adjacency_triangle_index;
+            st.adjacency_triangle_index3_original_triangle_index1[j] = current_adjacency_triangle_index;
             if (current_adjacency_triangle_index != -1) {
-                st.adjacency_pn_normal_parameter[j].xyz = translate_parameter(st.parameter_in_original[j / 2].xyz, currentEdge);
-//                st.adjacency_pn_normal_parameter[j].xyz = getAdjacencyNormalPN(adjacency_parameter, current_adjacency_triangle_index);
-//                if (! all(lessThan(abs(st.adjacency_pn_normal3_is_sharp1[j] - st.pn_normal[j / 2]), ZERO4))) {
-//                    st.adjacency_pn_normal3_is_sharp1[j].w = 1;
-//                } else {
-//                    st.adjacency_pn_normal3_is_sharp1[j].w = -1;
-//                }
+                for (int k = 0; k < 2; ++k) {
+                    uint temp = adjacency_normal_index_aux[j * 2 + k];
+                    st.adjacency_pn_normal_parameter[temp].xyz = translate_parameter(st.parameter_in_original[temp / 2].xyz, currentEdge);
+                }
             }
-//             else {
-//                st.adjacency_pn_normal3_is_sharp1[j].w = -1;
-//            }
-
         }
 
         vec3 t[3];
@@ -233,7 +225,7 @@ void main() {
         float double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2;
         float radius = double_area / perimeter;
         st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
-        st.original_triangle_index = triangleIndex;
+        st.adjacency_triangle_index3_original_triangle_index1[3] = int(triangleIndex);
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }
@@ -256,10 +248,9 @@ float power(float b, int n) {
 
 
 // 根据 parameter 获得PNTriangle中的法向
-vec4 getPNNormal(vec3 parameter) {
+vec3 getPNNormal(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
-    //todo
     for (int i = 2; i >=0; --i) {
         for (int j = 2 - i; j >= 0; --j) {
             int k = 2 - i - j;
@@ -268,7 +259,7 @@ vec4 getPNNormal(vec3 parameter) {
             result += PNTriangleN[ctrlPointIndex ++] * n;
         }
     }
-    return vec4(normalize(result), 0);
+    return normalize(result);
 }
 
 vec3 getNormalOrg(vec3 parameter) {

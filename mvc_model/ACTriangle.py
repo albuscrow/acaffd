@@ -318,6 +318,7 @@ class ACTriangle:
             self._pn_triangle_n[i] = j
         for i, j, k in zip([1, 4, 2], [0, 1, 2], [1, 2, 0]):
             self._pn_triangle_n[i] = self.gen_normal_control_point(j, k)
+        return self._pn_triangle_p, self._pn_triangle_n
 
     def get_adjacency_normal(self, triangle_index, flag, original_normal_index):
         triangle, neighbor_edge = self._neighbor[triangle_index]

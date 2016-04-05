@@ -19,9 +19,8 @@ struct SplitedTriangle {
     vec4 original_normal[3];
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original[3];
-    int adjacency_triangle_index_for_pn_normal[6];
+    ivec4 adjacency_triangle_index3_original_triangle_index1;
     float triangle_quality;
-    uint original_triangle_index;
 };
 
 //input
@@ -275,16 +274,16 @@ void main() {
             vec3 currentPosition = currentTriangle.pn_position[i / 2].xyz;
             vec3 controlPoint = bezierPositionControlPoint[move_control_point[i]];
             vec3 result;
-            if (currentTriangle.adjacency_triangle_index_for_pn_normal[i] > 0) {
+            if (currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]] > 0) {
                 samplePointForNormal[i / 2].normal =
                     getNormalInOriginalPNTriangle(currentTriangle.adjacency_pn_normal_parameter[i].xyz,
-                        currentTriangle.adjacency_triangle_index_for_pn_normal[i]);
+                        currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]]);
                 vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
                 if (! all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
                     vec3 n_ave = cross(currentNormal, adj_normal);
                     result = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;
                 } else {
-                    currentTriangle.adjacency_triangle_index_for_pn_normal[i] = -1;
+                    currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]] = -1;
                     result = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
                 }
             } else {
@@ -323,10 +322,8 @@ void main() {
     }
 
     vec4 temp_sharp_parameter[3];
-    int aux[6] = {5,0,1,2,3,4};
     for (int i = 0; i < 3; ++i) {
-        if (currentTriangle.adjacency_triangle_index_for_pn_normal[aux[i * 2]] > 0
-         || currentTriangle.adjacency_triangle_index_for_pn_normal[aux[i * 2 + 1]] > 0) {
+        if (currentTriangle.adjacency_triangle_index3_original_triangle_index1[i] > 0) {
             temp_sharp_parameter[i] = vec4(0);
             temp_sharp_parameter[i][i] = 1;
         } else {
@@ -350,8 +347,8 @@ void main() {
         // get background data
         vec3 temp = parameterInOriginal3_triangle_quality1[point_offset].xyz;
         SamplePoint sp;
-        sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.original_triangle_index);
-        sp.normal = getNormalInOriginalPNTriangle(temp, currentTriangle.original_triangle_index);
+        sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
+        sp.normal = getNormalInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
         getSamplePointHelper(sp);
         sampleFast(sp);
         realPosition[point_offset] = vec4(sp.position, 1);

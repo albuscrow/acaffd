@@ -15,6 +15,8 @@ class PreviousComputeControllerCPU:
 
         # declare buffer
         self._splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
+        self._share_adjacency_pn_triangle_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_DYNAMIC_COPY)
+        self._share_adjacency_pn_triangle_position_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 19, None, GL_DYNAMIC_COPY)
 
         self._b_spline_body = b_spline_body
 
@@ -57,7 +59,12 @@ class PreviousComputeControllerCPU:
         self._b_spline_body = b_spline_body
 
     def compute_cpu(self) -> int:
-        number, data = self._model.split(self._b_spline_body)  # type: np.array
-        self._splited_triangle_ssbo.async_update(data)
+        number, splited_triangle_data, pn_triangle_position_control_point, pn_triangle_normal_control_point \
+            = self._model.split(self._b_spline_body)  # type: np.array
+        self._splited_triangle_ssbo.async_update(splited_triangle_data)
         self._splited_triangle_ssbo.gl_sync()
+        self._share_adjacency_pn_triangle_position_ssbo.async_update(pn_triangle_position_control_point)
+        self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
+        self._share_adjacency_pn_triangle_normal_ssbo.async_update(pn_triangle_normal_control_point)
+        self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()
         return number

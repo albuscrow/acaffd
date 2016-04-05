@@ -127,6 +127,8 @@ class PreviousComputeControllerGPU:
         self._program.use()
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
+        for i in self._share_adjacency_pn_triangle_normal_ssbo.get_value(ctypes.c_float, (10, 4)):
+            print(i)
         glUseProgram(0)
         self._splited_triangle_number = self.get_splited_triangles_number()
         self._need_recompute = False
