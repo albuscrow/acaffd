@@ -264,6 +264,19 @@ void main() {
         }
     }
 
+    vec4 temp_sharp_parameter[3] = currentTriangle.parameter_in_original;
+    for (int i = 0; i < 3; ++i) {
+        temp_sharp_parameter[i].w = 0;
+    }
+//    for (int i = 0; i < 3; ++i) {
+//        if (currentTriangle.adjacency_triangle_index3_original_triangle_index1[i] >= 0) {
+//            temp_sharp_parameter[i] = vec4(0);
+//            temp_sharp_parameter[i][i] = 1;
+//        } else {
+//            temp_sharp_parameter[i] = vec4(0.3333333, 0.3333333, 0.3333333, 0);
+//        }
+//    }
+
     if (adjust_control_point > 0) {
         //调整控制顶点
         uint move_control_point[6] =  {2,1,3,7,8,5};
@@ -282,6 +295,7 @@ void main() {
                 if (! all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
                     vec3 n_ave = cross(currentNormal, adj_normal);
                     result = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;
+                    ++ temp_sharp_parameter[i / 2].w;
                 } else {
                     currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]] = -1;
                     result = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
@@ -295,6 +309,12 @@ void main() {
         E /= 6;
         vec3 V = (bezierPositionControlPoint[0] + bezierPositionControlPoint[6] + bezierPositionControlPoint[9]) / 3;
         bezierPositionControlPoint[4] = E + (E - V) / 2;
+    }
+
+    for (int i = 0; i < 3; ++i) {
+        if (temp_sharp_parameter[i].w <= 0) {
+            temp_sharp_parameter[i] = vec4(0.333, 0.333, 0.333, 0);
+        }
     }
 
     for (int i = 0; i < 3; ++i) {
@@ -321,15 +341,6 @@ void main() {
         }
     }
 
-    vec4 temp_sharp_parameter[3];
-    for (int i = 0; i < 3; ++i) {
-        if (currentTriangle.adjacency_triangle_index3_original_triangle_index1[i] > 0) {
-            temp_sharp_parameter[i] = vec4(0);
-            temp_sharp_parameter[i][i] = 1;
-        } else {
-            temp_sharp_parameter[i] = vec4(0.3333333, 0.3333333, 0.3333333, 0);
-        }
-    }
 
     // 细分
     // 生成顶点数据

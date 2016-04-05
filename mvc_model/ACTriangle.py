@@ -257,7 +257,6 @@ class ACTriangle:
                         pn_normal_adjacent[aux2[index]] = adjacent_normal
                         pn_normal_parameter_adjacent[aux2[index]] = np.append(adjacent_parameter, 0)
                         if not equal_vec(adjacent_normal, pn_normal[aux1[index]]):
-                            print(adjacent_normal - pn_normal[aux1[index]])
                             is_sharp3_triangle_quality[-1] = 1
                             adjacency_triangle_index3_original_triangle_index1[i] = self.neighbor[original_edge_info[i]][0].id
 
