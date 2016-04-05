@@ -213,8 +213,6 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter);
 void sampleFast(inout SamplePoint spi);
 vec3 sampleFastNormal(in SamplePoint spi);
 
-vec3 getAdjacencyNormalPN(vec3 parameter, uint adjacency_triangle_index);
-
 // 代表三个方向B spline body的区间数
 float BSplineBodyMinParameter[3];
 float BSplineBodyStep[3];
@@ -255,7 +253,6 @@ void main() {
 
     for (int i = 0; i < 3; ++i) {
         currentTriangle.pn_position[i].xyz = samplePoint[vertexIndexInSamplePoint[i]].position;
-        currentTriangle.pn_normal[i].xyz = samplePoint[vertexIndexInSamplePoint[i]].normal;
     }
 
     // 计算Bezier曲面片控制顶点
@@ -274,16 +271,16 @@ void main() {
         uint adjacency_normal_index_to_edge_index[6] = {0,1,1,2,2,0};
         vec3 E = vec3(0);
         for (int i = 0; i < 6; ++i) {
-
-
             vec3 currentNormal = currentTriangle.pn_normal[i / 2].xyz;
             vec3 currentPosition = currentTriangle.pn_position[i / 2].xyz;
             vec3 controlPoint = bezierPositionControlPoint[move_control_point[i]];
             vec3 result;
             if (currentTriangle.adjacency_triangle_index_for_pn_normal[i] > 0) {
-                samplePointForNormal[i / 2].normal = getAdjacencyNormalPN(currentTriangle.adjacency_pn_normal_parameter[i].xyz, currentTriangle.adjacency_triangle_index_for_pn_normal[i]);
+                samplePointForNormal[i / 2].normal =
+                    getNormalInOriginalPNTriangle(currentTriangle.adjacency_pn_normal_parameter[i].xyz,
+                        currentTriangle.adjacency_triangle_index_for_pn_normal[i]);
                 vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
-                if (! all(lessThan(abs(adj_normal - currentTriangle.pn_normal[i / 2].xyz), ZERO3))) {
+                if (! all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
                     vec3 n_ave = cross(currentNormal, adj_normal);
                     result = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;
                 } else {
@@ -590,19 +587,18 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
 }
 
 // 根据 parameter 获得PNTriangle中的法向
-vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint original_triangle_index) {
+vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint triangle_index) {
     vec3 result = vec3(0);
-    int ctrlPointIndex = 0;
-    int offset = int(original_triangle_index * 6);
+    uint ctrlPointIndex = triangle_index * 6;
     for (int i = 2; i >=0; --i) {
         for (int j = 2 - i; j >= 0; --j) {
             int k = 2 - i - j;
             float n = 2.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
                     / factorial(i) / factorial(j) / factorial(k);
-            result += PNTriangleN_shared[offset + ctrlPointIndex ++] * n;
+            result += PNTriangleN_shared[ctrlPointIndex ++] * n;
         }
     }
-    return result;
+    return normalize(result);
 }
 
 // 根据 parameter 获得PNTriangle中的位置
@@ -621,17 +617,3 @@ vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_inde
     return result;
 }
 
-vec3 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index) {
-    vec3 result = vec3(0);
-    uint ctrlPointIndex = adjacency_triangle_index * 6;
-    //todo
-    for (int i = 2; i >=0; --i) {
-        for (int j = 2 - i; j >= 0; --j) {
-            int k = 2 - i - j;
-            float n = 2f / factorial(i) / factorial(j) / factorial(k)
-                * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
-            result += PNTriangleN_shared[ctrlPointIndex ++] * n;
-        }
-    }
-    return normalize(result);
-}
