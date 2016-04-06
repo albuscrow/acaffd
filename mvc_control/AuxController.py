@@ -212,7 +212,7 @@ class AuxController:
         glUniform3f(2, direction[0], direction[1], direction[2])
         glDispatchCompute(*self.group_size)
         res = self._intersect_result_vbo.get_value(ctypes.c_float, (triangle_number, 4))
-        closet = [0,0,0,9999999]
+        closet = [0, 0, 0, 9999999]
         for r in res:
             if r[3] < 0:
                 continue

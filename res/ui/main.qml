@@ -209,6 +209,13 @@ ApplicationWindow {
                     }
 
                     CheckBox {
+                        text: qsTr("显示控制顶点")
+                        checked: false
+                        onClicked: {
+                            controller.set_show_control_point(checked)
+                        }
+                    }
+                    CheckBox {
                         text: qsTr("显示法向差异")
                         checked: false
                         onClicked: {
@@ -224,13 +231,6 @@ ApplicationWindow {
                         }
                     }
 
-                    CheckBox {
-                        text: qsTr("显示控制顶点")
-                        checked: false
-                        onClicked: {
-                            controller.set_show_control_point(checked)
-                        }
-                    }
 
                     CheckBox {
                         text: qsTr("调整控制定点")
@@ -253,6 +253,13 @@ ApplicationWindow {
                         checked: false
                         onClicked: {
                             controller.set_show_real(checked)
+                        }
+                    }
+
+                    Button {
+                        text: "打印精度对比"
+                        onClicked: {
+                            controller.set_need_comparison()
                         }
                     }
                 }

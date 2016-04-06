@@ -137,6 +137,10 @@ class Controller(QObject):
     def set_show_normal(self, is_show: bool):
         self._gl_proxy.set_show_normal(is_show)
 
+    @pyqtSlot()
+    def set_need_comparison(self):
+        self._gl_proxy.set_need_comparison()
+
     @pyqtSlot(int, int, int, int)
     def left_move(self, x1: int, y1: int, x2: int, y2: int):
         y1 = self.window_size.h - y1

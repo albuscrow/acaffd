@@ -143,3 +143,6 @@ class GLProxy:
 
     def set_show_real(self, is_show):
         self._deform_and_renderer_controller.set_show_real(is_show)
+
+    def set_need_comparison(self):
+        self._deform_and_renderer_controller.set_need_comparison()

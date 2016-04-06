@@ -1,3 +1,7 @@
+from functools import reduce
+
+from math import sqrt
+
 from Constant import *
 from mvc_model.GLObject import ACVBO
 from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
@@ -111,6 +115,8 @@ class DeformAndDrawController:
 
         self._need_update_show_real_flag = True
         self._show_real = False
+
+        self._need_comparison = False
 
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -255,6 +261,7 @@ class DeformAndDrawController:
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
         self.gl_sync_buffer()
         self.gl_deform(operator)
+        self.comparison()
         self._renderer_program.use()
         if self._need_update_show_splited_edge_flag:
             self._renderer_program.update_uniform_about_split_edge()
@@ -461,3 +468,26 @@ class DeformAndDrawController:
     @property
     def show_real(self):
         return self._show_real
+
+    def set_need_comparison(self):
+        self._need_comparison = True
+
+    @staticmethod
+    def comparison_helper(vbo1: ACVBO, vbo2: ACVBO, info: str):
+        point_number = int(vbo1.capacity / 16)
+        acc = 0
+        max_e = -1
+        for i, j in zip(vbo1.get_value(ctypes.c_float, (point_number, 4)),
+                        vbo2.get_value(ctypes.c_float, (point_number, 4))):
+            diff = i - j
+            e = sqrt(reduce(lambda p, x: p + x, [e * e for e in diff[:3]], 0))
+            max_e = max(e, max_e)
+            acc += e
+        print('%s比较(平均/最大): %e / %e' % (info, acc / point_number, max_e))
+
+    def comparison(self):
+        if not self._need_comparison:
+            return
+        self._need_comparison = False
+        DeformAndDrawController.comparison_helper(self._vertex_vbo, self._real_position_vbo, '位置')
+        DeformAndDrawController.comparison_helper(self._normal_vbo, self._real_normal_vbo, '法向')

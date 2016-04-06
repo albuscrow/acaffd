@@ -268,14 +268,6 @@ void main() {
     for (int i = 0; i < 3; ++i) {
         temp_sharp_parameter[i].w = 0;
     }
-//    for (int i = 0; i < 3; ++i) {
-//        if (currentTriangle.adjacency_triangle_index3_original_triangle_index1[i] >= 0) {
-//            temp_sharp_parameter[i] = vec4(0);
-//            temp_sharp_parameter[i][i] = 1;
-//        } else {
-//            temp_sharp_parameter[i] = vec4(0.3333333, 0.3333333, 0.3333333, 0);
-//        }
-//    }
 
     if (adjust_control_point > 0) {
         //调整控制顶点
