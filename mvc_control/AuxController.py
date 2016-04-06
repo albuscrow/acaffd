@@ -35,11 +35,13 @@ class AuxController:
         self._control_point_position_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._b_spline_body_info_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)  # type: ACVBO
+        self._selected_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 1, None, GL_DYNAMIC_DRAW)
         self._vao_control_point = -1  # type: int
         self._normal_control_mode = False  # type: bool
         self._pick_region = None  # type: ACRect
         self._control_points_changed = True  # type: bool
         self._direct_control_point = []  # type:  list
+        self._intersect_point_parameter = None
 
         # init compute select point shader program
         self._select_point_program = ProgramWrap() \
@@ -172,7 +174,7 @@ class AuxController:
         self._normal_control_mode = v
         self._control_point_position_vbo.async_update(self.get_control_point_data())
 
-    def add_direct_control_point(self, intersect_point):
+    def add_direct_control_point(self, intersect_point,):
         if intersect_point is not None:
             self._direct_control_point = [np.append(intersect_point, 0)]
             self._control_point_position_vbo.async_update(self.get_control_point_data())
@@ -188,7 +190,7 @@ class AuxController:
 
     def move_direct_control_point(self, direction):
         direction /= 300
-        self._b_spline_body.move_dffd(self._direct_control_point[0], direction)
+        self._b_spline_body.move_dffd(self._intersect_point_parameter, direction)
         target_point = np.append(self._direct_control_point[0][:3] + direction, 1)
         if len(self._direct_control_point) <= 1:
             self._direct_control_point.append(target_point)
@@ -204,6 +206,9 @@ class AuxController:
     def gl_select_point_gpu(self):
         if not self._need_select_point:
             return
+
+        self._selected_counter_acbo.async_update(np.array([0], dtype=np.uint32))
+        self._selected_counter_acbo.gl_sync()
         start_point, direction, triangle_number = self._select_argument
         self._intersect_result_vbo.gl_sync()
         self._select_point_program.use()
@@ -211,16 +216,18 @@ class AuxController:
         glUniform3f(1, start_point[0], start_point[1], start_point[2])
         glUniform3f(2, direction[0], direction[1], direction[2])
         glDispatchCompute(*self.group_size)
-        res = self._intersect_result_vbo.get_value(ctypes.c_float, (triangle_number, 4))
+        selected_triangle_number = self._selected_counter_acbo.get_value(ctypes.c_uint32)[0]
+        print('selected_triangle_number', selected_triangle_number)
+        res = self._intersect_result_vbo.get_value(ctypes.c_float, (selected_triangle_number, 4))
         closet = [0, 0, 0, 9999999]
         for r in res:
-            if r[3] < 0:
-                continue
+            print(r[3])
             if r[3] < closet[3]:
                 closet = r
         self._need_select_point = False
-        if closet[3] > 0:
-            self.add_direct_control_point(np.array(closet[:3], dtype='f4'))
+        if closet[3] != 9999999 and closet[3] > 0:
+            self.add_direct_control_point(start_point + closet[3] * direction)
+            self._intersect_point_parameter = np.array(closet[:3], dtype='f4')
 
     def select_point_gpu(self, start_point, direction, triangle_number):
         self._need_select_point = True

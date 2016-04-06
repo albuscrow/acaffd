@@ -16,6 +16,7 @@ struct SamplePoint {
 struct SplitedTriangle {
     vec4 pn_position[3];
     vec4 pn_normal[3];
+    vec4 original_position[3];
     vec4 original_normal[3];
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original[3];
@@ -43,6 +44,11 @@ layout(std140, binding=1) uniform ControlPointForSample{
 //output
 layout(std430, binding=6) buffer TesselatedVertexBuffer{
     vec4[] tessellatedVertex;
+};
+
+//input
+layout(std430, binding=21) buffer TessellatedParameterInBSplineBody{
+    vec4[] tessellatedParameterInBSplineBody;
 };
 
 //output
@@ -79,6 +85,7 @@ layout(std430, binding=18) buffer NormalSplitedTriangle{
 layout(std430, binding=19) buffer PNTrianglePShareBuffer{
     vec3[] PNTriangleP_shared;
 };
+
 
 //output
 layout(std430, binding=10) buffer ParameterInOriginalBuffer{
@@ -211,6 +218,7 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter);
 
 void sampleFast(inout SamplePoint spi);
 vec3 sampleFastNormal(in SamplePoint spi);
+vec4 getParameterInBSplineBody(vec3 pointParameter);
 
 // 代表三个方向B spline body的区间数
 float BSplineBodyMinParameter[3];
@@ -347,6 +355,7 @@ void main() {
         parameterInOriginal3_triangle_quality1[point_offset][3] = currentTriangle.triangle_quality;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
+        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(pointParameter);
         // get background data
         vec3 temp = parameterInOriginal3_triangle_quality1[point_offset].xyz;
         SamplePoint sp;
@@ -617,3 +626,10 @@ vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_inde
     return result;
 }
 
+vec4 getParameterInBSplineBody(vec3 pointParameter) {
+    vec4 result = vec4(0);
+    for (int i = 0; i < 3; ++i) {
+        result += currentTriangle.original_position[i] * pointParameter[i];
+    }
+    return result;
+}

@@ -33,6 +33,7 @@ layout(std430, binding=19) buffer PNTrianglePShareBuffer{
 struct SplitedTriangle {
     vec4 pn_position[3];
     vec4 pn_normal[3];
+    vec4 original_position[3];
     vec4 original_normal[3];
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original[3];
@@ -118,6 +119,9 @@ vec3 getPNNormal(vec3 parameter);
 // 根据 parameter 获得普通插值法向
 vec3 getNormalOrg(vec3 parameter);
 
+// 根据 parameter 获得普通插值position
+vec3 getPositionOrg(vec3 parameter);
+
 // 根据 parameter 获得邻接PNTriangle中的法向
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_);
 
@@ -185,6 +189,7 @@ void main() {
             st.pn_position[i] = vec4(getPNPosition(st.parameter_in_original[i].xyz), 1);
             st.pn_normal[i].xyz = getPNNormal(st.parameter_in_original[i].xyz);
             st.original_normal[i].xyz = getNormalOrg(st.parameter_in_original[i].xyz);
+            st.original_position[i].xyz = getPositionOrg(st.parameter_in_original[i].xyz);
         }
 
         uint edgeInfo[3];
@@ -260,6 +265,14 @@ vec3 getPNNormal(vec3 parameter) {
         }
     }
     return normalize(result);
+}
+
+vec3 getPositionOrg(vec3 parameter) {
+    vec3 result = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result += point[i] * parameter[i];
+    }
+    return result;
 }
 
 vec3 getNormalOrg(vec3 parameter) {

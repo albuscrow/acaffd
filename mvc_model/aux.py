@@ -71,8 +71,6 @@ class BSplineBody:
                     step = min(i, order - 1)
                     result.append(result[-1] + step)
             else:
-                # k = length / ((1 + (control_point_number - 2) / 2) * (
-                #     control_point_number - 2) / 2 + control_point_number / 2)
                 result = [0]
                 for i in range(1, int(control_point_number / 2) + 1):
                     step = min(i, order - 1)
@@ -80,7 +78,6 @@ class BSplineBody:
                 for i in range(int(control_point_number / 2) - 1, 0, -1):
                     step = min(i, order - 1)
                     result.append(result[-1] + step)
-            # print(result)
             return [(x / result[-1] - 0.5) * length for x in result]
         else:
             raise Exception('control point number can not less than order')
@@ -110,14 +107,10 @@ class BSplineBody:
                            *self._order,
                            4), dtype=np.float32)
         for interval_index in product(*[range(x) for x in interval_number]):
-
             left_index = [x + y - 1 for x, y in zip(interval_index, self._order)]
-
             m = [get_aux_matrix_offset(order, cpn, li) for order, cpn, li in
                  zip(self._order, self._control_point_number, left_index)]
-
             control_point_base = [x - y + 1 for x, y in zip(left_index, self._order)]
-
             intermediate_results_1 = np.zeros((*self._order, 3))
             for w in range(self._order[2]):
                 control_points = self._ctrlPoints[control_point_base[0]:control_point_base[0] + self._order[0],
@@ -125,19 +118,16 @@ class BSplineBody:
                                  control_point_base[2] + w]
                 for i in range(3):
                     intermediate_results_1[..., w, i] = m[0].dot(control_points[..., i])
-
             intermediate_results_2 = np.zeros((*self._order, 3))
             for u in range(self._order[0]):
                 control_point = intermediate_results_1[u, ...]
                 for i in range(3):
                     intermediate_results_2[u, ..., i] = m[1].dot(control_point[..., i])
-
             for v in range(self._order[1]):
                 control_point = intermediate_results_2[:, v, ...]
                 for i in range(3):
                     result[interval_index[0], interval_index[1], interval_index[2], :, v, :, i] = \
                         control_point[..., i].dot(m[2].T)
-
         return result
 
     def get_control_point_number(self):
@@ -158,9 +148,10 @@ class BSplineBody:
         for ijk in product(*[range(x) for x in self._control_point_number]):
             Rs[ijk] = self.R(parameter, ijk)
             aux += Rs[ijk] ** 2
-        for i, j, k in product(*[range(x) for x in self._control_point_number]):
-            k_aux = displacement * Rs[i, j, k] / aux
-            self._ctrlPoints[i, j, k] += k_aux
+        if aux != 0:
+            for i, j, k in product(*[range(x) for x in self._control_point_number]):
+                k_aux = displacement * Rs[i, j, k] / aux
+                self._ctrlPoints[i, j, k] += k_aux
 
     def R(self, parameter, ijk):
         return reduce(lambda p, x: p * x, [self.B(knots, order, i, para) for knots, order, i, para in
@@ -173,7 +164,7 @@ class BSplineBody:
         for index in range(i, i + order):
             if knots[index] <= t < knots[index + 1]:
                 temp[index - i] = 1
-            elif t == knots[index + 1] == 1:
+            elif t == knots[index + 1] == knots[-1]:
                 temp[index - i] = 1
             else:
                 temp[index - i] = 0
@@ -230,17 +221,22 @@ from matplotlib.pylab import plot, show
 if __name__ == '__main__':
     knots = [0, 0, 0, 0, 1 / 3, 2 / 3, 1, 1, 1, 1]
     body = BSplineBody(2, 2, 2)
-    x = np.linspace(0, 1, 100)
-    y1 = [body.B(knots, 4, 0, i) for i in x]
-    y2 = [body.B(knots, 4, 1, i) for i in x]
-    y3 = [body.B(knots, 4, 2, i) for i in x]
-    y4 = [body.B(knots, 4, 3, i) for i in x]
-    y5 = [body.B(knots, 4, 4, i) for i in x]
-    y6 = [body.B(knots, 4, 5, i) for i in x]
+    x = np.linspace(-0.4481132075471698, 0.4481132075471698, 100)
+    knots = [-0.4481132075471698, -0.4481132075471698, -0.4481132075471698, -0.14937106918238996, 0.1493710691823899, 0.4481132075471698, 0.4481132075471698, 0.4481132075471698]
+    y1 = [body.B(knots, 3, 0, i) for i in x]
+    y2 = [body.B(knots, 3, 1, i) for i in x]
+    y3 = [body.B(knots, 3, 2, i) for i in x]
+    y4 = [body.B(knots, 3, 3, i) for i in x]
+    y5 = [body.B(knots, 3, 4, i) for i in x]
+    # y6 = [body.B(knots, 3, 5, i) for i in x]
     plot(x, y1)
     plot(x, y2)
     plot(x, y3)
     plot(x, y4)
     plot(x, y5)
-    plot(x, y6)
+    # plot(x, y6)
     show()
+    knots = [-0.4481132075471698, -0.4481132075471698, -0.4481132075471698, -0.14937106918238996, 0.1493710691823899, 0.4481132075471698, 0.4481132075471698, 0.4481132075471698]
+    order = 3
+    i = 4
+    t = -0.0521475225687

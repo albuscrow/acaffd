@@ -154,6 +154,13 @@ class Controller(QObject):
             if self._gl_proxy.direct_control_point_selected():
                 direction = np.mat([x2 - x1, y2 - y1, 0, 0], dtype='f4') * i
                 self._gl_proxy.move_direct_control_point(np.array(direction, dtype='f4').reshape(4,)[:3])
+
+                # start_point = np.mat([0, 0, 0, 1], dtype='f4') * i
+                # end_point_z = -4
+                # end_point_y = y2 / self.window_size.h * 2 - 1
+                # end_point_x = x2 / self.window_size.h * 2 - self.window_size.aspect
+                # end_point = np.mat([end_point_x, end_point_y, end_point_z, 1], dtype='f4') * i
+                # self._gl_proxy.set_select_point(start_point, end_point - start_point)
             else:
                 start_point = np.mat([0, 0, 0, 1], dtype='f4') * i
                 end_point_z = -4

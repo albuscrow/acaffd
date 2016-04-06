@@ -120,6 +120,7 @@ class DeformAndDrawController:
 
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._parameter_in_BSpline_body_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 21, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None,
@@ -191,6 +192,9 @@ class DeformAndDrawController:
         if self._vertex_vbo is not None:
             self._vertex_vbo.capacity = self.splited_triangle_number \
                                         * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        if self._parameter_in_BSpline_body_vbo is not None:
+            self._parameter_in_BSpline_body_vbo.capacity = self.splited_triangle_number \
+                                        * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
         if self._normal_vbo is not None:
             self._normal_vbo.capacity = self.splited_triangle_number \
                                         * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
@@ -226,6 +230,7 @@ class DeformAndDrawController:
 
     def gl_sync_buffer(self):
         self._vertex_vbo.gl_sync()
+        self._parameter_in_BSpline_body_vbo.gl_sync()
         self._normal_vbo.gl_sync()
         self._parameter_in_splited_triangle_vbo.gl_sync()
         self._parameter_in_original_vbo.gl_sync()
