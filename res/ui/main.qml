@@ -255,6 +255,21 @@ ApplicationWindow {
                             controller.set_show_real(checked)
                         }
                     }
+                    ExclusiveGroup { id: group }
+                    RadioButton {
+                        text: "ac"
+                        exclusiveGroup: group
+                        onClicked: {
+                            controller.change_algorithm(0)
+                        }
+                    }
+                    RadioButton {
+                        text: "cym"
+                        exclusiveGroup: group
+                        onClicked: {
+                            controller.change_algorithm(1)
+                        }
+                    }
 
                     Button {
                         text: "打印精度对比"

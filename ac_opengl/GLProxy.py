@@ -7,7 +7,7 @@ from mvc_control.DeformAndDrawController import DeformAndDrawController
 from mvc_model.GLObject import ACVBO
 from mvc_model.model import OBJ
 from OpenGL.GL import *
-import numpy as np
+from Constant import *
 import sys
 
 from mvc_model.plain_class import ACRect
@@ -21,10 +21,16 @@ else:
 class GLProxy:
     def __init__(self):
         self._aux_controller = None  # type: AuxController
-        self._previous_compute_controller = None  # type: PreviousComputeController
         self._deform_and_renderer_controller = None  # type: DeformAndDrawController
         self._debug_buffer = None  # type: ACVBO
         self._model = None  # type: OBJ
+        self._previous_compute_controller_CYM = None
+        self._previous_compute_controller_AC = None
+
+        if len(sys.argv) > 1 and sys.argv[1] == 'cpu':
+            self._algorithm = ALGORITHM_CYM
+        else:
+            self._algorithm = ALGORITHM_AC
 
     def change_model(self, model: OBJ):
         self._model = model
@@ -33,21 +39,21 @@ class GLProxy:
         else:
             self._aux_controller.change_size(model.get_length_xyz())
 
-        if self._previous_compute_controller is None:
-            if PreviousComputeController == PreviousComputeControllerCPU:
-                self._previous_compute_controller = PreviousComputeController(model,
-                                                                              self._aux_controller.b_spline_body)  # type: PreviousComputeController
-            else:
-                self._previous_compute_controller = PreviousComputeController(model)  # type: PreviousComputeController
+        if self.previous_compute_controller is None:
+            self._previous_compute_controller_AC = \
+                PreviousComputeControllerGPU(model)
+            self._previous_compute_controller_CYM = \
+                PreviousComputeControllerCPU(model, self._aux_controller.b_spline_body,
+                                             self._previous_compute_controller_AC)
         else:
-            self._previous_compute_controller.change_model(model)
-            self._previous_compute_controller.b_spline_body = self._aux_controller.b_spline_body
+            self.previous_compute_controller.change_model(model)
+            self.previous_compute_controller.b_spline_body = self._aux_controller.b_spline_body
 
         if self._deform_and_renderer_controller is not None:
             self._deform_and_renderer_controller.cage_size = self._aux_controller.get_cage_size()
 
     def draw(self, model_view_matrix, perspective_matrix):
-        number, need_deform = self._previous_compute_controller.gl_compute()
+        number, need_deform = self.previous_compute_controller.gl_compute()
         self._deform_and_renderer_controller.set_number_and_need_deform(number, need_deform)
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
                                                          self._aux_controller.gl_sync_buffer_for_deformation)
@@ -62,9 +68,9 @@ class GLProxy:
         self._debug_buffer.gl_sync()
 
         # init previous compute shader
-        self._previous_compute_controller.gl_init()
+        self.previous_compute_controller.gl_init()
 
-        self._previous_compute_controller.gl_compute()
+        self.previous_compute_controller.gl_compute()
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(
@@ -78,7 +84,7 @@ class GLProxy:
 
     def set_select_point(self, start_point, direction):
         self._aux_controller.select_point_gpu(start_point, direction,
-                                              self._previous_compute_controller.splited_triangle_number *
+                                              self.previous_compute_controller.splited_triangle_number *
                                               self._deform_and_renderer_controller.tessellated_triangle_number_pre_splited_triangle)
 
     def move_control_points(self, x, y, z):
@@ -92,12 +98,12 @@ class GLProxy:
     def change_control_point_number(self, u, v, w):
         self._aux_controller.change_control_point_number(u, v, w)
         self._deform_and_renderer_controller.cage_size = self._aux_controller.get_cage_size()
-        self._previous_compute_controller.need_compute = True
+        self.previous_compute_controller.need_compute = True
         self._deform_and_renderer_controller.need_deform = True
 
     def change_split_factor(self, factor):
-        if isinstance(self._previous_compute_controller, PreviousComputeControllerGPU):
-            self._previous_compute_controller.split_factor = factor
+        if self._algorithm == ALGORITHM_AC:
+            self.previous_compute_controller.split_factor = factor
 
     def set_control_point_visibility(self, v):
         self._aux_controller.is_normal_control_point_mode = v
@@ -146,3 +152,18 @@ class GLProxy:
 
     def set_need_comparison(self):
         self._deform_and_renderer_controller.set_need_comparison()
+
+    @property
+    def algorithm(self):
+        return self._algorithm
+
+    @algorithm.setter
+    def algorithm(self, algorithm):
+        self._algorithm = algorithm
+
+    @property
+    def previous_compute_controller(self):
+        if self._algorithm == ALGORITHM_AC:
+            return self._previous_compute_controller_AC
+        else:
+            return self._previous_compute_controller_CYM

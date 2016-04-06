@@ -192,3 +192,15 @@ class PreviousComputeControllerGPU:
     @property
     def splited_triangle_number(self):
         return self._splited_triangle_number
+
+    @property
+    def share_adjacency_pn_triangle_normal_ssbo(self):
+        return self._share_adjacency_pn_triangle_normal_ssbo
+
+    @property
+    def share_adjacency_pn_triangle_position_ssbo(self):
+        return self._share_adjacency_pn_triangle_position_ssbo
+
+    @property
+    def splited_triangle_ssbo(self):
+        return self._splited_triangle_ssbo

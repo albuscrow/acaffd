@@ -1,4 +1,6 @@
 import numpy as np
+
+from mvc_control.PreviousComputeControllerGPU import PreviousComputeControllerGPU
 from mvc_model.aux import BSplineBody
 from mvc_model.model import OBJ
 from mvc_model.GLObject import ACVBO
@@ -6,7 +8,7 @@ from OpenGL.GL import *
 
 
 class PreviousComputeControllerCPU:
-    def __init__(self, model: OBJ, b_spline_body: BSplineBody):
+    def __init__(self, model: OBJ, b_spline_body: BSplineBody, ac: PreviousComputeControllerGPU):
         self._model = model  # type: OBJ
 
         self._need_recompute = True  # type: bool
@@ -14,9 +16,9 @@ class PreviousComputeControllerCPU:
         self._splited_triangle_number = -1  # type: int
 
         # declare buffer
-        self._splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
-        self._share_adjacency_pn_triangle_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_DYNAMIC_COPY)
-        self._share_adjacency_pn_triangle_position_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 19, None, GL_DYNAMIC_COPY)
+        self._splited_triangle_ssbo = ac.splited_triangle_ssbo
+        self._share_adjacency_pn_triangle_normal_ssbo = ac.share_adjacency_pn_triangle_normal_ssbo
+        self._share_adjacency_pn_triangle_position_ssbo = ac.share_adjacency_pn_triangle_position_ssbo
 
         self._b_spline_body = b_spline_body
 

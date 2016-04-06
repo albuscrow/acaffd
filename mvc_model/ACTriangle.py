@@ -189,10 +189,18 @@ class ACPoly:
 
 class ACTriangle:
 
+    #vec4 pn_position[3];
+    #vec4 pn_normal[3];
+    #vec4 original_normal[3];
+    #vec4 adjacency_pn_normal_parameter[6];
+    #vec4 parameter_in_original[3];
+    #ivec4 adjacency_triangle_index3_original_triangle_index1;
+    #float triangle_quality;
+
     DATA_TYPE = [('pn_position', '4f4', 3),
                  ('pn_normal', '4f4', 3),
-                 ('original_position', '4f4', 3),
                  ('original_normal', '4f4', 3),
+                 ('original_position', '4f4', 3),
                  ('adjacency_pn_normal_parameter', '4f4', 6),
                  ('parameter_in_original', '4f4', 3),
                  ('adjacency_triangle_index3_original_triangle_index1', 'i4', 4),
@@ -213,6 +221,7 @@ class ACTriangle:
 
     def as_element_for_shader(self) -> list:
 
+        original_position = self.positionv4
         pn_position = [self.get_position_in_pn_triangle(x) for x in self._parameter]
         self.positionv4 = np.array(pn_position, dtype='f4')
 
@@ -264,7 +273,7 @@ class ACTriangle:
         data = []
         data.append(pn_position)
         data.append(pn_normal)
-        data.append(self.positionv4)
+        data.append(original_position)
         data.append(self.normalv4)
         data.append(pn_normal_parameter_adjacent)
         data.append(np.hstack((self.parameter, [[0], [0], [0]])))

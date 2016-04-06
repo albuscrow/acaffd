@@ -217,11 +217,9 @@ class AuxController:
         glUniform3f(2, direction[0], direction[1], direction[2])
         glDispatchCompute(*self.group_size)
         selected_triangle_number = self._selected_counter_acbo.get_value(ctypes.c_uint32)[0]
-        print('selected_triangle_number', selected_triangle_number)
         res = self._intersect_result_vbo.get_value(ctypes.c_float, (selected_triangle_number, 4))
         closet = [0, 0, 0, 9999999]
         for r in res:
-            print(r[3])
             if r[3] < closet[3]:
                 closet = r
         self._need_select_point = False
