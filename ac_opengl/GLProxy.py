@@ -68,7 +68,8 @@ class GLProxy:
         self._debug_buffer.gl_sync()
 
         # init previous compute shader
-        self.previous_compute_controller.gl_init()
+        self._previous_compute_controller_AC.gl_init()
+        self._previous_compute_controller_CYM.gl_init()
 
         self.previous_compute_controller.gl_compute()
 
@@ -160,6 +161,8 @@ class GLProxy:
     @algorithm.setter
     def algorithm(self, algorithm):
         self._algorithm = algorithm
+        self.previous_compute_controller.need_compute = True
+        self.previous_compute_controller.gl_async_update_buffer_about_output()
 
     @property
     def previous_compute_controller(self):

@@ -70,3 +70,6 @@ class PreviousComputeControllerCPU:
         self._share_adjacency_pn_triangle_normal_ssbo.async_update(pn_triangle_normal_control_point)
         self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()
         return number
+
+    def gl_async_update_buffer_about_output(self):
+        pass

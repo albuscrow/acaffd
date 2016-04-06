@@ -206,7 +206,6 @@ class AuxController:
     def gl_select_point_gpu(self):
         if not self._need_select_point:
             return
-
         self._selected_counter_acbo.async_update(np.array([0], dtype=np.uint32))
         self._selected_counter_acbo.gl_sync()
         start_point, direction, triangle_number = self._select_argument

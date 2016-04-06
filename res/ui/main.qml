@@ -255,6 +255,12 @@ ApplicationWindow {
                             controller.set_show_real(checked)
                         }
                     }
+                    Button {
+                        text: "打印精度对比"
+                        onClicked: {
+                            controller.set_need_comparison()
+                        }
+                    }
                     ExclusiveGroup { id: group }
                     RadioButton {
                         text: "ac"
@@ -271,12 +277,6 @@ ApplicationWindow {
                         }
                     }
 
-                    Button {
-                        text: "打印精度对比"
-                        onClicked: {
-                            controller.set_need_comparison()
-                        }
-                    }
                 }
             }
         }
