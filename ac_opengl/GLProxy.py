@@ -170,3 +170,10 @@ class GLProxy:
             return self._previous_compute_controller_AC
         else:
             return self._previous_compute_controller_CYM
+
+    def control_points(self):
+        return self._aux_controller.get_normal_control_point_data()
+
+    def set_control_points(self, control_points):
+        self._aux_controller.set_control_points(control_points)
+        self._deform_and_renderer_controller.need_deform = True

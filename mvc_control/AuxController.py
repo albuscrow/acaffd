@@ -144,6 +144,9 @@ class AuxController:
         else:
             return np.array(self._direct_control_point, dtype='f4')
 
+    def get_normal_control_point_data(self):
+        return self._b_spline_body.normal_control_points
+
     def get_control_point_number(self):
         if self._normal_control_mode:
             return self._b_spline_body.get_control_point_number()
@@ -235,3 +238,9 @@ class AuxController:
     @property
     def group_size(self):
         return [int(self._select_argument[2] / 512 + 1), 1, 1]
+
+    def set_control_points(self, control_points):
+        self._b_spline_body.change_control_points(control_points)
+        self._control_point_position_vbo.async_update(self.get_control_point_data())
+        self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
+        self._control_points_changed = True

@@ -54,6 +54,10 @@ class BSplineBody:
         return np.array([np.append(x, y) for x, y in
                          zip(self._ctrlPoints.reshape((self.get_control_point_number(), 3)), self._is_hit)], dtype='f4')
 
+    @property
+    def normal_control_points(self):
+        return self._ctrlPoints
+
     @staticmethod
     def get_control_point_aux_list(length, control_point_number, order):
         if control_point_number == order:
@@ -210,6 +214,10 @@ class BSplineBody:
     def save_control_point_position(self):
         self._control_points_backup = self._ctrlPoints.copy()
 
+    def change_control_points(self, control_points):
+        self._ctrlPoints = control_points
+        self._control_points_backup = self._ctrlPoints.copy()
+
 
 def aux_multiply(value, v, result):
     result[0] += value * v[0]
@@ -223,7 +231,8 @@ if __name__ == '__main__':
     knots = [0, 0, 0, 0, 1 / 3, 2 / 3, 1, 1, 1, 1]
     body = BSplineBody(2, 2, 2)
     x = np.linspace(-0.4481132075471698, 0.4481132075471698, 100)
-    knots = [-0.4481132075471698, -0.4481132075471698, -0.4481132075471698, -0.14937106918238996, 0.1493710691823899, 0.4481132075471698, 0.4481132075471698, 0.4481132075471698]
+    knots = [-0.4481132075471698, -0.4481132075471698, -0.4481132075471698, -0.14937106918238996, 0.1493710691823899,
+             0.4481132075471698, 0.4481132075471698, 0.4481132075471698]
     y1 = [body.B(knots, 3, 0, i) for i in x]
     y2 = [body.B(knots, 3, 1, i) for i in x]
     y3 = [body.B(knots, 3, 2, i) for i in x]
@@ -237,7 +246,8 @@ if __name__ == '__main__':
     plot(x, y5)
     # plot(x, y6)
     show()
-    knots = [-0.4481132075471698, -0.4481132075471698, -0.4481132075471698, -0.14937106918238996, 0.1493710691823899, 0.4481132075471698, 0.4481132075471698, 0.4481132075471698]
+    knots = [-0.4481132075471698, -0.4481132075471698, -0.4481132075471698, -0.14937106918238996, 0.1493710691823899,
+             0.4481132075471698, 0.4481132075471698, 0.4481132075471698]
     order = 3
     i = 4
     t = -0.0521475225687

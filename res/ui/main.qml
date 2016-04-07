@@ -7,17 +7,26 @@ import FFD 1.0
 ApplicationWindow {
     visible: true
 
-
     FileDialog {
-        id: fileDialog
-        title: "Please choose a file"
+        id: openFileDialog
         folder: "/home/ac/code/python/affd/res/3d_model"
+        title: "Please choose a obj file"
         nameFilters: [ "Model files (*.obj)", "All files (*)" ]
-        visible: false
         onAccepted: {
-            controller.load_file(fileDialog.fileUrls)
+                controller.load_file(fileUrls)
         }
     }
+
+    FileDialog {
+        id: openControlPointFileDialog
+        folder: "/home/ac/code/python/affd/res/3d_model"
+        title: "Please choose a npy file"
+        nameFilters: [ "Model files (*.npy)", "All files (*)" ]
+        onAccepted: {
+                controller.load_control_points(fileUrls)
+        }
+    }
+
 
     menuBar: MenuBar {
         Menu {
@@ -25,7 +34,23 @@ ApplicationWindow {
 
             MenuItem {
                 text: qsTr("Open file...")
-                onTriggered: fileDialog.open()
+                onTriggered: {
+                    openFileDialog.open()
+                }
+            }
+
+            MenuItem {
+                text: qsTr("Save Ctrl Points...")
+                onTriggered: {
+                    controller.save_ctrl_points()
+                }
+            }
+
+            MenuItem {
+                text: qsTr("Load Ctrl Points...")
+                onTriggered: {
+                    openControlPointFileDialog.open()
+                }
             }
 
             MenuItem {

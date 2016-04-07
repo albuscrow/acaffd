@@ -64,7 +64,4 @@ void main() {
     pf = pow(nDotHV, 10);
     vec3 temp_color = vec3(diffuse * 0.7 + diffuse2 * 0.5 + pf * 0.7);
     color = vec4(temp_color, 1);
-
-
-
 }

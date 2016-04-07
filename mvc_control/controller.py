@@ -1,3 +1,5 @@
+from PyQt5.QtWidgets import QFileDialog
+
 from mvc_model.model import OBJ, ModelFileFormatType
 from math import *
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
@@ -8,6 +10,8 @@ from pyrr.euler import *
 from ac_opengl.GLProxy import GLProxy
 from mvc_model.plain_class import ACRect
 import numpy as np
+from os.path import isfile, exists
+import os
 
 __author__ = 'ac'
 
@@ -17,9 +21,11 @@ class Controller(QObject):
 
     def __init__(self):
         super().__init__()
+        self._context = None
         self._gl_proxy = GLProxy()  # type: GLProxy
 
         # todo test code
+        self._loaded_file_path = None  # type: str
         self.load_file(get_test_file_name())
 
         # default show b spline control points
@@ -58,12 +64,43 @@ class Controller(QObject):
         self._gl_proxy.change_split_factor(level)
         self.updateScene.emit()
 
-    @pyqtSlot(str)
-    def load_file(self, file_path):
+
+    @staticmethod
+    def check_file_path(file_path):
         if file_path.startswith('file://'):
             file_path = file_path[len('file://'):]
-        raw_obj = OBJ(file_path, ModelFileFormatType.obj)
+        if not isfile(file_path):
+            print('文件名错误!')
+            return None
+        else:
+            return file_path
+
+    @pyqtSlot(str)
+    def load_file(self, file_path):
+        self._loaded_file_path = self.check_file_path(file_path)
+        if self._loaded_file_path is None:
+            return
+        raw_obj = OBJ(self._loaded_file_path, ModelFileFormatType.obj)
         self._gl_proxy.change_model(raw_obj)
+
+    @pyqtSlot()
+    def save_ctrl_points(self):
+        dir = self._loaded_file_path[:self._loaded_file_path.rfind('.')]
+        if not exists(dir):
+            os.mkdir(dir)
+        no = len(os.listdir(dir))
+        file_name = '%s/%s_control_points%d' % (dir, self._loaded_file_path[self._loaded_file_path.rfind('/') + 1:self._loaded_file_path.rfind('.')], no)
+        points = self._gl_proxy.control_points()
+        np.save(file_name, points)
+
+    @pyqtSlot(str)
+    def load_control_points(self, file_path):
+        file_path = self.check_file_path(file_path)
+        if file_path is None:
+            return
+        load = np.load(file_path)
+        self._gl_proxy.set_control_points(load)
+        self.updateScene.emit()
 
     @pyqtSlot(int, int)
     def rotate(self, x, y):
@@ -153,7 +190,7 @@ class Controller(QObject):
             i = np.mat(self._model_view_matrix).I
             if self._gl_proxy.direct_control_point_selected():
                 direction = np.mat([x2 - x1, y2 - y1, 0, 0], dtype='f4') * i
-                self._gl_proxy.move_direct_control_point(np.array(direction, dtype='f4').reshape(4,)[:3])
+                self._gl_proxy.move_direct_control_point(np.array(direction, dtype='f4').reshape(4, )[:3])
 
                 # start_point = np.mat([0, 0, 0, 1], dtype='f4') * i
                 # end_point_z = -4
@@ -232,6 +269,14 @@ class Controller(QObject):
             self.gl_init()
             self._inited = True
         self.gl_on_frame_draw()
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, c):
+        self._context = c
 
 
 def get_test_file_name():
