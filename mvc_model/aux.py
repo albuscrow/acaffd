@@ -89,6 +89,7 @@ class BSplineBody:
                 v = i % (self._control_point_number[1] * self._control_point_number[2]) // self._control_point_number[2]
                 w = i % self._control_point_number[2]
                 self._ctrlPoints[u, v, w] += xyz
+        self._control_points_backup = self._ctrlPoints.copy()
 
     @property
     def min_parameter(self):
