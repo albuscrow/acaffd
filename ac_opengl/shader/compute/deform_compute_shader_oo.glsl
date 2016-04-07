@@ -341,7 +341,6 @@ void main() {
         }
     }
 
-
     // 细分
     // 生成顶点数据
     for (int i = 0; i < tessellatedParameterLength; ++i) {
@@ -493,19 +492,19 @@ vec3 sampleFastNormal(in SamplePoint samplePoint) {
     float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
     float J_bar_star_T_1 = fw.y * fu.z - fu.y * fw.z;
     float J_bar_star_T_2 = fu.y * fv.z - fv.y * fu.z;
-    result.x = n.x * J_bar_star_T_0 * BSplineBodyLength[0] + n.y * J_bar_star_T_1 * BSplineBodyLength[1] + n.z * J_bar_star_T_2 * BSplineBodyLength[2];
+    result.x = n.x * J_bar_star_T_0 * BSplineBodyStep[0] + n.y * J_bar_star_T_1 * BSplineBodyStep[1] + n.z * J_bar_star_T_2 * BSplineBodyStep[2];
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第二行三个元素
     J_bar_star_T_0 = fv.z * fw.x - fw.z * fv.x;
     J_bar_star_T_1 = fw.z * fu.x - fu.z * fw.x;
     J_bar_star_T_2 = fu.z * fv.x - fv.z * fu.x;
-    result.y = n.x * J_bar_star_T_0 * BSplineBodyLength[0] + n.y * J_bar_star_T_1 * BSplineBodyLength[1] + n.z * J_bar_star_T_2 * BSplineBodyLength[2];
+    result.y = n.x * J_bar_star_T_0 * BSplineBodyStep[0] + n.y * J_bar_star_T_1 * BSplineBodyStep[1] + n.z * J_bar_star_T_2 * BSplineBodyStep[2];
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第三行三个元素
     J_bar_star_T_0 = fv.x * fw.y - fw.x * fv.y;
     J_bar_star_T_1 = fw.x * fu.y - fu.x * fw.y;
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
-    result.z = n.x * J_bar_star_T_0 * BSplineBodyLength[0] + n.y * J_bar_star_T_1 * BSplineBodyLength[1] + n.z * J_bar_star_T_2 * BSplineBodyLength[2];
+    result.z = n.x * J_bar_star_T_0 * BSplineBodyStep[0] + n.y * J_bar_star_T_1 * BSplineBodyStep[1] + n.z * J_bar_star_T_2 * BSplineBodyStep[2];
     return normalize(result);
 }
 
@@ -536,19 +535,19 @@ void sampleFast(inout SamplePoint samplePoint) {
     float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
     float J_bar_star_T_1 = fw.y * fu.z - fu.y * fw.z;
     float J_bar_star_T_2 = fu.y * fv.z - fv.y * fu.z;
-    result.x = n.x * J_bar_star_T_0 * BSplineBodyLength[0] + n.y * J_bar_star_T_1 * BSplineBodyLength[1] + n.z * J_bar_star_T_2 * BSplineBodyLength[2];
+    result.x = n.x * J_bar_star_T_0 * BSplineBodyStep[0] + n.y * J_bar_star_T_1 * BSplineBodyStep[1] + n.z * J_bar_star_T_2 * BSplineBodyStep[2];
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第二行三个元素
     J_bar_star_T_0 = fv.z * fw.x - fw.z * fv.x;
     J_bar_star_T_1 = fw.z * fu.x - fu.z * fw.x;
     J_bar_star_T_2 = fu.z * fv.x - fv.z * fu.x;
-    result.y = n.x * J_bar_star_T_0 * BSplineBodyLength[0] + n.y * J_bar_star_T_1 * BSplineBodyLength[1] + n.z * J_bar_star_T_2 * BSplineBodyLength[2];
+    result.y = n.x * J_bar_star_T_0 * BSplineBodyStep[0] + n.y * J_bar_star_T_1 * BSplineBodyStep[1] + n.z * J_bar_star_T_2 * BSplineBodyStep[2];
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第三行三个元素
     J_bar_star_T_0 = fv.x * fw.y - fw.x * fv.y;
     J_bar_star_T_1 = fw.x * fu.y - fu.x * fw.y;
     J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
-    result.z = n.x * J_bar_star_T_0 * BSplineBodyLength[0] + n.y * J_bar_star_T_1 * BSplineBodyLength[1] + n.z * J_bar_star_T_2 * BSplineBodyLength[2];
+    result.z = n.x * J_bar_star_T_0 * BSplineBodyStep[0] + n.y * J_bar_star_T_1 * BSplineBodyStep[1] + n.z * J_bar_star_T_2 * BSplineBodyStep[2];
     samplePoint.normal = normalize(result);
 }
 
