@@ -1,5 +1,3 @@
-from PyQt5.QtWidgets import QFileDialog
-
 from mvc_model.model import OBJ, ModelFileFormatType
 from math import *
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
@@ -64,7 +62,6 @@ class Controller(QObject):
         self._gl_proxy.change_split_factor(level)
         self.updateScene.emit()
 
-
     @staticmethod
     def check_file_path(file_path):
         if file_path.startswith('file://'):
@@ -85,11 +82,21 @@ class Controller(QObject):
 
     @pyqtSlot()
     def save_ctrl_points(self):
-        dir = self._loaded_file_path[:self._loaded_file_path.rfind('.')]
+        dir = self._loaded_file_path[:self._loaded_file_path.rfind('.')] + '_' + self._gl_proxy.get_parameter_str()
         if not exists(dir):
             os.mkdir(dir)
-        no = len(os.listdir(dir))
-        file_name = '%s/%s_control_points%d' % (dir, self._loaded_file_path[self._loaded_file_path.rfind('/') + 1:self._loaded_file_path.rfind('.')], no)
+        files = os.listdir(dir)
+        file_name_prefix = self._loaded_file_path[
+                           self._loaded_file_path.rfind('/') + 1:self._loaded_file_path.rfind('.')]
+        no = 0
+        for f in files:
+            if f.startswith(file_name_prefix):
+                no += 1
+        file_name = '%s/%s_control_points%d' \
+                    % (dir,
+                       file_name_prefix,
+                       no)
+        print(file_name)
         points = self._gl_proxy.control_points()
         np.save(file_name, points)
 

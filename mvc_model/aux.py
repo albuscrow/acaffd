@@ -218,6 +218,10 @@ class BSplineBody:
         self._ctrlPoints = control_points
         self._control_points_backup = self._ctrlPoints.copy()
 
+    @property
+    def control_point_number(self):
+        return self._control_point_number
+
 
 def aux_multiply(value, v, result):
     result[0] += value * v[0]

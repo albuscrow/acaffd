@@ -177,3 +177,8 @@ class GLProxy:
     def set_control_points(self, control_points):
         self._aux_controller.set_control_points(control_points)
         self._deform_and_renderer_controller.need_deform = True
+
+    def get_parameter_str(self):
+        return '%s_%.3f_%d' % (self.aux_controller.get_control_point_str(),
+                               self._previous_compute_controller_AC.split_factor,
+                               self._deform_and_renderer_controller.tessellation_level)
