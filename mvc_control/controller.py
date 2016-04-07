@@ -10,6 +10,8 @@ from mvc_model.plain_class import ACRect
 import numpy as np
 from os.path import isfile, exists
 import os
+from threading import Thread
+from time import sleep
 
 __author__ = 'ac'
 
@@ -47,6 +49,9 @@ class Controller(QObject):
 
         self._inited = False  # type: bool
 
+        self.factors = np.arange(0.05, 3 * 0.5, 0.01, dtype='f4')
+        self.indice = 0
+
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
         self._gl_proxy.move_control_points(x, y, z)
@@ -60,7 +65,7 @@ class Controller(QObject):
     @pyqtSlot(float)
     def change_split_factor(self, level):
         self._gl_proxy.change_split_factor(level)
-        self.updateScene.emit()
+        # self.updateScene.emit()
 
     @staticmethod
     def check_file_path(file_path):
@@ -256,17 +261,28 @@ class Controller(QObject):
     def gl_init(self) -> None:
         glClearColor(1, 1, 1, 1)
         self._gl_proxy.gl_init_global()
+        # self.run_splited_factor_test(0.01, 0.02)
+        # print('debug')
 
+    #             self.outer = outer
+    #
+    #         def run(self):
+    #             for f in self.factors:
+    #                 sleep(3)
+    #                 print('current splited factor:', f)
     def gl_on_frame_draw(self) -> None:
         glEnable(GL_SCISSOR_TEST)
         glScissor(*self.window_size.xywh)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        # todo 这句理论上应该在gl_on_view_port_change调用，但是会有问题
         glViewport(*self.window_size.xywh)
 
         if self._gl_proxy:
             self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
+            if self.indice < len(self.factors):
+                self.change_split_factor(self.factors[self.indice])
+                self.set_need_comparison()
+                self.indice += 1
 
         glDisable(GL_SCISSOR_TEST)
 
@@ -284,6 +300,26 @@ class Controller(QObject):
     @context.setter
     def context(self, c):
         self._context = c
+
+        # def run_splited_factor_test(self, start, end):
+        #     class ac_test(Thread):
+        #         def __init__(self, outer):
+        #             super().__init__()
+        #             self.factors = np.arange(start, end, 0.01)
+        #             self.outer = outer
+        #
+        #         def run(self):
+        #             for f in self.factors:
+        #                 sleep(3)
+        #                 print('current splited factor:', f)
+        #                 self.outer.change_split_factor(f)
+        #                 self.outer.set_need_comparison()
+        #
+        #         def stop(self):
+        #             self.isrunning = False
+        #
+        #     t = ac_test(self)
+        #     t.start()
 
 
 def get_test_file_name():

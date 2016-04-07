@@ -266,7 +266,6 @@ class DeformAndDrawController:
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
         self.gl_sync_buffer()
         self.gl_deform(operator)
-        self.comparison()
         self._renderer_program.use()
         if self._need_update_show_splited_edge_flag:
             self._renderer_program.update_uniform_about_split_edge()
@@ -287,6 +286,7 @@ class DeformAndDrawController:
         if self._need_update_show_real_flag:
             self._renderer_program.update_uniform_about_real()
             self._need_update_show_real_flag = False
+
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
@@ -322,6 +322,9 @@ class DeformAndDrawController:
 
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
+        if self._vertex_vbo.capacity == 0:
+            return
+        self.comparison()
 
     @property
     def splited_triangle_number(self):

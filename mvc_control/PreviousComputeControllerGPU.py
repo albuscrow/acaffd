@@ -133,7 +133,6 @@ class PreviousComputeControllerGPU:
         glUseProgram(0)
         self._splited_triangle_number = self.get_splited_triangles_number()
         self._need_recompute = False
-        print('splited triangle number: %d' % self._splited_triangle_number)
         return self._splited_triangle_number, True
 
     @property
