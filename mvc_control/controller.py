@@ -302,9 +302,9 @@ def get_test_file_name():
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
+    # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
-    # file_path = "res/3d_model/snail.obj"
+    file_path = "res/3d_model/snail.obj"
     return file_path
