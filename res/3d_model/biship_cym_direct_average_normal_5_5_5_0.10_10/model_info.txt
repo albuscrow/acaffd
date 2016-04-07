@@ -1,0 +1,2 @@
+original triangle number: 432
+splited triangle number: 1936

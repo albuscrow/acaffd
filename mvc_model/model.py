@@ -57,14 +57,17 @@ class OBJ:
                     elif first_token == 'f':
                         f_store.add(' '.join(tokens))
                     elif first_token == 'vp':
-                        logging.warning("this feature(vp) in wavefront .obj is not implement, ignore")
+                        pass
+                        # logging.warning("this feature(vp) in wavefront .obj is not implement, ignore")
                         # raise Exception()
                     elif first_token in ('usemtl', 'usemat'):
-                        logging.warning("this feature(usemtl, usemat) in wavefront .obj is not implement, ignore")
+                        pass
+                        # logging.warning("this feature(usemtl, usemat) in wavefront .obj is not implement, ignore")
                         # raise Exception()
                         # material = tokens[0]
                     elif first_token == 'mtllib':
-                        logging.warning("this feature(mtllib) in wavefront .obj is not implement, ignore")
+                        pass
+                        # logging.warning("this feature(mtllib) in wavefront .obj is not implement, ignore")
                         # raise Exception()
                         # self.mtl = self.Material(tokens[0])
                 for l in f_store:
@@ -117,6 +120,7 @@ class OBJ:
         self.original_normal_number = len(self._normal)
         self._triangles = None  # type: list[ACTriangle]
         self.reorganize()
+        print('original triangle number: %d' % self.original_triangle_number)
 
     def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
         # 纪录该三角形的三个顶点
