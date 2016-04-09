@@ -78,7 +78,8 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, cage_size: list):
+    def __init__(self, cage_size: list, controller=None):
+        self._controller = controller
         self._splited_triangle_number = -1
         self._cage_size = cage_size  # type: list
 
@@ -286,7 +287,6 @@ class DeformAndDrawController:
         if self._need_update_show_real_flag:
             self._renderer_program.update_uniform_about_real()
             self._need_update_show_real_flag = False
-
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
@@ -503,15 +503,17 @@ class DeformAndDrawController:
             acc += ((e - average) ** 2)
         standard_deviation = (acc / point_number) ** 0.5
         print('%s比较(平均/最大/标准差): %e / %e / %e' % (info, average, max_e, standard_deviation))
+        return average, max_e, standard_deviation
 
     def comparison(self):
         if not self._need_comparison:
             return
         self._need_comparison = False
 
-        DeformAndDrawController.comparison_helper(self._vertex_vbo, self._real_position_vbo, '位置',
-                                                  lambda i, j: sqrt(
-                                                      reduce(lambda p, x: p + x, [e * e for e in (i - j)[:3]], 0)))
+        dr1 = DeformAndDrawController.comparison_helper(self._vertex_vbo, self._real_position_vbo, '位置',
+                                                        lambda i, j: sqrt(
+                                                            reduce(lambda p, x: p + x, [e * e for e in (i - j)[:3]],
+                                                                   0)))
 
         def fun(i, j):
             cos_value = np.dot(i[:3], j[:3])
@@ -521,4 +523,5 @@ class DeformAndDrawController:
                 cos_value = -1
             return acos(cos_value) / pi * 180
 
-        DeformAndDrawController.comparison_helper(self._normal_vbo, self._real_normal_vbo, '法向', fun)
+        dr2 = DeformAndDrawController.comparison_helper(self._normal_vbo, self._real_normal_vbo, '法向', fun)
+        self._controller.add_diff_result((dr1, dr2))

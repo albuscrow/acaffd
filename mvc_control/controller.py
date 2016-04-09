@@ -10,6 +10,7 @@ from mvc_model.plain_class import ACRect
 import numpy as np
 from os.path import isfile, exists
 import os
+from matplotlib.pylab import plot, show
 from threading import Thread
 from time import sleep
 
@@ -22,7 +23,7 @@ class Controller(QObject):
     def __init__(self):
         super().__init__()
         self._context = None
-        self._gl_proxy = GLProxy()  # type: GLProxy
+        self._gl_proxy = GLProxy(self)  # type: GLProxy
 
         # todo test code
         self._loaded_file_path = None  # type: str
@@ -49,8 +50,23 @@ class Controller(QObject):
 
         self._inited = False  # type: bool
 
-        self.factors = np.arange(0.05, 3 * 0.5, 0.01, dtype='f4')
+        self.factors = np.arange(0.05, 12 * 0.5, 0.05, dtype='f4')
         self.indice = 0
+        self.diff_result = []
+        self._test = False
+
+    def add_diff_result(self, r):
+        self.diff_result.append(r)
+
+    def show_diff_result(self):
+        # plot(self.factors, [x[0][0] for x in self.diff_result])
+        print(self.factors)
+        print([x[0][0] for x in self.diff_result])
+        # for f, (x, y) in zip(self.factors, self.diff_result):
+            # print('factors', f)
+            # print(x)
+            # print(y)
+            # plot(f, y[0])
 
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
@@ -279,10 +295,14 @@ class Controller(QObject):
 
         if self._gl_proxy:
             self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
-            if self.indice < len(self.factors):
-                self.change_split_factor(self.factors[self.indice])
-                self.set_need_comparison()
-                self.indice += 1
+            if self._test:
+                if self.indice < len(self.factors):
+                    self.change_split_factor(self.factors[self.indice])
+                    self.set_need_comparison()
+                    self.indice += 1
+                else:
+                    self.show_diff_result()
+                    self._test = False
 
         glDisable(GL_SCISSOR_TEST)
 
@@ -292,6 +312,10 @@ class Controller(QObject):
             self.gl_init()
             self._inited = True
         self.gl_on_frame_draw()
+
+    @pyqtSlot()
+    def begin_test(self):
+        self._test = True
 
     @property
     def context(self):
@@ -324,7 +348,7 @@ class Controller(QObject):
 
 def get_test_file_name():
     # todo
-    # file_path = "res/3d_model/Mobile.obj"
+    file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
@@ -338,7 +362,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
+    # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"

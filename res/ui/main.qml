@@ -286,6 +286,14 @@ ApplicationWindow {
                             controller.set_need_comparison()
                         }
                     }
+
+                    Button {
+                        text: "begin test"
+                        onClicked: {
+                            controller.begin_test()
+                        }
+                    }
+
                     ExclusiveGroup { id: group }
                     RadioButton {
                         text: "ac"
