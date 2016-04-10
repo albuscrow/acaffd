@@ -280,7 +280,7 @@ vec3 getNormalOrg(vec3 parameter) {
     for (int i = 0; i < 3; ++i) {
         result += normal[i] * parameter[i];
     }
-    return normalize(result);
+    return result;
 }
 
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {

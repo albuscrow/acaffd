@@ -23,5 +23,5 @@ scene = engine.rootObjects()[0].findChild(FFDScene, 'scene')
 controller = scene.controller  # type: Controller
 engine.rootContext().setContextProperty('controller', controller)
 
-print('main thread:', threading.current_thread().ident)
+# print('main thread:', threading.current_thread().ident)
 app.exec()

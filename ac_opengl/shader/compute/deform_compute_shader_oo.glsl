@@ -25,7 +25,7 @@ struct SplitedTriangle {
 };
 
 //input
-coherent layout(std430, binding=4) buffer PNTriangleNShareBuffer{
+layout(std430, binding=4) buffer PNTriangleNShareBuffer{
     vec3[] PNTriangleN_shared;
 };
 
@@ -210,6 +210,7 @@ vec3 bezierNormalControlPoint[10];
 vec4 getPosition(vec3 parameter);
 vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
 vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
+vec3 getNormalInOriginal(vec3 parameter);
 vec4 getNormal(vec3 parameter);
 vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter);
 
@@ -237,7 +238,6 @@ void main() {
         BSplineBodyMinParameter[i] = -BSplineBodyLength[i] / 2;
         BSplineBodyStep[i] = BSplineBodyLength[i] / BSplineBodyIntervalNumber[i];
     }
-
 
     currentTriangle = input_triangles[triangleIndex];
     // 计算采样点
@@ -359,7 +359,8 @@ void main() {
         vec3 temp = parameterInOriginal3_triangle_quality1[point_offset].xyz;
         SamplePoint sp;
         sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
-        sp.normal = getNormalInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
+        sp.normal = getNormalInOriginal(pointParameter);
+//        sp.normal = getNormalInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
         getSamplePointHelper(sp);
         sampleFast(sp);
         realPosition[point_offset] = vec4(sp.position, 1);
@@ -578,6 +579,15 @@ SamplePoint getSamplePoint(vec3 position[3], vec3 normal[3], vec3 parameter) {
     return result;
 }
 
+vec3 getNormalInOriginal(vec3 parameter) {
+    vec3 normal = vec3(0);
+    for (uint i = 0; i < 3; ++i) {
+        normal += (currentTriangle.original_normal[i] * parameter[i]).xyz;
+    }
+
+    return normalize(normal);
+}
+
 SamplePoint getSamplePointBeforeSample(vec3 parameter) {
     SamplePoint result;
     result.position = vec3(0);
@@ -587,8 +597,9 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
 
     result.normal = vec3(0);
     for (int i = 0; i < 3; ++i) {
-        result.normal += (currentTriangle.original_normal[i] * parameter[i]).xyz;
+        result.normal += (normalize(currentTriangle.original_normal[i].xyz) * parameter[i]);
     }
+    normalize(result.normal);
     getSamplePointHelper(result);
 
     return result;
