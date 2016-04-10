@@ -298,6 +298,7 @@ ApplicationWindow {
                     RadioButton {
                         text: "ac"
                         exclusiveGroup: group
+                        checked: true
                         onClicked: {
                             controller.change_algorithm(0)
                         }

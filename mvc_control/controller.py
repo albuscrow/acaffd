@@ -9,10 +9,8 @@ from ac_opengl.GLProxy import GLProxy
 from mvc_model.plain_class import ACRect
 import numpy as np
 from os.path import isfile, exists
+from Constant import ALGORITHM_AC, ALGORITHM_CYM
 import os
-from matplotlib.pylab import plot, show
-from threading import Thread
-from time import sleep
 
 __author__ = 'ac'
 
@@ -55,18 +53,15 @@ class Controller(QObject):
         self.diff_result = []
         self._test = False
 
+        self.gl_task = None
+
     def add_diff_result(self, r):
         self.diff_result.append(r)
 
     def show_diff_result(self):
-        # plot(self.factors, [x[0][0] for x in self.diff_result])
+        print('show_diff_result:')
         print(self.factors)
         print([x[0][0] for x in self.diff_result])
-        # for f, (x, y) in zip(self.factors, self.diff_result):
-            # print('factors', f)
-            # print(x)
-            # print(y)
-            # plot(f, y[0])
 
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
@@ -88,7 +83,7 @@ class Controller(QObject):
         if file_path.startswith('file://'):
             file_path = file_path[len('file://'):]
         if not isfile(file_path):
-            print('文件名错误!')
+            print('check_file_path:', '文件名错误!')
             return None
         else:
             return file_path
@@ -117,7 +112,6 @@ class Controller(QObject):
                     % (dir,
                        file_name_prefix,
                        no)
-        print(file_name)
         points = self._gl_proxy.control_points()
         np.save(file_name, points)
 
@@ -204,7 +198,29 @@ class Controller(QObject):
 
     @pyqtSlot()
     def set_need_comparison(self):
+        self.diff_result.clear()
+        is_ac = True
+        if self._gl_proxy.algorithm != ALGORITHM_AC:
+            self._gl_proxy.algorithm = ALGORITHM_AC
+            is_ac = False
         self._gl_proxy.set_need_comparison()
+
+        def gl_task1():
+            self._gl_proxy.algorithm = ALGORITHM_CYM
+            self._gl_proxy.set_need_comparison()
+
+            def gl_task2():
+                if is_ac:
+                    self._gl_proxy.algorithm = ALGORITHM_AC
+                self.gl_task = None
+                for ac, cym, label in zip(*self.diff_result, ['位置', '法向']):
+                    print(label + '比对: 平均/最大/标准差')
+                    print('ac %e / %e / %e' % (ac[0], ac[1], ac[2]))
+                    print('cym %e / %e / %e' % (cym[0], cym[1], cym[2]))
+
+            self.gl_task = gl_task2
+
+        self.gl_task = gl_task1
 
     @pyqtSlot(int, int, int, int)
     def left_move(self, x1: int, y1: int, x2: int, y2: int):
@@ -295,6 +311,8 @@ class Controller(QObject):
 
         if self._gl_proxy:
             self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
+            if self.gl_task:
+                self.gl_task()
             if self._test:
                 if self.indice < len(self.factors):
                     self.change_split_factor(self.factors[self.indice])
@@ -348,7 +366,7 @@ class Controller(QObject):
 
 def get_test_file_name():
     # todo
-    file_path = "res/3d_model/Mobile.obj"
+    # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
@@ -361,7 +379,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/test_2_triangle_plain.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
-    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"

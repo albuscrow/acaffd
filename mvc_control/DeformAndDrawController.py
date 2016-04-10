@@ -502,7 +502,7 @@ class DeformAndDrawController:
         for e in es:
             acc += ((e - average) ** 2)
         standard_deviation = (acc / point_number) ** 0.5
-        print('%s比较(平均/最大/标准差): %e / %e / %e' % (info, average, max_e, standard_deviation))
+        print('comparison_helper:', '%s比较(平均/最大/标准差): %e / %e / %e' % (info, average, max_e, standard_deviation))
         return average, max_e, standard_deviation
 
     def comparison(self):

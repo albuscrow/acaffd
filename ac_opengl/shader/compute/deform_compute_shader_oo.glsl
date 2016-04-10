@@ -293,7 +293,7 @@ void main() {
                         currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]]);
                 vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
                 if (! all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
-                    vec3 n_ave = cross(currentNormal, adj_normal);
+                    vec3 n_ave = normalize(cross(currentNormal, adj_normal));
                     result = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;
                     ++ temp_sharp_parameter[i / 2].w;
                 } else {
