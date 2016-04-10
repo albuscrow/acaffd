@@ -283,14 +283,14 @@ ApplicationWindow {
                     Button {
                         text: "打印精度对比"
                         onClicked: {
-                            controller.set_need_comparison()
+                            controller.begin_diff_comparison()
                         }
                     }
 
                     Button {
-                        text: "begin test"
+                        text: "测试分割尺度"
                         onClicked: {
-                            controller.begin_test()
+                            controller.begin_test_split_factor()
                         }
                     }
 

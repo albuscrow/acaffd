@@ -48,10 +48,8 @@ class Controller(QObject):
 
         self._inited = False  # type: bool
 
-        self.factors = np.arange(0.05, 12 * 0.5, 0.05, dtype='f4')
-        self.indice = 0
+        self.factors = np.arange(0.1, (4 / 3) ** 0.5, 0.1, dtype='f4')
         self.diff_result = []
-        self._test = False
 
         self.gl_task = None
 
@@ -197,7 +195,29 @@ class Controller(QObject):
         self._gl_proxy.set_show_normal(is_show)
 
     @pyqtSlot()
+    def begin_test_split_factor(self):
+        indices = 0
+        original_split_factor = self._gl_proxy.previous_compute_controller.split_factor
+
+        def gl_task1():
+            nonlocal indices
+            print('split factor gl_task1', indices)
+            if indices < len(self.factors):
+                self.change_split_factor(self.factors[indices])
+                self.set_need_comparison()
+                indices += 1
+            else:
+                self.change_split_factor(original_split_factor)
+                self.show_diff_result()
+                self.gl_task = None
+
+        self.gl_task = gl_task1
+
     def set_need_comparison(self):
+        self._gl_proxy.set_need_comparison()
+
+    @pyqtSlot()
+    def begin_diff_comparison(self):
         self.diff_result.clear()
         is_ac = True
         if self._gl_proxy.algorithm != ALGORITHM_AC:
@@ -208,8 +228,10 @@ class Controller(QObject):
         def gl_task1():
             self._gl_proxy.algorithm = ALGORITHM_CYM
             self._gl_proxy.set_need_comparison()
+            print('comparison gl_task1')
 
             def gl_task2():
+                print('comparison gl_task2')
                 if is_ac:
                     self._gl_proxy.algorithm = ALGORITHM_AC
                 self.gl_task = None
@@ -313,14 +335,6 @@ class Controller(QObject):
             self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
             if self.gl_task:
                 self.gl_task()
-            if self._test:
-                if self.indice < len(self.factors):
-                    self.change_split_factor(self.factors[self.indice])
-                    self.set_need_comparison()
-                    self.indice += 1
-                else:
-                    self.show_diff_result()
-                    self._test = False
 
         glDisable(GL_SCISSOR_TEST)
 
@@ -330,38 +344,6 @@ class Controller(QObject):
             self.gl_init()
             self._inited = True
         self.gl_on_frame_draw()
-
-    @pyqtSlot()
-    def begin_test(self):
-        self._test = True
-
-    @property
-    def context(self):
-        return self._context
-
-    @context.setter
-    def context(self, c):
-        self._context = c
-
-        # def run_splited_factor_test(self, start, end):
-        #     class ac_test(Thread):
-        #         def __init__(self, outer):
-        #             super().__init__()
-        #             self.factors = np.arange(start, end, 0.01)
-        #             self.outer = outer
-        #
-        #         def run(self):
-        #             for f in self.factors:
-        #                 sleep(3)
-        #                 print('current splited factor:', f)
-        #                 self.outer.change_split_factor(f)
-        #                 self.outer.set_need_comparison()
-        #
-        #         def stop(self):
-        #             self.isrunning = False
-        #
-        #     t = ac_test(self)
-        #     t.start()
 
 
 def get_test_file_name():

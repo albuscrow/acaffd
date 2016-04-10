@@ -23,7 +23,6 @@ engine.load(QUrl('res/ui/main.qml'))
 scene = engine.rootObjects()[0].findChild(FFDScene, 'scene')
 
 controller = scene.controller  # type: Controller
-controller.context = app
 engine.rootContext().setContextProperty('controller', controller)
 
 app.exec()
