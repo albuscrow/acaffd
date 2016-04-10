@@ -57,14 +57,17 @@ class OBJ:
                     elif first_token == 'f':
                         f_store.add(' '.join(tokens))
                     elif first_token == 'vp':
-                        logging.warning("this feature(vp) in wavefront .obj is not implement, ignore")
+                        pass
+                        # logging.warning("this feature(vp) in wavefront .obj is not implement, ignore")
                         # raise Exception()
                     elif first_token in ('usemtl', 'usemat'):
-                        logging.warning("this feature(usemtl, usemat) in wavefront .obj is not implement, ignore")
+                        pass
+                        # logging.warning("this feature(usemtl, usemat) in wavefront .obj is not implement, ignore")
                         # raise Exception()
                         # material = tokens[0]
                     elif first_token == 'mtllib':
-                        logging.warning("this feature(mtllib) in wavefront .obj is not implement, ignore")
+                        pass
+                        # logging.warning("this feature(mtllib) in wavefront .obj is not implement, ignore")
                         # raise Exception()
                         # self.mtl = self.Material(tokens[0])
                 for l in f_store:
@@ -117,6 +120,7 @@ class OBJ:
         self.original_normal_number = len(self._normal)
         self._triangles = None  # type: list[ACTriangle]
         self.reorganize()
+        print('OBJ:', 'original triangle number: %d' % self.original_triangle_number)
 
     def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
         # 纪录该三角形的三个顶点
@@ -163,7 +167,7 @@ class OBJ:
                         self._adjacency[-1][i] = triangle_index * 4 + j
                         break
             elif common_triangle_number >= 2:
-                print(triangle_index_set, tokens)
+                # print(triangle_index_set, tokens)
                 raise Exception('3 or more triangle adjacency with the same edge, number is', common_triangle_number)
 
         # 将当前三角形加入到aux_point_map中

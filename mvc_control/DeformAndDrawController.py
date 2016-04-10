@@ -1,6 +1,6 @@
 from functools import reduce
 
-from math import sqrt
+from math import sqrt, acos, pi, fabs
 
 from Constant import *
 from mvc_model.GLObject import ACVBO
@@ -78,7 +78,8 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, cage_size: list):
+    def __init__(self, cage_size: list, controller=None):
+        self._controller = controller
         self._splited_triangle_number = -1
         self._cage_size = cage_size  # type: list
 
@@ -194,7 +195,7 @@ class DeformAndDrawController:
                                         * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
         if self._parameter_in_BSpline_body_vbo is not None:
             self._parameter_in_BSpline_body_vbo.capacity = self.splited_triangle_number \
-                                        * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+                                                           * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
         if self._normal_vbo is not None:
             self._normal_vbo.capacity = self.splited_triangle_number \
                                         * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
@@ -266,7 +267,6 @@ class DeformAndDrawController:
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
         self.gl_sync_buffer()
         self.gl_deform(operator)
-        self.comparison()
         self._renderer_program.use()
         if self._need_update_show_splited_edge_flag:
             self._renderer_program.update_uniform_about_split_edge()
@@ -322,6 +322,9 @@ class DeformAndDrawController:
 
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
+        if self._vertex_vbo.capacity == 0:
+            return
+        self.comparison()
 
     @property
     def splited_triangle_number(self):
@@ -341,6 +344,10 @@ class DeformAndDrawController:
     @property
     def group_size(self):
         return [int(self.splited_triangle_number / 512 + 1), 1, 1]
+
+    @property
+    def tessellation_level(self):
+        return self._tessellation_level
 
     def init_tessellation_pattern_data(self, tessellation_level):
         self._tessellation_level = tessellation_level
@@ -478,21 +485,43 @@ class DeformAndDrawController:
         self._need_comparison = True
 
     @staticmethod
-    def comparison_helper(vbo1: ACVBO, vbo2: ACVBO, info: str):
+    def comparison_helper(vbo1: ACVBO, vbo2: ACVBO, info: str, fun):
         point_number = int(vbo1.capacity / 16)
         acc = 0
         max_e = -1
+        es = []
         for i, j in zip(vbo1.get_value(ctypes.c_float, (point_number, 4)),
                         vbo2.get_value(ctypes.c_float, (point_number, 4))):
-            diff = i - j
-            e = sqrt(reduce(lambda p, x: p + x, [e * e for e in diff[:3]], 0))
+            e = fun(i, j)
             max_e = max(e, max_e)
             acc += e
-        print('%s比较(平均/最大): %e / %e' % (info, acc / point_number, max_e))
+            es.append(e)
+
+        average = acc / point_number
+        acc = 0
+        for e in es:
+            acc += ((e - average) ** 2)
+        standard_deviation = (acc / point_number) ** 0.5
+        # print('comparison_helper:', '%s比较(平均/最大/标准差): %e / %e / %e' % (info, average, max_e, standard_deviation))
+        return average, max_e, standard_deviation
 
     def comparison(self):
         if not self._need_comparison:
             return
         self._need_comparison = False
-        DeformAndDrawController.comparison_helper(self._vertex_vbo, self._real_position_vbo, '位置')
-        DeformAndDrawController.comparison_helper(self._normal_vbo, self._real_normal_vbo, '法向')
+
+        dr1 = DeformAndDrawController.comparison_helper(self._vertex_vbo, self._real_position_vbo, '位置',
+                                                        lambda i, j: sqrt(
+                                                            reduce(lambda p, x: p + x, [e * e for e in (i - j)[:3]],
+                                                                   0)))
+
+        def fun(i, j):
+            cos_value = np.dot(i[:3], j[:3])
+            if cos_value > 1:
+                cos_value = 1
+            elif cos_value < -1:
+                cos_value = -1
+            return acos(cos_value) / pi * 180
+
+        dr2 = DeformAndDrawController.comparison_helper(self._normal_vbo, self._real_normal_vbo, '法向', fun)
+        self._controller.add_diff_result((dr1, dr2))

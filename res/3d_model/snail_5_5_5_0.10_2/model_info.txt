@@ -1,0 +1,2 @@
+original triangle number: 46740
+splited triangle number: 47074

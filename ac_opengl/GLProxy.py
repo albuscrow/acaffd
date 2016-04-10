@@ -19,7 +19,8 @@ else:
 
 
 class GLProxy:
-    def __init__(self):
+    def __init__(self, controller=None):
+        self._controller = controller
         self._aux_controller = None  # type: AuxController
         self._deform_and_renderer_controller = None  # type: DeformAndDrawController
         self._debug_buffer = None  # type: ACVBO
@@ -75,7 +76,7 @@ class GLProxy:
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(
-            self._aux_controller.get_cage_size())
+            self._aux_controller.get_cage_size(), self._controller)
         self._deform_and_renderer_controller.gl_init()
 
     def set_select_region(self, x1, y1, x2, y2):
@@ -177,3 +178,8 @@ class GLProxy:
     def set_control_points(self, control_points):
         self._aux_controller.set_control_points(control_points)
         self._deform_and_renderer_controller.need_deform = True
+
+    def get_parameter_str(self):
+        return '%s_%.2f_%d' % (self.aux_controller.get_control_point_str(),
+                               self._previous_compute_controller_AC.split_factor,
+                               self._deform_and_renderer_controller.tessellation_level)

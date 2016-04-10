@@ -177,7 +177,7 @@ class AuxController:
         self._normal_control_mode = v
         self._control_point_position_vbo.async_update(self.get_control_point_data())
 
-    def add_direct_control_point(self, intersect_point,):
+    def add_direct_control_point(self, intersect_point, ):
         if intersect_point is not None:
             self._direct_control_point = [np.append(intersect_point, 0)]
             self._control_point_position_vbo.async_update(self.get_control_point_data())
@@ -244,3 +244,6 @@ class AuxController:
         self._control_point_position_vbo.async_update(self.get_control_point_data())
         self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
         self._control_points_changed = True
+
+    def get_control_point_str(self):
+        return '_'.join([str(x) for x in self._b_spline_body.control_point_number])

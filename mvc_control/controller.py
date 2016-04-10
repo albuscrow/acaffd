@@ -1,5 +1,3 @@
-from PyQt5.QtWidgets import QFileDialog
-
 from mvc_model.model import OBJ, ModelFileFormatType
 from math import *
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
@@ -11,6 +9,7 @@ from ac_opengl.GLProxy import GLProxy
 from mvc_model.plain_class import ACRect
 import numpy as np
 from os.path import isfile, exists
+from Constant import ALGORITHM_AC, ALGORITHM_CYM
 import os
 
 __author__ = 'ac'
@@ -22,7 +21,7 @@ class Controller(QObject):
     def __init__(self):
         super().__init__()
         self._context = None
-        self._gl_proxy = GLProxy()  # type: GLProxy
+        self._gl_proxy = GLProxy(self)  # type: GLProxy
 
         # todo test code
         self._loaded_file_path = None  # type: str
@@ -49,6 +48,19 @@ class Controller(QObject):
 
         self._inited = False  # type: bool
 
+        self.factors = np.arange(0.1, (4 / 3) ** 0.5, 0.1, dtype='f4')
+        self.diff_result = []
+
+        self.gl_task = None
+
+    def add_diff_result(self, r):
+        self.diff_result.append(r)
+
+    def show_diff_result(self):
+        print('show_diff_result:')
+        print(self.factors)
+        print([x[0][0] for x in self.diff_result])
+
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
         self._gl_proxy.move_control_points(x, y, z)
@@ -62,15 +74,14 @@ class Controller(QObject):
     @pyqtSlot(float)
     def change_split_factor(self, level):
         self._gl_proxy.change_split_factor(level)
-        self.updateScene.emit()
-
+        # self.updateScene.emit()
 
     @staticmethod
     def check_file_path(file_path):
         if file_path.startswith('file://'):
             file_path = file_path[len('file://'):]
         if not isfile(file_path):
-            print('文件名错误!')
+            print('check_file_path:', '文件名错误!')
             return None
         else:
             return file_path
@@ -85,11 +96,20 @@ class Controller(QObject):
 
     @pyqtSlot()
     def save_ctrl_points(self):
-        dir = self._loaded_file_path[:self._loaded_file_path.rfind('.')]
+        dir = self._loaded_file_path[:self._loaded_file_path.rfind('.')] + '_' + self._gl_proxy.get_parameter_str()
         if not exists(dir):
             os.mkdir(dir)
-        no = len(os.listdir(dir))
-        file_name = '%s/%s_control_points%d' % (dir, self._loaded_file_path[self._loaded_file_path.rfind('/') + 1:self._loaded_file_path.rfind('.')], no)
+        files = os.listdir(dir)
+        file_name_prefix = self._loaded_file_path[
+                           self._loaded_file_path.rfind('/') + 1:self._loaded_file_path.rfind('.')]
+        no = 0
+        for f in files:
+            if f.startswith(file_name_prefix):
+                no += 1
+        file_name = '%s/%s_control_points%d' \
+                    % (dir,
+                       file_name_prefix,
+                       no)
         points = self._gl_proxy.control_points()
         np.save(file_name, points)
 
@@ -175,8 +195,54 @@ class Controller(QObject):
         self._gl_proxy.set_show_normal(is_show)
 
     @pyqtSlot()
+    def begin_test_split_factor(self):
+        indices = 0
+        original_split_factor = self._gl_proxy.previous_compute_controller.split_factor
+
+        def gl_task1():
+            nonlocal indices
+            print('split factor gl_task1', indices)
+            if indices < len(self.factors):
+                self.change_split_factor(self.factors[indices])
+                self.set_need_comparison()
+                indices += 1
+            else:
+                self.change_split_factor(original_split_factor)
+                self.show_diff_result()
+                self.gl_task = None
+
+        self.gl_task = gl_task1
+
     def set_need_comparison(self):
         self._gl_proxy.set_need_comparison()
+
+    @pyqtSlot()
+    def begin_diff_comparison(self):
+        self.diff_result.clear()
+        is_ac = True
+        if self._gl_proxy.algorithm != ALGORITHM_AC:
+            self._gl_proxy.algorithm = ALGORITHM_AC
+            is_ac = False
+        self._gl_proxy.set_need_comparison()
+
+        def gl_task1():
+            self._gl_proxy.algorithm = ALGORITHM_CYM
+            self._gl_proxy.set_need_comparison()
+            print('comparison gl_task1')
+
+            def gl_task2():
+                print('comparison gl_task2')
+                if is_ac:
+                    self._gl_proxy.algorithm = ALGORITHM_AC
+                self.gl_task = None
+                for ac, cym, label in zip(*self.diff_result, ['位置', '法向']):
+                    print(label + '比对: 平均/最大/标准差')
+                    print('ac %e / %e / %e' % (ac[0], ac[1], ac[2]))
+                    print('cym %e / %e / %e' % (cym[0], cym[1], cym[2]))
+
+            self.gl_task = gl_task2
+
+        self.gl_task = gl_task1
 
     @pyqtSlot(int, int, int, int)
     def left_move(self, x1: int, y1: int, x2: int, y2: int):
@@ -249,17 +315,26 @@ class Controller(QObject):
     def gl_init(self) -> None:
         glClearColor(1, 1, 1, 1)
         self._gl_proxy.gl_init_global()
+        # self.run_splited_factor_test(0.01, 0.02)
+        # print('debug')
 
+    #             self.outer = outer
+    #
+    #         def run(self):
+    #             for f in self.factors:
+    #                 sleep(3)
+    #                 print('current splited factor:', f)
     def gl_on_frame_draw(self) -> None:
         glEnable(GL_SCISSOR_TEST)
         glScissor(*self.window_size.xywh)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        # todo 这句理论上应该在gl_on_view_port_change调用，但是会有问题
         glViewport(*self.window_size.xywh)
 
         if self._gl_proxy:
             self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
+            if self.gl_task:
+                self.gl_task()
 
         glDisable(GL_SCISSOR_TEST)
 
@@ -269,14 +344,6 @@ class Controller(QObject):
             self.gl_init()
             self._inited = True
         self.gl_on_frame_draw()
-
-    @property
-    def context(self):
-        return self._context
-
-    @context.setter
-    def context(self, c):
-        self._context = c
 
 
 def get_test_file_name():
@@ -294,8 +361,8 @@ def get_test_file_name():
     # file_path = "res/3d_model/test_2_triangle_plain.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
-    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
+    file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
