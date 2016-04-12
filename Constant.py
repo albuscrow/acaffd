@@ -1,6 +1,7 @@
 # float32 * 4
 NORMAL_SIZE = 16
 VERTEX_SIZE = 16
+TEX_COORD_SIZE = 8
 
 # 三个index,int32
 PER_TRIANGLE_INDEX_SIZE = 12

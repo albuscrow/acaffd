@@ -16,6 +16,7 @@ class OBJ:
         self._vertex = []
         self._normal = []
         self._tex_coord = []
+        self._has_texture = True
         self._index = []
         self._adjacency = []
 
@@ -141,6 +142,7 @@ class OBJ:
                     if index[1]:
                         self._tex_coord.append(temp_tex_coords[int(index[1])])
                     else:
+                        self._has_texture = False
                         self._tex_coord.append([0, 0])
                     self._normal.append(temp_normals[int(index[2])])
 
@@ -191,6 +193,10 @@ class OBJ:
     @property
     def normal(self):
         return np.array(self._normal, dtype=np.float32)
+
+    @property
+    def tex_coord(self):
+        return np.array(self._tex_coord, dtype=np.float32)
 
     @property
     def index(self):
