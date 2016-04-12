@@ -4,6 +4,7 @@ layout(location=3) uniform int show_splited_edge;
 layout(location=4) uniform int show_triangle_quality;
 layout(location=5) uniform int show_normal_diff;
 layout(location=6) uniform int show_position_diff;
+layout(location=8) uniform int has_texture;
 layout(binding=1) uniform sampler2D acTextureSampler;
 
 in vec3 varying_normal;
@@ -61,6 +62,10 @@ void main() {
         }
         return;
     }
+    if (has_texture > 0) {
+        color = texture(acTextureSampler, varying_tex_coord);
+        return;
+    }
     vec3 lightPosition = vec3(0,1,1);
     vec3 eye = normalize(varying_position - vec3(0,0,-1));
     vec3 lightVector = normalize(vec3(0, 0, 1));
@@ -76,8 +81,6 @@ void main() {
 	float pf = 0.0;								// power factor
     pf = pow(nDotHV, 10);
     float temp_color = diffuse * 0.7 + diffuse2 * 0.5 + pf * 0.7;
-//    color = vec4(temp_color, 1);
-//    color = varying_color + temp_color;
-    color = texture(acTextureSampler, varying_tex_coord);
+    color = vec4(temp_color, temp_color, temp_color, 1);
     return;
 }

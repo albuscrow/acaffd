@@ -272,6 +272,10 @@ class OBJ:
                     res = p
         return res
 
+    @property
+    def has_texture(self):
+        return self._has_texture
+
 
 if __name__ == '__main__':
     import numpy as np

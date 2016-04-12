@@ -63,6 +63,7 @@ class ModelRendererShader(ProgramWrap):
 
     def init_uniform(self):
         self.update_uniform_about_split_edge()
+        glProgramUniform1i(self._gl_program_name, 8, 1 if self._controller.has_texture else -1)
 
     def update_uniform_about_split_edge(self):
         glProgramUniform1i(self._gl_program_name, 3, 1 if self._controller.splited_edge_visibility else -1)
@@ -81,7 +82,7 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, cage_size: list, controller=None):
+    def __init__(self, cage_size: list, has_texture, controller=None):
         self._controller = controller
         self._splited_triangle_number = -1
         self._cage_size = cage_size  # type: list
@@ -161,6 +162,8 @@ class DeformAndDrawController:
             .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_renderer_prefix('normal.f.glsl'))) \
             .add_shader(ShaderWrap(GL_GEOMETRY_SHADER, add_renderer_prefix('normal.g.glsl')))  # type: ProgramWrap
 
+        self._has_texture = has_texture
+
     def gl_init(self):
         self._model_vao = glGenVertexArrays(1)
         glBindVertexArray(self._model_vao)
@@ -211,7 +214,6 @@ class DeformAndDrawController:
         image = DeformAndDrawController.load_texture_data('res/3d_model/test1024.png')
         # Give the image to OpenGL
         image_data = np.array(list(image.getdata()), dtype=np.uint8)
-        print('image size', image.size[0], image.size[1], image_data.shape)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.size[0], image.size[1],
                      0, GL_RGBA, GL_UNSIGNED_BYTE, image_data)
         glActiveTexture(GL_TEXTURE0)
@@ -541,7 +543,6 @@ class DeformAndDrawController:
         for e in es:
             acc += ((e - average) ** 2)
         standard_deviation = (acc / point_number) ** 0.5
-        # print('comparison_helper:', '%s比较(平均/最大/标准差): %e / %e / %e' % (info, average, max_e, standard_deviation))
         return average, max_e, standard_deviation
 
     def comparison(self):
@@ -564,3 +565,7 @@ class DeformAndDrawController:
 
         dr2 = DeformAndDrawController.comparison_helper(self._normal_vbo, self._real_normal_vbo, '法向', fun)
         self._controller.add_diff_result((dr1, dr2))
+
+    @property
+    def has_texture(self):
+        return self._has_texture

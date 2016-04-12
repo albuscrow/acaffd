@@ -76,7 +76,7 @@ class GLProxy:
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(
-            self._aux_controller.get_cage_size(), self._controller)
+            self._aux_controller.get_cage_size(), self._model.has_texture, self._controller)
         self._deform_and_renderer_controller.gl_init()
 
     def set_select_region(self, x1, y1, x2, y2):
