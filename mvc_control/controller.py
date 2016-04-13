@@ -1,3 +1,5 @@
+import threading
+
 from mvc_model.model import OBJ, ModelFileFormatType
 from math import *
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
@@ -11,12 +13,14 @@ import numpy as np
 from os.path import isfile, exists
 from Constant import ALGORITHM_AC, ALGORITHM_CYM
 import os
+from matplotlib.pylab import plot, show
 
 __author__ = 'ac'
 
 
 class Controller(QObject):
     updateScene = pyqtSignal()
+    show_figure = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -52,18 +56,24 @@ class Controller(QObject):
         self.diff_result = []
 
         self.gl_task = None
+        self.show_figure.connect(self.show_diff_result)
 
     def add_diff_result(self, r):
         self.diff_result.append(r)
 
     def show_diff_result(self):
-        print('show_diff_result:')
-        print(self.factors)
-        print([x[0][0] for x in self.diff_result])
+        plot(self.factors, [x[0][0] for x in self.diff_result])
+        show()
 
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
-        self._gl_proxy.move_control_points(x, y, z)
+        if self._gl_proxy.normal_control_mode:
+            self._gl_proxy.move_control_points(x, y, z)
+            self.updateScene.emit()
+
+    @pyqtSlot(float, float, float)
+    def rotate_control_points(self, x, y, z):
+        self._gl_proxy.rotate_control_points(x, y, z)
         self.updateScene.emit()
 
     @pyqtSlot(int)
@@ -201,17 +211,18 @@ class Controller(QObject):
 
         def gl_task1():
             nonlocal indices
-            print('split factor gl_task1', indices)
             if indices < len(self.factors):
                 self.change_split_factor(self.factors[indices])
                 self.set_need_comparison()
                 indices += 1
+                self.updateScene.emit()
             else:
                 self.change_split_factor(original_split_factor)
-                self.show_diff_result()
+                self.show_figure.emit()
                 self.gl_task = None
 
         self.gl_task = gl_task1
+        self.updateScene.emit()
 
     def set_need_comparison(self):
         self._gl_proxy.set_need_comparison()
@@ -228,10 +239,8 @@ class Controller(QObject):
         def gl_task1():
             self._gl_proxy.algorithm = ALGORITHM_CYM
             self._gl_proxy.set_need_comparison()
-            print('comparison gl_task1')
 
             def gl_task2():
-                print('comparison gl_task2')
                 if is_ac:
                     self._gl_proxy.algorithm = ALGORITHM_AC
                 self.gl_task = None
@@ -241,8 +250,10 @@ class Controller(QObject):
                     print('cym %e / %e / %e' % (cym[0], cym[1], cym[2]))
 
             self.gl_task = gl_task2
+            self.updateScene.emit()
 
         self.gl_task = gl_task1
+        self.updateScene.emit()
 
     @pyqtSlot(int, int, int, int)
     def left_move(self, x1: int, y1: int, x2: int, y2: int):
@@ -257,13 +268,6 @@ class Controller(QObject):
             if self._gl_proxy.direct_control_point_selected():
                 direction = np.mat([x2 - x1, y2 - y1, 0, 0], dtype='f4') * i
                 self._gl_proxy.move_direct_control_point(np.array(direction, dtype='f4').reshape(4, )[:3])
-
-                # start_point = np.mat([0, 0, 0, 1], dtype='f4') * i
-                # end_point_z = -4
-                # end_point_y = y2 / self.window_size.h * 2 - 1
-                # end_point_x = x2 / self.window_size.h * 2 - self.window_size.aspect
-                # end_point = np.mat([end_point_x, end_point_y, end_point_z, 1], dtype='f4') * i
-                # self._gl_proxy.set_select_point(start_point, end_point - start_point)
             else:
                 start_point = np.mat([0, 0, 0, 1], dtype='f4') * i
                 end_point_z = -4
@@ -271,7 +275,6 @@ class Controller(QObject):
                 end_point_x = x2 / self.window_size.h * 2 - self.window_size.aspect
                 end_point = np.mat([end_point_x, end_point_y, end_point_z, 1], dtype='f4') * i
                 self._gl_proxy.set_select_point(start_point, end_point - start_point)
-
         self.updateScene.emit()
 
     @pyqtSlot()
@@ -345,7 +348,6 @@ class Controller(QObject):
             self._inited = True
         self.gl_on_frame_draw()
 
-
 def get_test_file_name():
     # todo
     # file_path = "res/3d_model/Mobile.obj"
@@ -356,12 +358,12 @@ def get_test_file_name():
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
     # file_path = "res/3d_model/star.obj"
-    # file_path = "res/3d_model/legoDog.obj"
+    file_path = "res/3d_model/legoDog.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/test_2_triangle_plain.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
-    file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"

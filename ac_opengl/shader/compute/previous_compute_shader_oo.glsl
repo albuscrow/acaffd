@@ -10,6 +10,11 @@ layout(std430, binding=1) buffer OrinigalNormalBuffer{
 };
 
 //input
+layout(std430, binding=22) buffer OrinigalTexCoordBuffer{
+    vec2[] orinigalTexCoord;
+};
+
+//input
 layout(std430, binding=2) buffer OriginalNormalBuffer{
     uint[] originalIndex;
 };
@@ -36,7 +41,7 @@ struct SplitedTriangle {
     vec4 original_position[3];
     vec4 original_normal[3];
     vec4 adjacency_pn_normal_parameter[6];
-    vec4 parameter_in_original[3];
+    vec4 parameter_in_original2_texcoord2[3];
     ivec4 adjacency_triangle_index3_original_triangle_index1;
     float triangle_quality;
 };
@@ -122,6 +127,9 @@ vec3 getNormalOrg(vec3 parameter);
 // 根据 parameter 获得普通插值position
 vec3 getPositionOrg(vec3 parameter);
 
+// 根据 parameter 获得普通插值TexCoord
+vec2 getTecCoordOrg(vec3 parameter);
+
 // 根据 parameter 获得邻接PNTriangle中的法向
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_);
 
@@ -183,18 +191,17 @@ void main() {
     for (uint i = splitIndexOffset; i < splitIndexOffset + subTriangleNumber; ++i) {
         uvec4 index = splitIndex[i];
         SplitedTriangle st;
-
-        for (int i = 0; i < 3; ++i) {
-            st.parameter_in_original[i] = changeParameter(splitParameter[index[i]]);
-            st.pn_position[i] = vec4(getPNPosition(st.parameter_in_original[i].xyz), 1);
-            st.pn_normal[i].xyz = getPNNormal(st.parameter_in_original[i].xyz);
-            st.original_normal[i].xyz = getNormalOrg(st.parameter_in_original[i].xyz);
-            st.original_position[i].xyz = getPositionOrg(st.parameter_in_original[i].xyz);
-        }
-
         uint edgeInfo[3];
+        vec3 parameter_in_original[3];
         for (int i = 0; i < 3; ++i) {
-            edgeInfo[i] = getEdgeInfo(st.parameter_in_original[i].xyz);
+            parameter_in_original[i] = changeParameter(splitParameter[index[i]]).xyz;
+            st.parameter_in_original2_texcoord2[i].xy = parameter_in_original[i].xy;
+            st.parameter_in_original2_texcoord2[i].zw = getTecCoordOrg(parameter_in_original[i]);
+            st.pn_position[i] = vec4(getPNPosition(parameter_in_original[i]), 1);
+            st.pn_normal[i].xyz = getPNNormal(parameter_in_original[i]);
+            st.original_normal[i].xyz = getNormalOrg(parameter_in_original[i]);
+            st.original_position[i].xyz = getPositionOrg(parameter_in_original[i]);
+            edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
         }
 
         int adjacency_triangle_index_edge[3];
@@ -213,7 +220,7 @@ void main() {
             if (current_adjacency_triangle_index != -1) {
                 for (int k = 0; k < 2; ++k) {
                     uint temp = adjacency_normal_index_aux[j * 2 + k];
-                    st.adjacency_pn_normal_parameter[temp].xyz = translate_parameter(st.parameter_in_original[temp / 2].xyz, currentEdge);
+                    st.adjacency_pn_normal_parameter[temp].xyz = translate_parameter(parameter_in_original[temp / 2], currentEdge);
                 }
             }
         }
@@ -231,6 +238,7 @@ void main() {
         float radius = double_area / perimeter;
         st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
         st.adjacency_triangle_index3_original_triangle_index1[3] = int(triangleIndex);
+
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }
@@ -267,6 +275,14 @@ vec3 getPNNormal(vec3 parameter) {
     return normalize(result);
 }
 
+vec2 getTecCoordOrg(vec3 parameter) {
+    vec2 result = vec2(0);
+    for (int i = 0; i < 3; ++i) {
+        result += orinigalTexCoord[original_index[i]] * parameter[i];
+    }
+    return result;
+}
+
 vec3 getPositionOrg(vec3 parameter) {
     vec3 result = vec3(0);
     for (int i = 0; i < 3; ++i) {
@@ -280,7 +296,7 @@ vec3 getNormalOrg(vec3 parameter) {
     for (int i = 0; i < 3; ++i) {
         result += normal[i] * parameter[i];
     }
-    return normalize(result);
+    return result;
 }
 
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {

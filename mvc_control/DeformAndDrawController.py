@@ -2,10 +2,14 @@ from functools import reduce
 
 from math import sqrt, acos, pi, fabs
 
+import math
+from PIL import Image
+
 from Constant import *
 from mvc_model.GLObject import ACVBO
 from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
+from OpenGL.GLU import *
 from pyrr.matrix44 import *
 
 
@@ -60,6 +64,7 @@ class ModelRendererShader(ProgramWrap):
 
     def init_uniform(self):
         self.update_uniform_about_split_edge()
+        glProgramUniform1i(self._gl_program_name, 8, 1 if self._controller.has_texture else -1)
 
     def update_uniform_about_split_edge(self):
         glProgramUniform1i(self._gl_program_name, 3, 1 if self._controller.splited_edge_visibility else -1)
@@ -78,7 +83,7 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, cage_size: list, controller=None):
+    def __init__(self, cage_size: list, has_texture, controller=None):
         self._controller = controller
         self._splited_triangle_number = -1
         self._cage_size = cage_size  # type: list
@@ -123,6 +128,7 @@ class DeformAndDrawController:
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._parameter_in_BSpline_body_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 21, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._tex_coord_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 23, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None,
                                                         GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -157,6 +163,8 @@ class DeformAndDrawController:
             .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_renderer_prefix('normal.f.glsl'))) \
             .add_shader(ShaderWrap(GL_GEOMETRY_SHADER, add_renderer_prefix('normal.g.glsl')))  # type: ProgramWrap
 
+        self._has_texture = has_texture
+
     def gl_init(self):
         self._model_vao = glGenVertexArrays(1)
         glBindVertexArray(self._model_vao)
@@ -170,6 +178,7 @@ class DeformAndDrawController:
         self._parameter_in_original_vbo.as_array_buffer(3, 4, GL_FLOAT)
         self._real_normal_vbo.as_array_buffer(4, 4, GL_FLOAT)
         self._real_position_vbo.as_array_buffer(5, 4, GL_FLOAT)
+        self._tex_coord_vbo.as_array_buffer(6, 2, GL_FLOAT)
         # specific index buffer
         self._index_vbo.as_element_array_buffer()
         # unbind program
@@ -189,6 +198,31 @@ class DeformAndDrawController:
 
         self.gl_async_update_buffer_for_self()
 
+        # init for texture
+        texture_name = glGenTextures(1)
+
+        glActiveTexture(GL_TEXTURE1)
+        glEnable(GL_TEXTURE_2D)
+
+        # "Bind" the newly created texture : all future texture functions will modify this texture
+        glBindTexture(GL_TEXTURE_2D, texture_name)
+
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+
+        image = DeformAndDrawController.load_texture_data('res/3d_model/test1024.png')
+        # Give the image to OpenGL
+        image_data = np.array(list(image.getdata()), dtype=np.uint8)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.size[0], image.size[1],
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, image_data)
+        glActiveTexture(GL_TEXTURE0)
+
+    @staticmethod
+    def load_texture_data(filename):
+        return Image.open(filename)
+
     def gl_async_update_buffer_for_self(self):
         if self._vertex_vbo is not None:
             self._vertex_vbo.capacity = self.splited_triangle_number \
@@ -198,7 +232,11 @@ class DeformAndDrawController:
                                                            * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
         if self._normal_vbo is not None:
             self._normal_vbo.capacity = self.splited_triangle_number \
-                                        * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+                                        * self.tessellated_point_number_pre_splited_triangle * NORMAL_SIZE
+
+        if self._tex_coord_vbo is not None:
+            self._tex_coord_vbo.capacity = self.splited_triangle_number \
+                                           * self.tessellated_point_number_pre_splited_triangle * TEX_COORD_SIZE
 
         if self._parameter_in_splited_triangle_vbo is not None:
             self._parameter_in_splited_triangle_vbo.capacity = self.splited_triangle_number \
@@ -209,7 +247,7 @@ class DeformAndDrawController:
 
         if self._real_normal_vbo is not None:
             self._real_normal_vbo.capacity = self.splited_triangle_number \
-                                             * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+                                             * self.tessellated_point_number_pre_splited_triangle * NORMAL_SIZE
         if self._real_position_vbo is not None:
             self._real_position_vbo.capacity = self.splited_triangle_number \
                                                * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
@@ -233,6 +271,7 @@ class DeformAndDrawController:
         self._vertex_vbo.gl_sync()
         self._parameter_in_BSpline_body_vbo.gl_sync()
         self._normal_vbo.gl_sync()
+        self._tex_coord_vbo.gl_sync()
         self._parameter_in_splited_triangle_vbo.gl_sync()
         self._parameter_in_original_vbo.gl_sync()
         self._real_normal_vbo.gl_sync()
@@ -295,9 +334,12 @@ class DeformAndDrawController:
         wvp_matrix = multiply(model_view_matrix, perspective_matrix)
         glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
         glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
+
+        glActiveTexture(GL_TEXTURE1)
         glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
         glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
+        glActiveTexture(GL_TEXTURE0)
         glBindVertexArray(0)
         glUseProgram(0)
 
@@ -490,9 +532,13 @@ class DeformAndDrawController:
         acc = 0
         max_e = -1
         es = []
+        no = 0
         for i, j in zip(vbo1.get_value(ctypes.c_float, (point_number, 4)),
                         vbo2.get_value(ctypes.c_float, (point_number, 4))):
             e = fun(i, j)
+            if math.isnan(e):
+                print('point no:', no, i, j)
+            no += 1
             max_e = max(e, max_e)
             acc += e
             es.append(e)
@@ -502,7 +548,6 @@ class DeformAndDrawController:
         for e in es:
             acc += ((e - average) ** 2)
         standard_deviation = (acc / point_number) ** 0.5
-        # print('comparison_helper:', '%s比较(平均/最大/标准差): %e / %e / %e' % (info, average, max_e, standard_deviation))
         return average, max_e, standard_deviation
 
     def comparison(self):
@@ -525,3 +570,7 @@ class DeformAndDrawController:
 
         dr2 = DeformAndDrawController.comparison_helper(self._normal_vbo, self._real_normal_vbo, '法向', fun)
         self._controller.add_diff_result((dr1, dr2))
+
+    @property
+    def has_texture(self):
+        return self._has_texture

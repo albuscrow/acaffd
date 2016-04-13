@@ -37,7 +37,7 @@ class PreviousComputeControllerGPU:
         self._model = model  # type: OBJ
 
         # init pattern data
-        self._split_factor = 0.1  # type: float
+        self._split_factor = 0.5  # type: float
         self.MAX_SEGMENTS = -1  # type: int
         self._pattern_offsets = None  # type: np.array
         self._pattern_indexes = None  # type: np.array
@@ -50,6 +50,7 @@ class PreviousComputeControllerGPU:
         # declare buffer
         self._original_vertex_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 0, None, GL_STATIC_DRAW)
         self._original_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 1, None, GL_STATIC_DRAW)
+        self._original_tex_coord_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 22, None, GL_STATIC_DRAW)
         self._original_index_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 2, None, GL_STATIC_DRAW)
         self._splited_triangle_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 0, None, GL_DYNAMIC_DRAW)
         self._adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_STATIC_DRAW)
@@ -97,6 +98,7 @@ class PreviousComputeControllerGPU:
     def gl_async_update_buffer_for_self_about_model(self):
         self._original_vertex_ssbo.async_update(self._model.vertex)
         self._original_normal_ssbo.async_update(self._model.normal)
+        self._original_tex_coord_ssbo.async_update(self._model.tex_coord)
         self._original_index_ssbo.async_update(self._model.index)
         self._adjacency_info_ssbo.async_update(self._model.adjacency)
         self.gl_async_update_buffer_about_output()
@@ -114,6 +116,7 @@ class PreviousComputeControllerGPU:
     def gl_sync(self):
         self._original_vertex_ssbo.gl_sync()
         self._original_normal_ssbo.gl_sync()
+        self._original_tex_coord_ssbo.gl_sync()
         self._original_index_ssbo.gl_sync()
         self._adjacency_info_ssbo.gl_sync()
         self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()

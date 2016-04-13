@@ -9,7 +9,7 @@ from numpy.linalg import LinAlgError
 from Constant import ZERO
 from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec
-from math import pow, factorial, sqrt
+from math import pow, factorial, sqrt, isnan
 
 SPLIT_PARAMETER_CHANGE_AUX = [[1, 0, 2], [0, 2, 1], [2, 1, 0]]
 
@@ -188,21 +188,21 @@ class ACPoly:
 
 
 class ACTriangle:
-
-    #vec4 pn_position[3];
-    #vec4 pn_normal[3];
-    #vec4 original_normal[3];
-    #vec4 adjacency_pn_normal_parameter[6];
-    #vec4 parameter_in_original[3];
-    #ivec4 adjacency_triangle_index3_original_triangle_index1;
-    #float triangle_quality;
+    # vec4 pn_position[3];
+    # vec4 pn_normal[3];
+    # vec4 original_position[3];
+    # vec4 original_normal[3];
+    # vec4 adjacency_pn_normal_parameter[6];
+    # vec4 parameter_in_original2_texcoord2[3];
+    # ivec4 adjacency_triangle_index3_original_triangle_index1;
+    # float triangle_quality;
 
     DATA_TYPE = [('pn_position', '4f4', 3),
                  ('pn_normal', '4f4', 3),
-                 ('original_normal', '4f4', 3),
                  ('original_position', '4f4', 3),
+                 ('original_normal', '4f4', 3),
                  ('adjacency_pn_normal_parameter', '4f4', 6),
-                 ('parameter_in_original', '4f4', 3),
+                 ('parameter_in_original2_texcoord2', '4f4', 3),
                  ('adjacency_triangle_index3_original_triangle_index1', 'i4', 4),
                  ('triangle_quality_and_padding', 'f', 4)]
 
@@ -271,12 +271,22 @@ class ACTriangle:
         triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4
         is_sharp3_triangle_quality.append(triangle_quality)
         data = []
+
+        # vec4 pn_position[3];
+        # vec4 pn_normal[3];
+        # vec4 original_position[3];
+        # vec4 original_normal[3];
+        # vec4 adjacency_pn_normal_parameter[6];
+        # vec4 parameter_in_original2_texcoord2[3];
+        # ivec4 adjacency_triangle_index3_original_triangle_index1;
+        # float triangle_quality;
+
         data.append(pn_position)
         data.append(pn_normal)
         data.append(original_position)
         data.append(self.normalv4)
         data.append(pn_normal_parameter_adjacent)
-        data.append(np.hstack((self.parameter, [[0], [0], [0]])))
+        data.append(np.hstack((self.parameter[:, :2], self._tex_coord)))
         data.append(adjacency_triangle_index3_original_triangle_index1)
         data.append([triangle_quality, 0, 0, 0])
         return tuple(data)

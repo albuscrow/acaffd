@@ -4,12 +4,16 @@ layout(location=3) uniform int show_splited_edge;
 layout(location=4) uniform int show_triangle_quality;
 layout(location=5) uniform int show_normal_diff;
 layout(location=6) uniform int show_position_diff;
+layout(location=8) uniform int has_texture;
+layout(binding=1) uniform sampler2D acTextureSampler;
+
 in vec3 varying_normal;
 in vec4 varying_parameter_in_original3_triangle_quality1;
 in vec4 varying_parameter_in_splited_triangle;
 in vec3 varying_diff_normal;
 in vec3 varying_diff_position;
 in vec3 varying_position;
+in vec2 varying_tex_coord;
 out vec4 color;
 
 void main() {
@@ -41,21 +45,17 @@ void main() {
         return;
     }
     if (show_normal_diff > 0) {
-        float l = length(varying_diff_normal);
-        if (l > 1) {
-            color = vec4(0, 0, 0, 1);
-        } else {
-            color = vec4(l, 1-l, 0, 1);
-        }
+        float l = min(length(varying_diff_normal), 1);
+        color = vec4(l, 1-l, 0, 1);
         return;
     }
     if (show_position_diff > 0) {
-        float l = length(varying_diff_position);
-        if (l > 1) {
-            color = vec4(0, 0, 0, 1);
-        } else {
-            color = vec4(l, 1-l, 0, 1);
-        }
+        float l = min(length(varying_diff_position), 1);
+        color = vec4(l, 1-l, 0, 1);
+        return;
+    }
+    if (has_texture > 0) {
+        color = texture(acTextureSampler, varying_tex_coord);
         return;
     }
     vec3 lightPosition = vec3(0,1,1);
@@ -72,6 +72,7 @@ void main() {
 	float nDotVP = max(0.0, dot(varying_normal, VP));	// normal.light
 	float pf = 0.0;								// power factor
     pf = pow(nDotHV, 10);
-    vec3 temp_color = vec3(diffuse * 0.7 + diffuse2 * 0.5 + pf * 0.7);
-    color = vec4(temp_color, 1);
+    float temp_color = diffuse * 0.7 + diffuse2 * 0.5 + pf * 0.7;
+    color = vec4(temp_color, temp_color, temp_color, 1);
+    return;
 }

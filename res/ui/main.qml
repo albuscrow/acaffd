@@ -77,8 +77,10 @@ ApplicationWindow {
                 drag.axis: Drag.XAndYAxis
                 anchors.fill: parent
                 property int pressKey
+                property int modifier
                 Keys.onPressed: {
                     pressKey = event.key
+                    modifier = event.modifiers
                 }
                 Keys.onReleased: {
                     pressKey = 0
@@ -101,7 +103,11 @@ ApplicationWindow {
                 onWheelMove:{
                     var delta = delta_y / 120;
                     if (key == Qt.Key_X) {
-                        controller.move_control_points(delta, 0, 0);
+                        if (modifier & Qt.ShiftModifier) {
+                            controller.rotate_control_points(delta, 0, 0)
+                        } else {
+                            controller.move_control_points(delta, 0, 0);
+                        }
                     } else if (key == Qt.Key_Y) {
                         controller.move_control_points(0, delta, 0);
                     } else if (key == Qt.Key_Z) {
@@ -131,7 +137,7 @@ ApplicationWindow {
                     }
 
                     SpinBox {
-                        value: 0.1
+                        value: 0.5
                         decimals: 2
                         stepSize: 0.05
                         onValueChanged: {
