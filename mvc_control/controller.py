@@ -73,8 +73,25 @@ class Controller(QObject):
 
     @pyqtSlot(float, float, float)
     def rotate_control_points(self, x, y, z):
-        self._gl_proxy.rotate_control_points(x, y, z)
-        self.updateScene.emit()
+        print(x, y, z)
+        if self._gl_proxy.normal_control_mode:
+            if x != 0:
+                if x > 0:
+                    m = create_from_x_rotation(0.1)
+                else:
+                    m = create_from_x_rotation(-0.1)
+            elif y != 0:
+                if y > 0:
+                    m = create_from_y_rotation(0.1)
+                else:
+                    m = create_from_y_rotation(-0.1)
+            else:
+                if z > 0:
+                    m = create_from_z_rotation(0.1)
+                else:
+                    m = create_from_z_rotation(-0.1)
+            self._gl_proxy.rotate_control_points(m)
+            self.updateScene.emit()
 
     @pyqtSlot(int)
     def change_tessellation_level(self, level):

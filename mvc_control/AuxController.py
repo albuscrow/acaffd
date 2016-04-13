@@ -138,8 +138,8 @@ class AuxController:
         self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
         self._control_points_changed = True
 
-    def rotate_selected_control_points(self, xyz):
-        self._b_spline_body.rotate([d / 10 for d in xyz])
+    def rotate_selected_control_points(self, m):
+        self._b_spline_body.rotate(m)
         self._control_point_position_vbo.async_update(self.get_control_point_data())
         self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
         self._control_points_changed = True

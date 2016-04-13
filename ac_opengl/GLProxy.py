@@ -93,8 +93,8 @@ class GLProxy:
         self._aux_controller.move_selected_control_points([x, y, z])
         self._deform_and_renderer_controller.need_deform = True
 
-    def rotate_control_points(self, x, y, z):
-        self._aux_controller.rotate_selected_control_points([x, y, z])
+    def rotate_control_points(self, m):
+        self._aux_controller.rotate_selected_control_points(m)
         self._deform_and_renderer_controller.need_deform = True
 
     def change_tessellation_level(self, level):

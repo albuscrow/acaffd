@@ -87,7 +87,6 @@ class BSplineBody:
             raise Exception('control point number can not less than order')
 
     def move(self, xyz):
-        print('move control points')
         for i, is_hit in enumerate(self._is_hit):
             if is_hit:
                 u = i // (self._control_point_number[1] * self._control_point_number[2])
@@ -96,8 +95,17 @@ class BSplineBody:
                 self._ctrlPoints[u, v, w] += xyz
         self._control_points_backup = self._ctrlPoints.copy()
 
-    def rotate(self, xyz):
-        print('rotate control points')
+    def rotate(self, m):
+        for i, is_hit in enumerate(self._is_hit):
+            if is_hit:
+                u = i // (self._control_point_number[1] * self._control_point_number[2])
+                v = i % (self._control_point_number[1] * self._control_point_number[2]) // self._control_point_number[2]
+                w = i % self._control_point_number[2]
+                temp = np.zeros((4,))
+                temp[:3] = self._ctrlPoints[u, v, w]
+                temp[3] = 1
+                self._ctrlPoints[u, v, w] = np.dot(temp, m)[:3]
+        self._control_points_backup = self._ctrlPoints.copy()
 
     @property
     def min_parameter(self):

@@ -109,9 +109,17 @@ ApplicationWindow {
                             controller.move_control_points(delta, 0, 0);
                         }
                     } else if (key == Qt.Key_Y) {
-                        controller.move_control_points(0, delta, 0);
+                        if (modifier & Qt.ShiftModifier) {
+                            controller.rotate_control_points(0, delta, 0)
+                        } else {
+                            controller.move_control_points(0, delta, 0);
+                        }
                     } else if (key == Qt.Key_Z) {
-                        controller.move_control_points(0, 0, delta);
+                        if (modifier & Qt.ShiftModifier) {
+                            controller.rotate_control_points(0, 0, delta)
+                        } else {
+                            controller.move_control_points(0, 0, delta);
+                        }
                     } else {
                         controller.zoom(delta)
                     }
