@@ -22,7 +22,6 @@ class Controller(QObject):
     updateScene = pyqtSignal()
     show_figure = pyqtSignal()
 
-
     def __init__(self):
         super().__init__()
         self._context = None
@@ -63,16 +62,18 @@ class Controller(QObject):
         self.diff_result.append(r)
 
     def show_diff_result(self):
-        # print('show_diff_result:')
-        # print(self.factors)
-        # print([x[0][0] for x in self.diff_result])
-        print(threading.current_thread().ident)
         plot(self.factors, [x[0][0] for x in self.diff_result])
         show()
 
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
-        self._gl_proxy.move_control_points(x, y, z)
+        if self._gl_proxy.normal_control_mode:
+            self._gl_proxy.move_control_points(x, y, z)
+            self.updateScene.emit()
+
+    @pyqtSlot(float, float, float)
+    def rotate_control_points(self, x, y, z):
+        self._gl_proxy.rotate_control_points(x, y, z)
         self.updateScene.emit()
 
     @pyqtSlot(int)
@@ -274,7 +275,6 @@ class Controller(QObject):
                 end_point_x = x2 / self.window_size.h * 2 - self.window_size.aspect
                 end_point = np.mat([end_point_x, end_point_y, end_point_z, 1], dtype='f4') * i
                 self._gl_proxy.set_select_point(start_point, end_point - start_point)
-
         self.updateScene.emit()
 
     @pyqtSlot()
@@ -359,12 +359,12 @@ def get_test_file_name():
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
     # file_path = "res/3d_model/star.obj"
-    # file_path = "res/3d_model/legoDog.obj"
+    file_path = "res/3d_model/legoDog.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/test_2_triangle_plain.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
-    file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"

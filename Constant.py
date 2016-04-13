@@ -22,17 +22,17 @@ CONTROL_POINT_TRIANGLE_NUMBER = 9
 SHOW_NORMAL_POINT_NUMBER_PER_TRIANGLE = 3
 
 
-#struct SplitedTriangle {
-#    vec4 pn_position[3];
-#    vec4 pn_normal[3];
-#    vec4 original_normal[3];
-#    vec4 adjacency_pn_normal3_is_sharp1[6];
-#    vec4 parameter_in_original[3];
-#    float triangle_quality;
-#    uint original_triangle_index;
-#};
 
-SPLITED_TRIANGLE_SIZE = 340
+# vec4 pn_position[3];
+# vec4 pn_normal[3];
+# vec4 original_position[3];
+# vec4 original_normal[3];
+# vec4 adjacency_pn_normal_parameter[6];
+# vec4 parameter_in_original2_texcoord2[3];
+# ivec4 adjacency_triangle_index3_original_triangle_index1;
+# float triangle_quality;
+
+SPLITED_TRIANGLE_SIZE = 368
 
 ZERO = 0.00001
 
