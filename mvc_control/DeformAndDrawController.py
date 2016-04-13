@@ -555,7 +555,6 @@ class DeformAndDrawController:
             return
         self._need_comparison = False
 
-        print('position')
         dr1 = DeformAndDrawController.comparison_helper(self._vertex_vbo, self._real_position_vbo, '位置',
                                                         lambda i, j: sqrt(
                                                             reduce(lambda p, x: p + x, [e * e for e in (i - j)[:3]],
@@ -569,7 +568,6 @@ class DeformAndDrawController:
                 cos_value = -1
             return acos(cos_value) / pi * 180
 
-        print('normal')
         dr2 = DeformAndDrawController.comparison_helper(self._normal_vbo, self._real_normal_vbo, '法向', fun)
         self._controller.add_diff_result((dr1, dr2))
 

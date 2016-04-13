@@ -29,6 +29,7 @@ class ACVBO:
         if self._capacity == capacity:
             return
         self._capacity = int(capacity)
+        self._data = None
         self._dirty = True
 
     def async_update(self, data: np.array):
@@ -50,6 +51,7 @@ class ACVBO:
         if not self._is_bind:
             glBindBufferBase(self._target, self._binding_point, self.buffer_name)
             self._is_bind = True
+
         if self._dirty:
             glBindBuffer(self._target, self.buffer_name)
             glBufferData(self._target, len(self), self._data, self._usage_hint)
