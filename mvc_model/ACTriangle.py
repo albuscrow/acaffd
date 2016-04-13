@@ -9,7 +9,7 @@ from numpy.linalg import LinAlgError
 from Constant import ZERO
 from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec
-from math import pow, factorial, sqrt
+from math import pow, factorial, sqrt, isnan
 
 SPLIT_PARAMETER_CHANGE_AUX = [[1, 0, 2], [0, 2, 1], [2, 1, 0]]
 

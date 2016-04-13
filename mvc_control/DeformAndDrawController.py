@@ -2,6 +2,7 @@ from functools import reduce
 
 from math import sqrt, acos, pi, fabs
 
+import math
 from PIL import Image
 
 from Constant import *
@@ -246,7 +247,7 @@ class DeformAndDrawController:
 
         if self._real_normal_vbo is not None:
             self._real_normal_vbo.capacity = self.splited_triangle_number \
-                                             * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+                                             * self.tessellated_point_number_pre_splited_triangle * NORMAL_SIZE
         if self._real_position_vbo is not None:
             self._real_position_vbo.capacity = self.splited_triangle_number \
                                                * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
@@ -531,9 +532,13 @@ class DeformAndDrawController:
         acc = 0
         max_e = -1
         es = []
+        no = 0
         for i, j in zip(vbo1.get_value(ctypes.c_float, (point_number, 4)),
                         vbo2.get_value(ctypes.c_float, (point_number, 4))):
             e = fun(i, j)
+            if math.isnan(e):
+                print('point no:', no, i, j)
+            no += 1
             max_e = max(e, max_e)
             acc += e
             es.append(e)
@@ -550,6 +555,7 @@ class DeformAndDrawController:
             return
         self._need_comparison = False
 
+        print('position')
         dr1 = DeformAndDrawController.comparison_helper(self._vertex_vbo, self._real_position_vbo, '位置',
                                                         lambda i, j: sqrt(
                                                             reduce(lambda p, x: p + x, [e * e for e in (i - j)[:3]],
@@ -563,6 +569,7 @@ class DeformAndDrawController:
                 cos_value = -1
             return acos(cos_value) / pi * 180
 
+        print('normal')
         dr2 = DeformAndDrawController.comparison_helper(self._normal_vbo, self._real_normal_vbo, '法向', fun)
         self._controller.add_diff_result((dr1, dr2))
 

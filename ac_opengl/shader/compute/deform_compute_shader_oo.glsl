@@ -46,7 +46,7 @@ layout(std430, binding=6) buffer TesselatedVertexBuffer{
     vec4[] tessellatedVertex;
 };
 
-//input
+//output
 layout(std430, binding=21) buffer TessellatedParameterInBSplineBody{
     vec4[] tessellatedParameterInBSplineBody;
 };
@@ -353,6 +353,9 @@ void main() {
             getTessellatedSplitParameter(currentTriangle.parameter_in_original2_texcoord2, tessellatedParameter[i]);
         parameterInOriginal3_triangle_quality1[point_offset].z =
             1 - parameterInOriginal3_triangle_quality1[point_offset].x - parameterInOriginal3_triangle_quality1[point_offset].y;
+        if (parameterInOriginal3_triangle_quality1[point_offset].z < 0) {
+            parameterInOriginal3_triangle_quality1[point_offset].z = 0;
+        }
         parameterInOriginal3_triangle_quality1[point_offset].w = currentTriangle.triangle_quality;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);

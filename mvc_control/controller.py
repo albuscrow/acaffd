@@ -348,7 +348,6 @@ class Controller(QObject):
             self._inited = True
         self.gl_on_frame_draw()
 
-
 def get_test_file_name():
     # todo
     # file_path = "res/3d_model/Mobile.obj"
