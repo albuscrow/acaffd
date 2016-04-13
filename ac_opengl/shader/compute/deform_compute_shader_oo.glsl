@@ -353,7 +353,7 @@ void main() {
             getTessellatedSplitParameter(currentTriangle.parameter_in_original2_texcoord2, tessellatedParameter[i]);
         parameterInOriginal3_triangle_quality1[point_offset].z =
             1 - parameterInOriginal3_triangle_quality1[point_offset].x - parameterInOriginal3_triangle_quality1[point_offset].y;
-        parameterInOriginal3_triangle_quality1[point_offset][3] = currentTriangle.triangle_quality;
+        parameterInOriginal3_triangle_quality1[point_offset].w = currentTriangle.triangle_quality;
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         tessellatedTexCoord[point_offset] = getTexCoord(pointParameter);
@@ -641,14 +641,13 @@ vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint triangle_index) {
 // 根据 parameter 获得PNTriangle中的位置
 vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_index) {
     vec3 result = vec3(0);
-    int ctrlPointIndex = 0;
     int offset = int(original_triangle_index * 10);
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
             int k = 3 - i - j;
             float n = 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
                     / factorial(i) / factorial(j) / factorial(k);
-            result += PNTriangleP_shared[offset + ctrlPointIndex ++] * n;
+            result += PNTriangleP_shared[offset ++] * n;
         }
     }
     return result;

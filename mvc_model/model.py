@@ -16,7 +16,7 @@ class OBJ:
         self._vertex = []
         self._normal = []
         self._tex_coord = []
-        self._has_texture = True
+        self._has_texture = False
         self._index = []
         self._adjacency = []
 

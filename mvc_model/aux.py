@@ -150,6 +150,7 @@ class BSplineBody:
         self.init_data()
 
     def move_dffd(self, parameter, displacement):
+        parameter = [min(max(x, -l / 2), l / 2) for x, l in zip(parameter, self._size)]
         self._ctrlPoints = self._control_points_backup.copy()
         displacement = np.asarray(displacement, dtype=np.float32)
         Rs = np.zeros((*self._control_point_number,), dtype=np.float32)

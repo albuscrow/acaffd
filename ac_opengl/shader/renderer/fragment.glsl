@@ -45,21 +45,13 @@ void main() {
         return;
     }
     if (show_normal_diff > 0) {
-        float l = length(varying_diff_normal);
-        if (l > 1) {
-            color = vec4(0, 0, 0, 1);
-        } else {
-            color = vec4(l, 1-l, 0, 1);
-        }
+        float l = min(length(varying_diff_normal), 1);
+        color = vec4(l, 1-l, 0, 1);
         return;
     }
     if (show_position_diff > 0) {
-        float l = length(varying_diff_position);
-        if (l > 1) {
-            color = vec4(0, 0, 0, 1);
-        } else {
-            color = vec4(l, 1-l, 0, 1);
-        }
+        float l = min(length(varying_diff_position), 1);
+        color = vec4(l, 1-l, 0, 1);
         return;
     }
     if (has_texture > 0) {
