@@ -253,3 +253,7 @@ class AuxController:
 
     def get_control_point_str(self):
         return '_'.join([str(x) for x in self._b_spline_body.control_point_number])
+
+    def get_bspline_body_size(self):
+        return self._b_spline_body.step
+

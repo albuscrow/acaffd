@@ -31,6 +31,10 @@ class BSplineBody:
 
         self.init_data()
 
+    @property
+    def step(self):
+        return [l / s for l, s in zip(self._size, self.get_cage_size())]
+
     def init_data(self):
         aux = [self.get_control_point_aux_list(size, cpn, o) for size, cpn, o in
                zip(self._size, self._control_point_number, self._order)]

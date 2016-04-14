@@ -1,4 +1,5 @@
 import threading
+from functools import reduce
 
 from mvc_model.model import OBJ, ModelFileFormatType
 from math import *
@@ -52,7 +53,7 @@ class Controller(QObject):
 
         self._inited = False  # type: bool
 
-        self.factors = np.arange(0.1, (4 / 3) ** 0.5, 0.1, dtype='f4')
+        self.factors = None
         self.diff_result = []
 
         self.gl_task = None
@@ -62,7 +63,10 @@ class Controller(QObject):
         self.diff_result.append(r)
 
     def show_diff_result(self):
-        plot(self.factors, [x[0][0] for x in self.diff_result])
+        path = self.get_save_path()
+        np.save(path + '/split_data', self.diff_result)
+        position = [x[0][0] for x in self.diff_result]
+        plot(self.factors, position)
         show()
 
     @pyqtSlot(float, float, float)
@@ -123,10 +127,8 @@ class Controller(QObject):
 
     @pyqtSlot()
     def save_ctrl_points(self):
-        dir = self._loaded_file_path[:self._loaded_file_path.rfind('.')] + '_' + self._gl_proxy.get_parameter_str()
-        if not exists(dir):
-            os.mkdir(dir)
-        files = os.listdir(dir)
+        path = self.get_save_path()
+        files = os.listdir(path)
         file_name_prefix = self._loaded_file_path[
                            self._loaded_file_path.rfind('/') + 1:self._loaded_file_path.rfind('.')]
         no = 0
@@ -134,11 +136,17 @@ class Controller(QObject):
             if f.startswith(file_name_prefix):
                 no += 1
         file_name = '%s/%s_control_points%d' \
-                    % (dir,
+                    % (path,
                        file_name_prefix,
                        no)
         points = self._gl_proxy.control_points()
         np.save(file_name, points)
+
+    def get_save_path(self):
+        path = self._loaded_file_path[:self._loaded_file_path.rfind('.')] + '_' + self._gl_proxy.get_parameter_str()
+        if not exists(path):
+            os.mkdir(path)
+        return path
 
     @pyqtSlot(str)
     def load_control_points(self, file_path):
@@ -223,13 +231,17 @@ class Controller(QObject):
 
     @pyqtSlot()
     def begin_test_split_factor(self):
+        self.diff_result.clear()
+        step = self._gl_proxy.aux_controller.get_bspline_body_size()
+        cage_length = reduce(lambda p, x: p + x ** 2, step, 0) ** 0.5
+        self.factors = np.arange(0.1, 1.2, 0.05, dtype='f4')
         indices = 0
         original_split_factor = self._gl_proxy.previous_compute_controller.split_factor
 
         def gl_task1():
             nonlocal indices
             if indices < len(self.factors):
-                self.change_split_factor(self.factors[indices])
+                self.change_split_factor(self.factors[indices] * cage_length)
                 self.set_need_comparison()
                 indices += 1
                 self.updateScene.emit()
@@ -247,29 +259,34 @@ class Controller(QObject):
     @pyqtSlot()
     def begin_diff_comparison(self):
         self.diff_result.clear()
-        is_ac = True
-        if self._gl_proxy.algorithm != ALGORITHM_AC:
-            self._gl_proxy.algorithm = ALGORITHM_AC
-            is_ac = False
-        self._gl_proxy.set_need_comparison()
 
-        def gl_task1():
-            self._gl_proxy.algorithm = ALGORITHM_CYM
+        def gl_task0():
+            is_ac = True
+            if self._gl_proxy.algorithm != ALGORITHM_AC:
+                self._gl_proxy.algorithm = ALGORITHM_AC
+                is_ac = False
             self._gl_proxy.set_need_comparison()
 
-            def gl_task2():
-                if is_ac:
-                    self._gl_proxy.algorithm = ALGORITHM_AC
-                self.gl_task = None
-                for ac, cym, label in zip(*self.diff_result, ['位置', '法向']):
-                    print(label + '比对: 平均/最大/标准差')
-                    print('ac %e / %e / %e' % (ac[0], ac[1], ac[2]))
-                    print('cym %e / %e / %e' % (cym[0], cym[1], cym[2]))
+            def gl_task1():
+                self._gl_proxy.algorithm = ALGORITHM_CYM
+                self._gl_proxy.set_need_comparison()
 
-            self.gl_task = gl_task2
+                def gl_task2():
+                    if is_ac:
+                        self._gl_proxy.algorithm = ALGORITHM_AC
+                    self.gl_task = None
+                    for ac, cym, label in zip(*self.diff_result, ['位置', '法向']):
+                        print(label + '比对: 平均/最大/标准差')
+                        print('ac %e / %e / %e' % (ac[0], ac[1], ac[2]))
+                        print('cym %e / %e / %e' % (cym[0], cym[1], cym[2]))
+
+                self.gl_task = gl_task2
+                self.updateScene.emit()
+
+            self.gl_task = gl_task1
             self.updateScene.emit()
 
-        self.gl_task = gl_task1
+        self.gl_task = gl_task0
         self.updateScene.emit()
 
     @pyqtSlot(int, int, int, int)
@@ -352,9 +369,9 @@ class Controller(QObject):
         glViewport(*self.window_size.xywh)
 
         if self._gl_proxy:
-            self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
             if self.gl_task:
                 self.gl_task()
+            self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
 
         glDisable(GL_SCISSOR_TEST)
 
@@ -375,12 +392,13 @@ def get_test_file_name():
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
     # file_path = "res/3d_model/star.obj"
-    file_path = "res/3d_model/legoDog.obj"
+    # file_path = "res/3d_model/legoDog.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/test_2_triangle_plain.obj"
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    file_path = "res/3d_model/rabbit_cym.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
