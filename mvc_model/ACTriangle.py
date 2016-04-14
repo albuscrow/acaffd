@@ -160,7 +160,9 @@ class ACPoly:
             t = ACTriangle(self._triangle.id)
             ps = [c, pre, p]
             t.positionv3 = np.array([p.position for p in ps], dtype='f4')
-            t.normalv3 = np.array([normalize(p.normal) for p in ps], dtype='f4')
+            # t.normalv3 = np.array([normalize(p.normal) for p in ps], dtype='f4')
+            # original normal not need normalize
+            t.normalv3 = np.array([p.normal for p in ps], dtype='f4')
             t.tex_coord = np.array([p.tex_coord for p in ps], dtype='f4')
             t.parameter = np.array([p.parameter for p in ps], dtype='f4')
             t.neighbor = self._triangle.neighbor
