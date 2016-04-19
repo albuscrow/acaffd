@@ -59,20 +59,30 @@ void main() {
         return;
     }
     vec3 lightPosition = vec3(0,1,1);
-    vec3 eye = normalize(varying_position - vec3(0,0,-1));
-    vec3 lightVector = normalize(vec3(0, 0, 1));
-    vec3 lightVector2 = normalize(vec3(-1, 0, -1));
-    float diffuse = max(dot(lightVector, normalize(varying_normal)), 0);
-    float diffuse2 = max(dot(lightVector2, normalize(varying_normal)), 0);
+    vec3 L = normalize(lightPosition - varying_position);
+    vec3 E = normalize(-varying_position); // we are in Eye Coordinates, so EyePos is (0,0,0)
+    vec3 R = normalize(-reflect(L, varying_normal));
 
-    //高光
-	vec3 VP = lightPosition - varying_position;	// 片元到光源的向量
-	VP = normalize(VP);
-	float nDotHV = max(0.0, dot(reflect(-VP, varying_normal), eye));
-	float nDotVP = max(0.0, dot(varying_normal, VP));	// normal.light
-	float pf = 0.0;								// power factor
-    pf = pow(nDotHV, 10);
-    float temp_color = diffuse * 0.7 + diffuse2 * 0.5 + pf * 0.7;
-    color = vec4(temp_color, temp_color, temp_color, 1);
+    //calculate Ambient Term:
+    vec4 Iamb = vec4(0.6);
+
+    //calculate Diffuse Term:
+    vec4 Idiff = vec4(0.3) * max(dot(varying_normal,L), 0.0);
+    Idiff = clamp(Idiff, 0.0, 1.0);
+
+    // calculate Specular Term:
+    vec4 Ispec = vec4(0.2) * pow(max(dot(R, E), 0.0), 30);
+    Ispec = clamp(Ispec, 0.0, 1.0);
+
+    lightPosition = vec3(-1, -1, 1);
+    L = normalize(lightPosition - varying_position);
+    R = normalize(-reflect(L, varying_normal));
+
+    //calculate Diffuse Term:
+    vec4 Idiff2 = vec4(0.2) * max(dot(varying_normal,L), 0.0);
+    Idiff2 = clamp(Idiff2, 0.0, 1.0);
+
+    color = Iamb + Idiff + Ispec + Idiff2;
+    color.w = 1;
     return;
 }

@@ -352,15 +352,7 @@ class Controller(QObject):
     def gl_init(self) -> None:
         glClearColor(1, 1, 1, 1)
         self._gl_proxy.gl_init_global()
-        # self.run_splited_factor_test(0.01, 0.02)
-        # print('debug')
 
-    #             self.outer = outer
-    #
-    #         def run(self):
-    #             for f in self.factors:
-    #                 sleep(3)
-    #                 print('current splited factor:', f)
     def gl_on_frame_draw(self) -> None:
         glEnable(GL_SCISSOR_TEST)
         glScissor(*self.window_size.xywh)
@@ -381,6 +373,7 @@ class Controller(QObject):
             self.gl_init()
             self._inited = True
         self.gl_on_frame_draw()
+
 
 def get_test_file_name():
     # todo
