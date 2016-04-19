@@ -202,6 +202,10 @@ class Controller(QObject):
         self._gl_proxy.set_show_real(is_show)
 
     @pyqtSlot(bool)
+    def set_show_original(self, is_show: bool):
+        self._gl_proxy.set_show_original(is_show)
+
+    @pyqtSlot(bool)
     def set_splited_edge_visibility(self, is_show: bool):
         self._gl_proxy.set_splited_edge_visibility(is_show)
 
@@ -391,9 +395,9 @@ def get_test_file_name():
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    file_path = "res/3d_model/rabbit_cym.obj"
+    # file_path = "res/3d_model/rabbit_cym.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
-    # file_path = "res/3d_model/vase_cym.obj"
+    file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"

@@ -5,6 +5,7 @@ layout(location=4) uniform int show_triangle_quality;
 layout(location=5) uniform int show_normal_diff;
 layout(location=6) uniform int show_position_diff;
 layout(location=8) uniform int has_texture;
+layout(location=9) uniform int show_original;
 layout(binding=1) uniform sampler2D acTextureSampler;
 
 in vec3 varying_normal;
@@ -17,6 +18,36 @@ in vec2 varying_tex_coord;
 out vec4 color;
 
 void main() {
+
+    vec3 lightPosition = vec3(0,1,1);
+    vec3 L = normalize(lightPosition - varying_position);
+    vec3 E = normalize(-varying_position); // we are in Eye Coordinates, so EyePos is (0,0,0)
+    vec3 R = normalize(-reflect(L, varying_normal));
+
+    //calculate Ambient Term:
+    vec4 Iamb = vec4(0.6);
+
+    //calculate Diffuse Term:
+    vec4 Idiff = vec4(0.3) * max(dot(varying_normal,L), 0.0);
+    Idiff = clamp(Idiff, 0.0, 1.0);
+
+    // calculate Specular Term:
+    vec4 Ispec = vec4(0.2) * pow(max(dot(R, E), 0.0), 30);
+    Ispec = clamp(Ispec, 0.0, 1.0);
+
+    lightPosition = vec3(-1, -1, 1);
+    L = normalize(lightPosition - varying_position);
+    R = normalize(-reflect(L, varying_normal));
+
+    //calculate Diffuse Term:
+    vec4 Idiff2 = vec4(0.2) * max(dot(varying_normal,L), 0.0);
+    Idiff2 = clamp(Idiff2, 0.0, 1.0);
+
+    color = Iamb + Idiff + Ispec + Idiff2;
+    color.w = 1;
+    if (show_original > 0) {
+        return;
+    }
     if (show_splited_edge > 0) {
         vec3 temp;
         temp.xy = varying_parameter_in_splited_triangle.zw;
@@ -58,31 +89,5 @@ void main() {
         color = texture(acTextureSampler, varying_tex_coord);
         return;
     }
-    vec3 lightPosition = vec3(0,1,1);
-    vec3 L = normalize(lightPosition - varying_position);
-    vec3 E = normalize(-varying_position); // we are in Eye Coordinates, so EyePos is (0,0,0)
-    vec3 R = normalize(-reflect(L, varying_normal));
-
-    //calculate Ambient Term:
-    vec4 Iamb = vec4(0.6);
-
-    //calculate Diffuse Term:
-    vec4 Idiff = vec4(0.3) * max(dot(varying_normal,L), 0.0);
-    Idiff = clamp(Idiff, 0.0, 1.0);
-
-    // calculate Specular Term:
-    vec4 Ispec = vec4(0.2) * pow(max(dot(R, E), 0.0), 30);
-    Ispec = clamp(Ispec, 0.0, 1.0);
-
-    lightPosition = vec3(-1, -1, 1);
-    L = normalize(lightPosition - varying_position);
-    R = normalize(-reflect(L, varying_normal));
-
-    //calculate Diffuse Term:
-    vec4 Idiff2 = vec4(0.2) * max(dot(varying_normal,L), 0.0);
-    Idiff2 = clamp(Idiff2, 0.0, 1.0);
-
-    color = Iamb + Idiff + Ispec + Idiff2;
-    color.w = 1;
     return;
 }

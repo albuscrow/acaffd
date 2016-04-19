@@ -6,6 +6,7 @@ import math
 from PIL import Image
 
 from Constant import *
+from mvc_control.PreviousComputeControllerGPU import PreviousComputeControllerGPU
 from mvc_model.GLObject import ACVBO
 from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
@@ -66,6 +67,9 @@ class ModelRendererShader(ProgramWrap):
         self.update_uniform_about_split_edge()
         glProgramUniform1i(self._gl_program_name, 8, 1 if self._controller.has_texture else -1)
 
+    def update_uniform_about_show_original(self):
+        glProgramUniform1i(self._gl_program_name, 9, 1 if self._controller.show_original else -1)
+
     def update_uniform_about_split_edge(self):
         glProgramUniform1i(self._gl_program_name, 3, 1 if self._controller.splited_edge_visibility else -1)
 
@@ -83,7 +87,8 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, cage_size: list, has_texture, controller=None):
+    def __init__(self, cage_size: list, has_texture, previous_controller, controller=None):
+        self._previous_controller = previous_controller  # type: PreviousComputeControllerGPU
         self._controller = controller
         self._splited_triangle_number = -1
         self._cage_size = cage_size  # type: list
@@ -124,6 +129,9 @@ class DeformAndDrawController:
 
         self._need_comparison = False
 
+        self._need_update_show_original = True
+        self._show_original = False
+
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._parameter_in_BSpline_body_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 21, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -136,6 +144,7 @@ class DeformAndDrawController:
         self._real_position_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 12, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._real_normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 13, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._model_vao = -1  # type: int
+        self._original_model_vao = -1  # type: int
 
         self._control_point_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 15, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._control_point_index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 16, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -182,6 +191,14 @@ class DeformAndDrawController:
         # specific index buffer
         self._index_vbo.as_element_array_buffer()
         # unbind program
+        glBindVertexArray(0)
+
+        self._original_model_vao = glGenVertexArrays(1)  # type: int
+        glBindVertexArray(self._original_model_vao)
+        self._previous_controller.original_vertex_ssbo.as_array_buffer(0, 4, GL_FLOAT)
+        self._previous_controller.original_normal_ssbo.as_array_buffer(1, 4, GL_FLOAT)
+        self._previous_controller.original_tex_coord_ssbo.as_array_buffer(6, 2, GL_FLOAT)
+        self._previous_controller.original_index_ssbo.as_element_array_buffer()
         glBindVertexArray(0)
 
         self._control_point_vao = glGenVertexArrays(1)
@@ -311,6 +328,10 @@ class DeformAndDrawController:
             self._renderer_program.update_uniform_about_split_edge()
             self._need_update_show_splited_edge_flag = False
 
+        if self._need_update_show_original:
+            self._renderer_program.update_uniform_about_show_original()
+            self._need_update_show_original = False
+
         if self._need_update_triangle_quality_flag:
             self._renderer_program.update_uniform_about_triangle_quality()
             self._need_update_triangle_quality_flag = False
@@ -336,7 +357,10 @@ class DeformAndDrawController:
         glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
 
         glActiveTexture(GL_TEXTURE1)
-        glBindVertexArray(self._model_vao)
+        if self._show_original:
+            glBindVertexArray(self._original_model_vao)
+        else:
+            glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
         glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
         glActiveTexture(GL_TEXTURE0)
@@ -484,6 +508,10 @@ class DeformAndDrawController:
         self._show_real = is_show
         self._need_update_show_real_flag = True
 
+    def set_show_original(self, is_show):
+        self._show_original = is_show
+        self._need_update_show_original = True
+
     def set_adjust_control_point(self, v):
         self._adjust_control_point = v
         self._need_update_adjust_control_point_flag = True
@@ -570,3 +598,7 @@ class DeformAndDrawController:
     @property
     def has_texture(self):
         return self._has_texture
+
+    @property
+    def show_original(self):
+        return self._show_original

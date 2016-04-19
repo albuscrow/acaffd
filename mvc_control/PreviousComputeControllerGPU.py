@@ -211,3 +211,19 @@ class PreviousComputeControllerGPU:
     @property
     def splited_triangle_ssbo(self):
         return self._splited_triangle_ssbo
+
+    @property
+    def original_vertex_ssbo(self):
+        return self._original_vertex_ssbo
+
+    @property
+    def original_normal_ssbo(self):
+        return self._original_normal_ssbo
+
+    @property
+    def original_tex_coord_ssbo(self):
+        return self._original_tex_coord_ssbo
+
+    @property
+    def original_index_ssbo(self):
+        return self._original_index_ssbo

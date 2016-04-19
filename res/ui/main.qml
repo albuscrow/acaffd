@@ -288,6 +288,14 @@ ApplicationWindow {
                     }
 
                     CheckBox {
+                        text: qsTr("显示原始模型")
+                        checked: false
+                        onClicked: {
+                            controller.set_show_original(checked)
+                        }
+                    }
+
+                    CheckBox {
                         text: qsTr("显示上采样直接变形结果")
                         checked: false
                         onClicked: {
