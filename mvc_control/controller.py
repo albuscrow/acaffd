@@ -77,7 +77,6 @@ class Controller(QObject):
 
     @pyqtSlot(float, float, float)
     def rotate_control_points(self, x, y, z):
-        print(x, y, z)
         if self._gl_proxy.normal_control_mode:
             if x != 0:
                 if x > 0:
@@ -174,18 +173,6 @@ class Controller(QObject):
         # record rotate_y and rotate_x
         xyz = [x / 100, - y / 100, 0]
         self._translate = [x + y for x, y in zip(self._translate, xyz)]
-        # update _mode_view_matrix
-        scale_matrix = create_from_scale(self._scale, dtype='f4')
-        self._model_view_matrix = multiply(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
-                                                                     -self._rotate_y / 180 * pi), dtype='f4'),
-                                           np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
-        self.updateScene.emit()
-
-    @pyqtSlot(int, int)
-    def rotate(self, x, y):
-        # record rotate_y and rotate_x
-        self._rotate_y += x
-        self._rotate_x += y
         # update _mode_view_matrix
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = multiply(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,

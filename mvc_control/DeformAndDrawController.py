@@ -1,8 +1,7 @@
 from functools import reduce
 
-from math import sqrt, acos, pi, fabs
+from math import sqrt, acos, pi
 
-import math
 from PIL import Image
 
 from Constant import *
@@ -31,7 +30,7 @@ class DeformComputeShader(ProgramWrap):
 
     def init_uniform(self):
         self.update_uniform_triangle_number()
-        self.update_uniform_about_b_spline()
+        # self.update_uniform_about_b_spline()
         self.update_uniform_about_tessellation()
         self.update_uniform_about_adjust_control_point_flag()
 
@@ -48,10 +47,10 @@ class DeformComputeShader(ProgramWrap):
         self._tessellation_indexes.async_update(self._controller.tessellation_index)
         self._tessellation_indexes.gl_sync()
 
-    def update_uniform_about_b_spline(self):
-        glProgramUniform1ui(self._gl_program_name, 1,
-                            int(self._controller.cage_size[1] * self._controller.cage_size[2]))
-        glProgramUniform1ui(self._gl_program_name, 2, int(self._controller.cage_size[2]))
+    # def update_uniform_about_b_spline(self):
+    #     glProgramUniform1ui(self._gl_program_name, 1,
+    #                         int(self._controller.cage_size[1] * self._controller.cage_size[2]))
+    #     glProgramUniform1ui(self._gl_program_name, 2, int(self._controller.cage_size[2]))
 
     def update_uniform_about_adjust_control_point_flag(self):
         glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.adjust_control_point else -1)

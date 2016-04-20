@@ -195,8 +195,6 @@ const vec3 sampleParameter[37] = {
 
 
 layout(location=0) uniform uint triangleNumber;
-layout(location=1) uniform uint vw;
-layout(location=2) uniform uint w;
 layout(location=4) uniform uint tessellatedParameterLength;
 layout(location=5) uniform uint tessellateIndexLength;
 layout(location=6) uniform int adjust_control_point;
@@ -231,7 +229,12 @@ vec4 getParameterInBSplineBody(vec3 pointParameter);
 // 代表三个方向B spline body的区间数
 float BSplineBodyMinParameter[3];
 float BSplineBodyStep[3];
-float BSplineBodyIntervalNumber[3];
+uint BSplineBodyIntervalNumber[3];
+uint IntervalNumberVW;
+uint IntervalNumberW;
+uint OrderVW;
+uint OrderW;
+uint OrderProduct;
 
 SplitedTriangle currentTriangle;
 vec3 normalizedOriginalNormal[3];
@@ -241,11 +244,17 @@ void main() {
         return;
     }
 
+    OrderProduct = 1;
     for (int i = 0; i < 3; ++i) {
-        BSplineBodyIntervalNumber[i] = BSplineBodyControlPointNum[i] - BSplineBodyOrder[i] + 1;
+        OrderProduct *= uint(BSplineBodyOrder[i]);
+        BSplineBodyIntervalNumber[i] = uint(BSplineBodyControlPointNum[i] - BSplineBodyOrder[i] + 1);
         BSplineBodyMinParameter[i] = -BSplineBodyLength[i] / 2;
         BSplineBodyStep[i] = BSplineBodyLength[i] / BSplineBodyIntervalNumber[i];
     }
+    IntervalNumberVW = BSplineBodyIntervalNumber[1] * BSplineBodyIntervalNumber[2];
+    IntervalNumberW = BSplineBodyIntervalNumber[2];
+    OrderVW = uint(BSplineBodyOrder[1] * BSplineBodyOrder[2]);
+    OrderW = uint(BSplineBodyOrder[2]);
 
     currentTriangle = input_triangles[triangleIndex];
     for (int i = 0; i < 3; ++i) {
@@ -453,19 +462,21 @@ vec4 getPosition(vec3 parameter) {
     return vec4(result, 1);
 }
 
-vec3 sample_helper(uvec3 knot_left_index, float[3] un, float[3] vn, float[3] wn){
+vec3 sample_helper(uvec3 knot_left_index, float[4] un, float[4] vn, float[4] wn){
     uint uli = knot_left_index.x;
     uint vli = knot_left_index.y;
     uint wli = knot_left_index.z;
-    //todo
-    uint controlPointOffset = ((uli - 2) * vw + (vli - 2) * w + (wli - 2)) * 27;
+
+    uint controlPointOffset = (uli * IntervalNumberVW
+                             + vli * IntervalNumberW
+                             + wli) * OrderProduct;
 
     vec3 tempcp2[4][4];
-    for (int i = 0; i < 3; ++i){
-        for (int j = 0; j < 3; ++j){
+    for (int i = 0; i < BSplineBodyOrder[0]; ++i){
+        for (int j = 0; j < BSplineBodyOrder[1]; ++j){
             tempcp2[i][j] = vec3(0.0f);
-            for (int k = 0; k < 3; ++k) {
-                vec4 cp = newControlPoints[controlPointOffset + i * 9 + j * 3 + k];
+            for (int k = 0; k < BSplineBodyOrder[2]; ++k) {
+                vec4 cp = newControlPoints[controlPointOffset + i * OrderVW + j * OrderW + k];
                 tempcp2[i][j].x += cp.x * wn[k];
                 tempcp2[i][j].y += cp.y * wn[k];
                 tempcp2[i][j].z += cp.z * wn[k];
@@ -474,9 +485,9 @@ vec3 sample_helper(uvec3 knot_left_index, float[3] un, float[3] vn, float[3] wn)
     }
 
     vec3 tempcp1[4];
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < BSplineBodyOrder[0]; ++i) {
         tempcp1[i] = vec3(0.0);
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < BSplineBodyOrder[1]; ++j) {
             tempcp1[i].x += tempcp2[i][j].x * vn[j];
             tempcp1[i].y += tempcp2[i][j].y * vn[j];
             tempcp1[i].z += tempcp2[i][j].z * vn[j];
@@ -484,7 +495,7 @@ vec3 sample_helper(uvec3 knot_left_index, float[3] un, float[3] vn, float[3] wn)
     }
 
     vec3 result = vec3(0);
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < BSplineBodyOrder[0]; ++i) {
         result.x += tempcp1[i].x * un[i];
         result.y += tempcp1[i].y * un[i];
         result.z += tempcp1[i].z * un[i];
@@ -497,13 +508,13 @@ vec3 sampleFastNormal(in SamplePoint samplePoint) {
     float v = samplePoint.position.y;
     float w = samplePoint.position.z;
 
-    float un[3] = {1, u, u * u};
-    float vn[3] = {1, v, v * v};
-    float wn[3] = {1, w, w * w};
+    float un[4] = {1, u, u * u, u * u * u};
+    float vn[4] = {1, v, v * v, v * v * v};
+    float wn[4] = {1, w, w * w, w * w * w};
 
-    float un_[3] = {0, 1, 2 * u};
-    float vn_[3] = {0, 1, 2 * v};
-    float wn_[3] = {0, 1, 2 * w};
+    float un_[4] = {0, 1, 2 * u, 3 * u * u};
+    float vn_[4] = {0, 1, 2 * v, 3 * v * v};
+    float wn_[4] = {0, 1, 2 * w, 3 * w * w};
 
     vec3 fu = sample_helper(samplePoint.knot_left_index, un_, vn, wn);
     vec3 fv = sample_helper(samplePoint.knot_left_index, un, vn_, wn);
@@ -537,16 +548,17 @@ void sampleFast(inout SamplePoint samplePoint) {
     float v = samplePoint.position.y;
     float w = samplePoint.position.z;
 
-    float un[3] = {1, u, u * u};
-    float vn[3] = {1, v, v * v};
-    float wn[3] = {1, w, w * w};
+
+    float un[4] = {1, u, u * u, u * u * u};
+    float vn[4] = {1, v, v * v, v * v * v};
+    float wn[4] = {1, w, w * w, w * w * w};
 
     //sample position
     samplePoint.position = sample_helper(samplePoint.knot_left_index, un, vn, wn);
 
-    float un_[3] = {0, 1, 2 * u};
-    float vn_[3] = {0, 1, 2 * v};
-    float wn_[3] = {0, 1, 2 * w};
+    float un_[4] = {0, 1, 2 * u, 3 * u * u};
+    float vn_[4] = {0, 1, 2 * v, 3 * v * v};
+    float wn_[4] = {0, 1, 2 * w, 3 * w * w};
 
     vec3 fu = sample_helper(samplePoint.knot_left_index, un_, vn, wn);
     vec3 fv = sample_helper(samplePoint.knot_left_index, un, vn_, wn);
@@ -584,7 +596,7 @@ void getSamplePointHelper(inout SamplePoint samplePoint) {
             samplePoint.knot_left_index[i] -= 1;
         }
         samplePoint.position[i] = temp - samplePoint.knot_left_index[i];
-        samplePoint.knot_left_index[i] += uint(BSplineBodyOrder[i] - 1);
+//        samplePoint.knot_left_index[i] += uint(BSplineBodyOrder[i] - 1);
     }
 }
 
@@ -641,7 +653,7 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
 
     result.normal = vec3(0);
     for (int i = 0; i < 3; ++i) {
-        result.normal += (normalizedOriginalNormal[i] * parameter[i]);
+        result.normal += normalizedOriginalNormal[i] * parameter[i];
     }
     normalize(result.normal);
     getSamplePointHelper(result);

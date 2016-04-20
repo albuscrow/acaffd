@@ -164,7 +164,7 @@ void main() {
         }
     }
 
-    // get current original tirangle index
+    // get current tirangle index point and normal
     for (int i = 0; i < 3; ++i) {
         original_index[i] = originalIndex[triangleIndex * 3 + i];
         point[i] = vec3(originalVertex[original_index[i]]);
@@ -258,7 +258,6 @@ float power(float b, int n) {
         return pow(b, n);
     }
 }
-
 
 // 根据 parameter 获得PNTriangle中的法向
 vec3 getPNNormal(vec3 parameter) {

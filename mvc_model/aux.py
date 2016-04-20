@@ -11,7 +11,8 @@ class BSplineBody:
     def __init__(self, lx, ly, lz, *argv):
         if len(argv) == 0:
             # 阶数，阶数 = p + 1,当阶数=1时，基函数为常数。是每个knot区间所对应的顶点数。当knot左右重合顶点为阶数时，b-spline始末与控制顶点重合
-            self._order = [3, 3, 3]  # type: list
+            self._order = [4, 4, 4]  # type: list
+            # self._order = [3, 3, 3]  # type: list
             # 控制顶点数，knot节点数 = 阶数 + 控制顶点数
             self._control_point_number = [5, 5, 5]  # type: list
         elif len(argv) == 6:
@@ -42,9 +43,9 @@ class BSplineBody:
         self._ctrlPoints.shape = (*self._control_point_number, 3)
         self._control_points_backup = self._ctrlPoints.copy()
         self.reset_hit_record()
-        self._knots = [self.get_knots(size, order, cpn) for size, order, cpn in
-                       zip(self._size, self._order, self._control_point_number)]
         self._step = [x / y for x, y in zip(self._size, self.get_cage_size())]
+        self._knots = [self.get_knots(size, order, internal_number) for size, order, internal_number in
+                       zip(self._size, self._order, self.get_cage_size())]
 
     def reset_hit_record(self):
         self._is_hit = [False] * self.get_control_point_number()
@@ -55,8 +56,9 @@ class BSplineBody:
 
     @property
     def control_points(self):
-        return np.array([np.append(x, y) for x, y in
-                         zip(self._ctrlPoints.reshape((self.get_control_point_number(), 3)), self._is_hit)], dtype='f4')
+        control_points = self._ctrlPoints.reshape((self.get_control_point_number(), 3))
+        hit = np.array(self._is_hit, dtype='f4').reshape((self.get_control_point_number(), 1))
+        return np.hstack((control_points, hit))
 
     @property
     def normal_control_points(self):
@@ -68,24 +70,13 @@ class BSplineBody:
             step = length / (control_point_number - 1)
             return np.arange(-length / 2, length / 2 + step / 2, step)
         elif control_point_number > order:
-            if control_point_number % 2 == 1:
-                # k = length / ((1 + (control_point_number - 1) / 2) * (control_point_number - 1) / 2)
-                result = [0]
-                for i in range(1, int(control_point_number / 2) + 1):
-                    step = min(i, order - 1)
-                    result.append(result[-1] + step)
-
-                for i in range(int(control_point_number / 2), 0, -1):
-                    step = min(i, order - 1)
-                    result.append(result[-1] + step)
-            else:
-                result = [0]
-                for i in range(1, int(control_point_number / 2) + 1):
-                    step = min(i, order - 1)
-                    result.append(result[-1] + step)
-                for i in range(int(control_point_number / 2) - 1, 0, -1):
-                    step = min(i, order - 1)
-                    result.append(result[-1] + step)
+            result = [0]
+            for i in range(1, int(control_point_number / 2) + 1):
+                step = min(i, order - 1)
+                result.append(result[-1] + step)
+            for i in range(int(control_point_number / 2) - (control_point_number + 1) % 2, 0, -1):
+                step = min(i, order - 1)
+                result.append(result[-1] + step)
             return [(x / result[-1] - 0.5) * length for x in result]
         else:
             raise Exception('control point number can not less than order')
@@ -105,10 +96,7 @@ class BSplineBody:
                 u = i // (self._control_point_number[1] * self._control_point_number[2])
                 v = i % (self._control_point_number[1] * self._control_point_number[2]) // self._control_point_number[2]
                 w = i % self._control_point_number[2]
-                temp = np.zeros((4,))
-                temp[:3] = self._ctrlPoints[u, v, w]
-                temp[3] = 1
-                self._ctrlPoints[u, v, w] = np.dot(temp, m)[:3]
+                self._ctrlPoints[u, v, w] = np.dot(self._ctrlPoints[u, v, w], m[:3, :3])
         self._control_points_backup = self._ctrlPoints.copy()
 
     @property
@@ -131,12 +119,11 @@ class BSplineBody:
             left_index = [x + y - 1 for x, y in zip(interval_index, self._order)]
             m = [get_aux_matrix_offset(order, cpn, li) for order, cpn, li in
                  zip(self._order, self._control_point_number, left_index)]
-            control_point_base = [x - y + 1 for x, y in zip(left_index, self._order)]
             intermediate_results_1 = np.zeros((*self._order, 3))
             for w in range(self._order[2]):
-                control_points = self._ctrlPoints[control_point_base[0]:control_point_base[0] + self._order[0],
-                                 control_point_base[1]:control_point_base[1] + self._order[1],
-                                 control_point_base[2] + w]
+                control_points = self._ctrlPoints[interval_index[0]:interval_index[0] + self._order[0],
+                                 interval_index[1]:interval_index[1] + self._order[1],
+                                 interval_index[2] + w]
                 for i in range(3):
                     intermediate_results_1[..., w, i] = m[0].dot(control_points[..., i])
             intermediate_results_2 = np.zeros((*self._order, 3))
@@ -205,9 +192,9 @@ class BSplineBody:
                 temp[index - i] = first + second
         return temp[0]
 
-    def get_knots(self, length, order, control_point_number):
+    @staticmethod
+    def get_knots(length, order, internal_number):
         res = [- length / 2] * order
-        internal_number = control_point_number - order + 1
         step = length / internal_number
         for i in range(1, internal_number):
             res.append(res[-1] + step)
