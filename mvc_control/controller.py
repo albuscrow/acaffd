@@ -69,6 +69,10 @@ class Controller(QObject):
         plot(self.factors, position)
         show()
 
+    @pyqtSlot()
+    def clear_director_control_points(self):
+        self._gl_proxy.clear_director_control_points()
+
     @pyqtSlot(float, float, float)
     def move_control_points(self, x, y, z):
         if self._gl_proxy.normal_control_mode:

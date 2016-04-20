@@ -85,6 +85,9 @@ ApplicationWindow {
                 Keys.onReleased: {
                     pressKey = 0
                 }
+                Keys.onEscapePressed: {
+                    controller.clear_director_control_points()
+                }
                 onRightMoveDelta: {
                     if (pressKey == Qt.Key_M) {
                         controller.move(x, y)

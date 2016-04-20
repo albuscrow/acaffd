@@ -200,3 +200,6 @@ class GLProxy:
 
     def set_use_pn_normal(self, use):
         self._deform_and_renderer_controller.use_pn_normal_for_renderer = use
+
+    def clear_director_control_points(self):
+        self.aux_controller.clear_all_direct_control_point()
