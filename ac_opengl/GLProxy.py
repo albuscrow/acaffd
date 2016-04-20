@@ -193,3 +193,6 @@ class GLProxy:
         return '%s_%.2f_%d' % (self.aux_controller.get_control_point_str(),
                                self._previous_compute_controller_AC.split_factor,
                                self._deform_and_renderer_controller.tessellation_level)
+
+    def set_use_pn_normal(self, use):
+        self._deform_and_renderer_controller.use_pn_normal_for_renderer = use

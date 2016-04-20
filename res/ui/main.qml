@@ -340,6 +340,14 @@ ApplicationWindow {
                         }
                     }
 
+
+                    CheckBox {
+                        text: qsTr("pn法向绘制")
+                        checked: false
+                        onClicked: {
+                            controller.set_use_pn_normal(checked)
+                        }
+                    }
                 }
             }
         }

@@ -220,6 +220,10 @@ class Controller(QObject):
     def set_show_normal(self, is_show: bool):
         self._gl_proxy.set_show_normal(is_show)
 
+    @pyqtSlot(bool)
+    def set_use_pn_normal(self, use: bool):
+        self._gl_proxy.set_use_pn_normal(use)
+
     @pyqtSlot()
     def begin_test_split_factor(self):
         self.diff_result.clear()
@@ -377,7 +381,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    file_path = "res/3d_model/cube2.obj"
+    # file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
@@ -389,7 +393,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/rabbit_cym.obj"
-    # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
+    file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"

@@ -198,6 +198,7 @@ layout(location=0) uniform uint triangleNumber;
 layout(location=4) uniform uint tessellatedParameterLength;
 layout(location=5) uniform uint tessellateIndexLength;
 layout(location=6) uniform int adjust_control_point;
+layout(location=1) uniform int use_pn_normal;
 
 layout(std140, binding=2) uniform TessellatedParameter{
     uniform vec4[66] tessellatedParameter;
@@ -652,8 +653,14 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
     }
 
     result.normal = vec3(0);
-    for (int i = 0; i < 3; ++i) {
-        result.normal += normalizedOriginalNormal[i] * parameter[i];
+    if (use_pn_normal > 0) {
+        for (int i = 0; i < 3; ++i) {
+            result.normal += (currentTriangle.pn_normal[i] * parameter[i]).xyz;
+        }
+    } else {
+        for (int i = 0; i < 3; ++i) {
+            result.normal += normalizedOriginalNormal[i] * parameter[i];
+        }
     }
     normalize(result.normal);
     getSamplePointHelper(result);

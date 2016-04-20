@@ -49,6 +49,9 @@ class DeformComputeShader(ProgramWrap):
     def update_uniform_about_adjust_control_point_flag(self):
         glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.adjust_control_point else -1)
 
+    def update_uniform_about_use_pn_triangle(self):
+        glProgramUniform1i(self._gl_program_name, 1, 1 if self._controller.use_pn_normal_for_renderer else -1)
+
 
 class ModelRendererShader(ProgramWrap):
     def __init__(self, controller):
@@ -123,6 +126,9 @@ class DeformAndDrawController:
 
         self._need_update_show_original = True
         self._show_original = False
+
+        self._need_update_use_pn_normal_for_renderer = True
+        self._use_pn_normal_for_renderer = False
 
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -296,9 +302,6 @@ class DeformAndDrawController:
             return
         operator()
         self._deform_program.use()
-        # if self._need_update_uniform_about_b_spline:
-        #     self._deform_program.update_uniform_about_b_spline()
-        #     self._need_update_uniform_about_b_spline = False
         if self._tessellation_factor_changed:
             self._deform_program.update_uniform_about_tessellation()
             self._tessellation_factor_changed = False
@@ -308,6 +311,10 @@ class DeformAndDrawController:
         if self._need_update_adjust_control_point_flag:
             self._deform_program.update_uniform_about_adjust_control_point_flag()
             self._need_update_adjust_control_point_flag = False
+        if self._need_update_use_pn_normal_for_renderer:
+            self._deform_program.update_uniform_about_use_pn_triangle()
+            self._need_update_use_pn_normal_for_renderer = False
+
         glDispatchCompute(*self.group_size)
         self._need_deform = False
         glUseProgram(0)
@@ -585,3 +592,13 @@ class DeformAndDrawController:
     @property
     def show_original(self):
         return self._show_original
+
+    @property
+    def use_pn_normal_for_renderer(self):
+        return self._use_pn_normal_for_renderer
+
+    @use_pn_normal_for_renderer.setter
+    def use_pn_normal_for_renderer(self, use):
+        self._use_pn_normal_for_renderer = use
+        self._need_update_use_pn_normal_for_renderer = True
+        self._need_deform = True
