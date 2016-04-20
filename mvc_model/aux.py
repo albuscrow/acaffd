@@ -11,8 +11,8 @@ class BSplineBody:
     def __init__(self, lx, ly, lz, *argv):
         if len(argv) == 0:
             # 阶数，阶数 = p + 1,当阶数=1时，基函数为常数。是每个knot区间所对应的顶点数。当knot左右重合顶点为阶数时，b-spline始末与控制顶点重合
-            self._order = [4, 4, 4]  # type: list
-            # self._order = [3, 3, 3]  # type: list
+            # self._order = [4, 4, 4]  # type: list
+            self._order = [3, 3, 3]  # type: list
             # 控制顶点数，knot节点数 = 阶数 + 控制顶点数
             self._control_point_number = [5, 5, 5]  # type: list
         elif len(argv) == 6:
@@ -146,6 +146,10 @@ class BSplineBody:
 
     def change_control_point_number(self, u, v, w):
         self._control_point_number = [u, v, w]
+        self.init_data()
+
+    def change_control_point_order(self, order):
+        self._order = [order] * 3
         self.init_data()
 
     def move_dffd(self, parameter, displacement):

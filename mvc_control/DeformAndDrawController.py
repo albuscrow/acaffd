@@ -30,7 +30,6 @@ class DeformComputeShader(ProgramWrap):
 
     def init_uniform(self):
         self.update_uniform_triangle_number()
-        # self.update_uniform_about_b_spline()
         self.update_uniform_about_tessellation()
         self.update_uniform_about_adjust_control_point_flag()
 
@@ -46,11 +45,6 @@ class DeformComputeShader(ProgramWrap):
         self._tessellation_parameter.gl_sync()
         self._tessellation_indexes.async_update(self._controller.tessellation_index)
         self._tessellation_indexes.gl_sync()
-
-    # def update_uniform_about_b_spline(self):
-    #     glProgramUniform1ui(self._gl_program_name, 1,
-    #                         int(self._controller.cage_size[1] * self._controller.cage_size[2]))
-    #     glProgramUniform1ui(self._gl_program_name, 2, int(self._controller.cage_size[2]))
 
     def update_uniform_about_adjust_control_point_flag(self):
         glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.adjust_control_point else -1)
@@ -86,11 +80,10 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, cage_size: list, has_texture, previous_controller, controller=None):
+    def __init__(self, has_texture, previous_controller, controller=None):
         self._previous_controller = previous_controller  # type: PreviousComputeControllerGPU
         self._controller = controller
         self._splited_triangle_number = -1
-        self._cage_size = cage_size  # type: list
 
         self._tessellation_level = -1  # type: int
         self._tessellated_point_number_pre_splited_triangle = -1  # type: int
@@ -303,9 +296,9 @@ class DeformAndDrawController:
             return
         operator()
         self._deform_program.use()
-        if self._need_update_uniform_about_b_spline:
-            self._deform_program.update_uniform_about_b_spline()
-            self._need_update_uniform_about_b_spline = False
+        # if self._need_update_uniform_about_b_spline:
+        #     self._deform_program.update_uniform_about_b_spline()
+        #     self._need_update_uniform_about_b_spline = False
         if self._tessellation_factor_changed:
             self._deform_program.update_uniform_about_tessellation()
             self._tessellation_factor_changed = False
@@ -444,10 +437,6 @@ class DeformAndDrawController:
         self._tessellation_factor_changed = True
 
     @property
-    def cage_size(self):
-        return self._cage_size
-
-    @property
     def tessellated_point_number_pre_splited_triangle(self):
         return self._tessellated_point_number_pre_splited_triangle
 
@@ -519,11 +508,6 @@ class DeformAndDrawController:
     @need_deform.setter
     def need_deform(self, value):
         self._need_deform = value
-
-    @cage_size.setter
-    def cage_size(self, value):
-        self._cage_size = value
-        self._need_update_uniform_about_b_spline = True
 
     def set_tessellation_factor(self, tessellation_factor):
         self.init_tessellation_pattern_data(tessellation_factor)

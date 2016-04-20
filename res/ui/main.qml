@@ -170,14 +170,6 @@ ApplicationWindow {
                         }
                     }
 
-                    //Label {
-                    //    text: "切割参数"
-                    //}
-                    //
-                    //SpinBox {
-                    //    id: tessellation_param_spin_box
-                    //}
-
                     Label {
                         text: "cp_u"
                     }
@@ -220,6 +212,21 @@ ApplicationWindow {
                                 cp_w.value = 3
                             }
                             controller.change_control_point_number(cp_u.value, cp_v.value, cp_w.value)
+                        }
+                    }
+
+                    Label {
+                        text: "order"
+                    }
+
+                    SpinBox {
+                        id: order
+                        value: 3
+                        onValueChanged: {
+                            if (cp_w.value <= 2) {
+                                cp_w.value = 3
+                            }
+                            controller.change_control_point_order(value)
                         }
                     }
 

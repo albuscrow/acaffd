@@ -50,9 +50,6 @@ class GLProxy:
             self.previous_compute_controller.change_model(model)
             self.previous_compute_controller.b_spline_body = self._aux_controller.b_spline_body
 
-        if self._deform_and_renderer_controller is not None:
-            self._deform_and_renderer_controller.cage_size = self._aux_controller.get_cage_size()
-
     def draw(self, model_view_matrix, perspective_matrix):
         number, need_deform = self.previous_compute_controller.gl_compute()
         self._deform_and_renderer_controller.set_number_and_need_deform(number, need_deform)
@@ -76,7 +73,7 @@ class GLProxy:
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(
-            self._aux_controller.get_cage_size(), self._model.has_texture,
+            self._model.has_texture,
             self.previous_compute_controller,
             self._controller)
         self._deform_and_renderer_controller.gl_init()
@@ -105,7 +102,11 @@ class GLProxy:
 
     def change_control_point_number(self, u, v, w):
         self._aux_controller.change_control_point_number(u, v, w)
-        self._deform_and_renderer_controller.cage_size = self._aux_controller.get_cage_size()
+        self.previous_compute_controller.need_compute = True
+        self._deform_and_renderer_controller.need_deform = True
+
+    def change_control_point_order(self, order):
+        self._aux_controller.change_control_point_order(order)
         self.previous_compute_controller.need_compute = True
         self._deform_and_renderer_controller.need_deform = True
 

@@ -168,6 +168,10 @@ class AuxController:
     def change_control_point_number(self, u, v, w):
         self._b_spline_body.change_control_point_number(u, v, w)
         self.async_upload_to_gpu()
+
+    def change_control_point_order(self, order):
+        self._b_spline_body.change_control_point_order(order)
+        self.async_upload_to_gpu()
         pass
 
     @property

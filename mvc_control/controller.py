@@ -313,6 +313,11 @@ class Controller(QObject):
         self.updateScene.emit()
 
     @pyqtSlot(int)
+    def change_control_point_order(self, order: int):
+        self._gl_proxy.change_control_point_order(order)
+        self.updateScene.emit()
+
+    @pyqtSlot(int)
     def change_algorithm(self, algorithm):
         self._gl_proxy.algorithm = algorithm
 
