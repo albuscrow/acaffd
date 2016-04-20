@@ -147,10 +147,14 @@ class GLProxy:
         return self._aux_controller.normal_control_mode
 
     def clear_direct_control_point(self):
-        self._aux_controller.clear_direct_control_point()
+        self._aux_controller.clear_dst_direct_control_point()
 
     def move_direct_control_point(self, direction):
         self._aux_controller.move_direct_control_point(direction)
+        self._deform_and_renderer_controller.need_deform = True
+
+    def move_direct_control_point_delta(self, direction):
+        self._aux_controller.move_direct_control_point_delta(direction)
         self._deform_and_renderer_controller.need_deform = True
 
     def direct_control_point_selected(self):

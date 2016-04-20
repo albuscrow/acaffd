@@ -50,6 +50,8 @@ class AuxController:
         self._need_select_point = False
         self._select_argument = None
 
+        self._delta_for_dffd = [0, 0, 0]
+
     def change_size(self, size):
         # check input
         if len(size) != 3:
@@ -172,7 +174,6 @@ class AuxController:
     def change_control_point_order(self, order):
         self._b_spline_body.change_control_point_order(order)
         self.async_upload_to_gpu()
-        pass
 
     @property
     def b_spline_body(self):
@@ -185,15 +186,23 @@ class AuxController:
     @is_normal_control_point_mode.setter
     def is_normal_control_point_mode(self, v):
         self._normal_control_mode = v
+        if self._normal_control_mode:
+            self.clear_all_direct_control_point()
         self._control_point_position_vbo.async_update(self.get_control_point_data())
 
-    def add_direct_control_point(self, intersect_point, ):
+    def add_direct_control_point(self, intersect_point):
         if intersect_point is not None:
             self._direct_control_point = [np.append(intersect_point, 0)]
             self._control_point_position_vbo.async_update(self.get_control_point_data())
 
-    def clear_direct_control_point(self):
+    def clear_dst_direct_control_point(self):
+        self._direct_control_point = self._direct_control_point[:1]
+        self._b_spline_body.save_control_point_position()
+        self._control_point_position_vbo.async_update(self.get_control_point_data())
+
+    def clear_all_direct_control_point(self):
         self._direct_control_point.clear()
+        self._delta_for_dffd = [0, 0, 0]
         self._b_spline_body.save_control_point_position()
         self._control_point_position_vbo.async_update(self.get_control_point_data())
 
@@ -202,9 +211,20 @@ class AuxController:
         return self._normal_control_mode
 
     def move_direct_control_point(self, direction):
-        direction /= 300
         self._b_spline_body.move_dffd(self._intersect_point_parameter, direction)
         target_point = np.append(self._direct_control_point[0][:3] + direction, 1)
+        if len(self._direct_control_point) <= 1:
+            self._direct_control_point.append(target_point)
+        else:
+            self._direct_control_point[1] = target_point
+        self._control_point_position_vbo.async_update(self.get_control_point_data())
+        self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
+        self._control_points_changed = True
+
+    def move_direct_control_point_delta(self, direction):
+        self._delta_for_dffd = [x + y for x, y in zip(self._delta_for_dffd, direction)]
+        self._b_spline_body.move_dffd(self._intersect_point_parameter, self._delta_for_dffd)
+        target_point = np.append(self._direct_control_point[0][:3] + self._delta_for_dffd, 1)
         if len(self._direct_control_point) <= 1:
             self._direct_control_point.append(target_point)
         else:

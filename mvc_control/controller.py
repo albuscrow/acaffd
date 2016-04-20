@@ -73,7 +73,11 @@ class Controller(QObject):
     def move_control_points(self, x, y, z):
         if self._gl_proxy.normal_control_mode:
             self._gl_proxy.move_control_points(x, y, z)
-            self.updateScene.emit()
+        else:
+            direct_delta = np.array([x / 10, y / 10, z / 10], dtype='f4')
+            self._gl_proxy.move_direct_control_point_delta(direct_delta)
+
+        self.updateScene.emit()
 
     @pyqtSlot(float, float, float)
     def rotate_control_points(self, x, y, z):
@@ -296,7 +300,7 @@ class Controller(QObject):
             i = np.mat(self._model_view_matrix).I
             if self._gl_proxy.direct_control_point_selected():
                 direction = np.mat([x2 - x1, y2 - y1, 0, 0], dtype='f4') * i
-                self._gl_proxy.move_direct_control_point(np.array(direction, dtype='f4').reshape(4, )[:3])
+                self._gl_proxy.move_direct_control_point(np.array(direction, dtype='f4').reshape(4, )[:3] / 300)
             else:
                 start_point = np.mat([0, 0, 0, 1], dtype='f4') * i
                 end_point_z = -4
@@ -381,7 +385,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    # file_path = "res/3d_model/cube2.obj"
+    file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
@@ -393,7 +397,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/rabbit_cym.obj"
-    file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
+    # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
