@@ -38,6 +38,8 @@ void main() {
         varying_parameter_in_splited_triangle = parameter_in_splited_edge;
         varying_diff_normal = abs((real_normal - normal).xyz*5.2);
         varying_diff_position = abs((real_position - vertice).xyz*30);
+//        varying_diff_normal = abs((real_normal - normal).xyz*50000);
+//        varying_diff_position = (real_position - vertice).xyz*30000;
         varying_tex_coord = tex_coord;
     }
 }

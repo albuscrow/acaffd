@@ -16,7 +16,6 @@ void GenerateLine(int index)
 {
     gl_Position = wvp_matrix * gl_in[index].gl_Position;
     EmitVertex();
-    gs_in[index].normal.w = 0;
     gl_Position = wvp_matrix * (gl_in[index].gl_Position + gs_in[index].normal * MAGNITUDE);
     EmitVertex();
     EndPrimitive();

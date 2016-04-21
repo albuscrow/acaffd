@@ -198,9 +198,9 @@ void main() {
             st.parameter_in_original2_texcoord2[i].xy = parameter_in_original[i].xy;
             st.parameter_in_original2_texcoord2[i].zw = getTecCoordOrg(parameter_in_original[i]);
             st.pn_position[i] = vec4(getPNPosition(parameter_in_original[i]), 1);
-            st.pn_normal[i].xyz = getPNNormal(parameter_in_original[i]);
-            st.original_normal[i].xyz = getNormalOrg(parameter_in_original[i]);
-            st.original_position[i].xyz = getPositionOrg(parameter_in_original[i]);
+            st.pn_normal[i] = vec4(getPNNormal(parameter_in_original[i]), 0);
+            st.original_normal[i] = vec4(getNormalOrg(parameter_in_original[i]), 0);
+            st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
             edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
         }
 
@@ -220,7 +220,7 @@ void main() {
             if (current_adjacency_triangle_index != -1) {
                 for (int k = 0; k < 2; ++k) {
                     uint temp = adjacency_normal_index_aux[j * 2 + k];
-                    st.adjacency_pn_normal_parameter[temp].xyz = translate_parameter(parameter_in_original[temp / 2], currentEdge);
+                    st.adjacency_pn_normal_parameter[temp] = vec4(translate_parameter(parameter_in_original[temp / 2], currentEdge), 0);
                 }
             }
         }

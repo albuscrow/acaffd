@@ -148,7 +148,7 @@ ApplicationWindow {
                     }
 
                     SpinBox {
-                        value: 0.5
+                        value: 0.45
                         decimals: 2
                         stepSize: 0.05
                         onValueChanged: {
