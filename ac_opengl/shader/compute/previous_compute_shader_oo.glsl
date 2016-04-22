@@ -157,8 +157,8 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber);
 vec3 translate_parameter(vec3 parameter, uint edgeNo);
 
 uint triangleIndex;
-//const int isBezier = -1;
-const int isBezier = 1;
+const int isBezier = -1;
+//const int isBezier = 1;
 void main() {
     triangleIndex = gl_GlobalInvocationID.x;
     if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {

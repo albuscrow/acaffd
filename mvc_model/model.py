@@ -140,7 +140,7 @@ class OBJ:
         temp_normals = []
         temp_uv = []
         f_store = set()
-        parse_factor = 10
+        parse_factor = 5
         one_patch_point = (parse_factor + 1) ** 2
         temp_index = []
         for i, j in product(range(parse_factor), range(parse_factor)):
@@ -234,6 +234,8 @@ class OBJ:
                 self._vertex.append(temp_vertices[vertex_index])
                 if temp_uv:
                     self._bezier_uv.append(temp_uv[vertex_index])
+                else:
+                    self._bezier_uv.append([0,0])
 
                 if len(index) == 2:
                     self._tex_coord.append(temp_tex_coords[int(index[1])])
@@ -350,8 +352,8 @@ class OBJ:
         self._triangles = []  # type: list[ACTriangle]
         for i, index in enumerate(zip(*([iter(self._index)] * 3))):
             t = ACTriangle(i)  # type: ACTriangle
-            t.positionv4, t.normalv4, t.tex_coord = [np.array([lst[x] for x in index], dtype='f4') for lst in
-                                                     [self._vertex, self._normal, self._tex_coord]]
+            t.positionv4, t.normalv4, t.tex_coord, t.bezier_uv = [np.array([lst[x] for x in index], dtype='f4') for lst in
+                                                     [self._vertex, self._normal, self._tex_coord, self._bezier_uv]]
             self._triangles.append(t)
         for i, triangle in enumerate(self._triangles):
             triangle.neighbor = []

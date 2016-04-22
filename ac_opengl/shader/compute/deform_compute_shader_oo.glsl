@@ -242,7 +242,8 @@ uint OrderProduct;
 
 SplitedTriangle currentTriangle;
 vec3 normalizedOriginalNormal[3];
-const int isBezier = 1;
+//const int isBezier = 1;
+const int isBezier = -1;
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
     if (triangleIndex >= triangleNumber) {
@@ -388,11 +389,11 @@ void main() {
             vec3 p, n;
             vec2 uv = getUV(pointParameter);
             sampleInBezier(currentTriangle.bezier_patch_id, uv[0], uv[1], p, n);
-            float d = 3.217;
-            float mid[3] = {0.21700000000000008, 0.0, 1.5750000000000004};
-            for (int i = 0; i < 3; ++i) {
-                p[i] = (p[i] - mid[i]) / d;
-            }
+//            float d = 3.217;
+//            float mid[3] = {0.21700000000000008, 0.0, 1.5750000000000004};
+//            for (int i = 0; i < 3; ++i) {
+//                p[i] = (p[i] - mid[i]) / d;
+//            }
             sp.position = p;
             sp.normal = n;
         } else {

@@ -19,6 +19,10 @@ class PreviousComputeControllerCPU:
         self._splited_triangle_ssbo = ac.splited_triangle_ssbo
         self._share_adjacency_pn_triangle_normal_ssbo = ac.share_adjacency_pn_triangle_normal_ssbo
         self._share_adjacency_pn_triangle_position_ssbo = ac.share_adjacency_pn_triangle_position_ssbo
+        self.original_vertex_ssbo = ac.original_vertex_ssbo
+        self.original_normal_ssbo = ac.original_normal_ssbo
+        self.original_tex_coord_ssbo = ac.original_tex_coord_ssbo
+        self.original_index_ssbo = ac.original_index_ssbo
 
         self._b_spline_body = b_spline_body
 
@@ -66,7 +70,11 @@ class PreviousComputeControllerCPU:
             = self._model.split(self._b_spline_body)  # type: np.array
         self._splited_triangle_ssbo.async_update(splited_triangle_data)
         self._splited_triangle_ssbo.gl_sync()
-        self._share_adjacency_pn_triangle_position_ssbo.async_update(pn_triangle_position_control_point)
+
+        if self._model.from_bezier:
+            self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
+        else:
+            self._share_adjacency_pn_triangle_position_ssbo.async_update(pn_triangle_position_control_point)
         self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
         self._share_adjacency_pn_triangle_normal_ssbo.async_update(pn_triangle_normal_control_point)
         self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()

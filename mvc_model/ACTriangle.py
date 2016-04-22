@@ -59,11 +59,12 @@ SAMPLE_PATTERN = np.array([
 
 class ACPoly:
     class Point:
-        def __init__(self, p, n, t, para):
+        def __init__(self, p, n, t, para, uv):
             self.position = p  # type: np.array
             self.normal = n  # type: np.array
             self.tex_coord = t  # type: np.array
             self.parameter = para  # type: np.array
+            self.bezier_uv = uv
 
         def large_than(self, component, value):
             return self.position[component] > value
@@ -88,7 +89,8 @@ class ACPoly:
                 res = ACPoly.Point(self.position + other.position,
                                    self.normal + other.normal,
                                    self.tex_coord + other.tex_coord,
-                                   self.parameter + other.parameter)
+                                   self.parameter + other.parameter,
+                                   self.bezier_uv + other.bezier_uv)
 
                 return res
             else:
@@ -99,7 +101,8 @@ class ACPoly:
                 res = ACPoly.Point(self.position * other,
                                    self.normal * other,
                                    self.tex_coord * other,
-                                   self.parameter * other)
+                                   self.parameter * other,
+                                   self.bezier_uv * other)
                 return res
             else:
                 raise Exception('input must be Number')
@@ -110,7 +113,7 @@ class ACPoly:
             self._points = p
         else:
             self._points = []
-            for x in zip(t.positionv3, t.normalv3, t.tex_coord, t.parameter):
+            for x in zip(t.positionv4, t.normalv3, t.tex_coord, t.parameter, t.bezier_uv):
                 self._points.append(ACPoly.Point(*x))
 
     def split_x(self, x):
@@ -159,11 +162,11 @@ class ACPoly:
         for p in self._points[2:]:
             t = ACTriangle(self._triangle.id)
             ps = [c, pre, p]
-            t.positionv3 = np.array([p.position for p in ps], dtype='f4')
-            # t.normalv3 = np.array([normalize(p.normal) for p in ps], dtype='f4')
+            t.positionv4 = np.array([p.position for p in ps], dtype='f4')
             # original normal not need normalize
             t.normalv3 = np.array([p.normal for p in ps], dtype='f4')
             t.tex_coord = np.array([p.tex_coord for p in ps], dtype='f4')
+            t.bezier_uv = np.array([p.bezier_uv for p in ps], dtype='f4')
             t.parameter = np.array([p.parameter for p in ps], dtype='f4')
             t.neighbor = self._triangle.neighbor
             t.pn_triangle_p = self._triangle.pn_triangle_p
@@ -197,6 +200,8 @@ class ACTriangle:
     # vec4 adjacency_pn_normal_parameter[6];
     # vec4 parameter_in_original2_texcoord2[3];
     # ivec4 adjacency_triangle_index3_original_triangle_index1;
+    # vec2 bezier_uv[3];
+    # uint bezier_patch_id;
     # float triangle_quality;
 
     DATA_TYPE = [('pn_position', '4f4', 3),
@@ -206,13 +211,16 @@ class ACTriangle:
                  ('adjacency_pn_normal_parameter', '4f4', 6),
                  ('parameter_in_original2_texcoord2', '4f4', 3),
                  ('adjacency_triangle_index3_original_triangle_index1', 'i4', 4),
-                 ('triangle_quality_and_padding', 'f', 4)]
+                 ('bezier_uv', '2f4', 3),
+                 ('bezier_patch_id', 'u4', 1),
+                 ('triangle_quality_and_padding', 'f4', 1)]
 
     def __init__(self, i):
         self._id = i
         self._position = None  # type: np.array
         self._normal = None  # type: np.array
         self._tex_coord = None  # type: np.array
+        self._bezier_uv = None  # type: np.array
         self._neighbor = None  # type: list[(ACTriangle, int)]
         self._pn_triangle_p = [None] * 10  # type: list
         self._pn_triangle_n = [None] * 6
@@ -262,7 +270,8 @@ class ACTriangle:
                         pn_normal_parameter_adjacent[aux2[index]] = np.append(adjacent_parameter, 0)
                         if not equal_vec(adjacent_normal, pn_normal[aux1[index]]):
                             is_sharp3_triangle_quality[-1] = 1
-                            adjacency_triangle_index3_original_triangle_index1[i] = self.neighbor[original_edge_info[i]][0].id
+                            adjacency_triangle_index3_original_triangle_index1[i] = \
+                            self.neighbor[original_edge_info[i]][0].id
 
         adjacency_triangle_index3_original_triangle_index1[3] = self._id
         t = [self.positionv3[i - 1] - self.positionv3[i] for i in [1, 2, 0]]
@@ -274,14 +283,16 @@ class ACTriangle:
         is_sharp3_triangle_quality.append(triangle_quality)
         data = []
 
-        # vec4 pn_position[3];
-        # vec4 pn_normal[3];
-        # vec4 original_position[3];
-        # vec4 original_normal[3];
-        # vec4 adjacency_pn_normal_parameter[6];
-        # vec4 parameter_in_original2_texcoord2[3];
-        # ivec4 adjacency_triangle_index3_original_triangle_index1;
-        # float triangle_quality;
+        #[('pn_position', '4f4', 3),
+        # ('pn_normal', '4f4', 3),
+        # ('original_position', '4f4', 3),
+        # ('original_normal', '4f4', 3),
+        # ('adjacency_pn_normal_parameter', '4f4', 6),
+        # ('parameter_in_original2_texcoord2', '4f4', 3),
+        # ('adjacency_triangle_index3_original_triangle_index1', 'i4', 4),
+        # ('bezier_uv', '2f4', 3),
+        # ('bezier_patch_id', 'u4', 1),
+        # ('triangle_quality_and_padding', 'f4', 1)]
 
         data.append(pn_position)
         data.append(pn_normal)
@@ -290,7 +301,9 @@ class ACTriangle:
         data.append(pn_normal_parameter_adjacent)
         data.append(np.hstack((self.parameter[:, :2], self._tex_coord)))
         data.append(adjacency_triangle_index3_original_triangle_index1)
-        data.append([triangle_quality, 0, 0, 0])
+        data.append(self.bezier_uv)
+        data.append(int(original_position[0][3]))
+        data.append(triangle_quality)
         return tuple(data)
 
     @staticmethod
@@ -417,7 +430,7 @@ class ACTriangle:
         T = start_point[0, :3] - np.mat(position[0], dtype='f4')
         t, u, v = np.array(np.dot(T, i))[0]
         if all([0 <= x <= 1 for x in [u, v, 1 - u - v]]) and t > 0:
-            return t, np.array((start_point[0, :3] + t * direction[0, :3]), dtype='f4').reshape(3,)
+            return t, np.array((start_point[0, :3] + t * direction[0, :3]), dtype='f4').reshape(3, )
         else:
             return None, None
 
@@ -446,6 +459,10 @@ class ACTriangle:
         return self._tex_coord
 
     @property
+    def bezier_uv(self):
+        return self._bezier_uv
+
+    @property
     def parameter(self):
         return self._parameter
 
@@ -464,6 +481,10 @@ class ACTriangle:
     @tex_coord.setter
     def tex_coord(self, value):
         self._tex_coord = value
+
+    @bezier_uv.setter
+    def bezier_uv(self, value):
+        self._bezier_uv = value
 
     @neighbor.setter
     def neighbor(self, value):
