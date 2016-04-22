@@ -1,127 +1,213 @@
 import logging
-from enum import Enum
-from itertools import product
 from mvc_model.ACTriangle import ACTriangle, ACPoly
 from mvc_model.aux import BSplineBody
-from util.util import normalize
+from util.util import normalize, equal_vec
 import numpy as np
+from itertools import product
+from math import factorial, isnan
 
 
-class ModelFileFormatType(Enum):
-    obj = 1
+class BSplinePatch:
+    def __init__(self, control_points):
+        self._control_points = np.array(control_points).reshape((4, 4, 3))
+
+    def sample(self, u, v):
+        result = np.zeros((3,))
+        control_point_number = self._control_points.shape[:2]
+        for i, j in product(*[range(x) for x in control_point_number]):
+            result += self.b(u, control_point_number[0] - 1, i) \
+                      * self.b(v, control_point_number[1] - 1, j) \
+                      * self._control_points[i, j]
+
+        result_u = np.zeros((3,))
+        for j in range(4):
+            temp = np.zeros((3,))
+            for i in range(3):
+                temp += self.b(u, 2, i) * (self._control_points[i, j] - self._control_points[i + 1, j])
+            result_u += self.b(v, 3, j) * temp
+
+        result_v = np.zeros((3,))
+        for i in range(4):
+            temp = np.zeros((3,))
+            for j in range(3):
+                temp += self.b(v, 2, j) * (self._control_points[i, j] - self._control_points[i, j + 1])
+            result_v += self.b(u, 3, i) * temp
+
+        cross = np.cross(result_u, result_v)
+
+        return result.tolist() + [1], normalize(cross).tolist() + [0]
+
+    def c(self, n, r):
+        return factorial(n) / factorial(r) / factorial(n - r)
+
+    def b(self, t, n, i):
+        return self.c(n, i) * pow(t, i) * pow(1 - t, n - i)
+
+
+class BPT:
+    def __init__(self, file_path):
+        self._b_spline_patch = []
+
+        with open(file_path, 'r') as file:
+            patch_number = int(file.readline())
+            for _ in range(patch_number):
+                control_points = []
+                u, v = map(lambda s: int(s) + 1, file.readline().split())
+                for _ in range(u * v):
+                    control_points.append([float(x) for x in file.readline().split()])
+                self._b_spline_patch.append(BSplinePatch(control_points))
+
+    @property
+    def b_spline_patch(self):
+        return self._b_spline_patch
 
 
 class OBJ:
-    def __init__(self, file_path, format_type: ModelFileFormatType = ModelFileFormatType.obj):
+    def __init__(self, file_path: str = None, bpt=None):
         self._vertex = []
         self._normal = []
         self._tex_coord = []
         self._has_texture = False
         self._index = []
         self._adjacency = []
+        self._original_index_number = 0
+        self._original_triangle_number = 0
+        self._original_vertex_number = 0
+        self._original_normal_number = 0
+        self._triangles = None  # type: list[ACTriangle]
+        self._length = []
 
-        if format_type == ModelFileFormatType.obj:
-            temp_vertices = [[]]
-            max_x = -999999
-            max_y = -999999
-            max_z = -999999
-            min_x = 999999
-            min_y = 999999
-            min_z = 999999
-            temp_normals = [[]]
-            temp_tex_coords = [[]]
-            # vertex 到 vertex_index map
-            aux_vertex_map = {}
-            # point 到 由该point构成的三角形index map, 这里的三角形index由该三角形的第一个顶点的self.index中的位置决定。
-            aux_point_map = {}
-
-            f_store = set()
-            with open(file_path, 'r') as file:
-                for l in file:
-                    l = l.strip()
-                    if l is None or len(l) == 0 or l.startswith('#'):
-                        continue
-                    tokens = l.split()
-                    first_token = tokens.pop(0)
-                    if first_token == 'v':
-                        temp_vertices.append(list(map(float, tokens)))
-                        temp_vertices[-1].append(1)
-                        max_x, min_x = self.find_max_min(max_x, min_x, temp_vertices[-1][0])
-                        max_y, min_y = self.find_max_min(max_y, min_y, temp_vertices[-1][1])
-                        max_z, min_z = self.find_max_min(max_z, min_z, temp_vertices[-1][2])
-                    elif first_token == 'vn':
-                        temp_normals.append(list(map(float, tokens)))
-                        temp_normals[-1] = normalize(temp_normals[-1])
-                        temp_normals[-1].append(0)
-                    elif first_token == 'vt':
-                        temp_tex_coords.append(list(map(float, tokens)))
-                    elif first_token == 'f':
-                        f_store.add(' '.join(tokens))
-                    elif first_token == 'vp':
-                        pass
-                        # logging.warning("this feature(vp) in wavefront .obj is not implement, ignore")
-                        # raise Exception()
-                    elif first_token in ('usemtl', 'usemat'):
-                        pass
-                        # logging.warning("this feature(usemtl, usemat) in wavefront .obj is not implement, ignore")
-                        # raise Exception()
-                        # material = tokens[0]
-                    elif first_token == 'mtllib':
-                        pass
-                        # logging.warning("this feature(mtllib) in wavefront .obj is not implement, ignore")
-                        # raise Exception()
-                        # self.mtl = self.Material(tokens[0])
-                for l in f_store:
-                    tokens = l.split()
-                    if len(tokens) in (3, 4):
-                        self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
-                                        tokens[:3])
-                        if len(tokens) == 4:
-                            self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords,
-                                            temp_vertices,
-                                            [tokens[0], tokens[2], tokens[3]])
-                    else:
-                        logging.error("this feature(face vertices = " + str(
-                            len(tokens)) + ") in wavefront .obj is not implement")
-                        raise Exception()
+        if file_path:
+            if file_path.endswith('.obj') or file_path.endswith('.OBJ'):
+                self.parse_from_obj(file_path)
+            else:
+                self.parse_from_bpt(BPT(file_path))
+        elif bpt:
+            self.parse_from_bpt(bpt)
         else:
-            logging.error('only support obj file')
             raise Exception()
 
-        # 归一化，使模型坐标从-1,1
-        mid_x = (max_x + min_x) / 2
-        self.d_x = (max_x - min_x)
+    def parse_from_obj(self, file_path):
+        temp_vertices = [[0, 0, 0]]
+        temp_normals = [[0, 0, 0]]
+        temp_tex_coords = [[0, 0]]
+        f_store = set()
+        with open(file_path, 'r') as file:
+            for l in file:
+                l = l.strip()
+                if l is None or len(l) == 0 or l.startswith('#'):
+                    continue
+                tokens = l.split()
+                first_token = tokens.pop(0)
+                if first_token == 'v':
+                    temp_vertices.append(list(map(float, tokens)))
+                    temp_vertices[-1].append(1)
+                elif first_token == 'vn':
+                    temp_normals.append(list(map(float, tokens)))
+                    temp_normals[-1] = normalize(temp_normals[-1])
+                    temp_normals[-1].append(0)
+                elif first_token == 'vt':
+                    temp_tex_coords.append(list(map(float, tokens)))
+                elif first_token == 'f':
+                    f_store.add(' '.join(tokens))
+                elif first_token == 'vp':
+                    pass
+                    # logging.warning("this feature(vp) in wavefront .obj is not implement, ignore")
+                    # raise Exception()
+                elif first_token in ('usemtl', 'usemat'):
+                    pass
+                    # logging.warning("this feature(usemtl, usemat) in wavefront .obj is not implement, ignore")
+                    # raise Exception()
+                    # material = tokens[0]
+                elif first_token == 'mtllib':
+                    pass
+                    # logging.warning("this feature(mtllib) in wavefront .obj is not implement, ignore")
+                    # raise Exception()
+                    # self.mtl = self.Material(tokens[0])
+        self.handle_face(f_store, temp_normals, temp_tex_coords, temp_vertices)
 
-        mid_y = (max_y + min_y) / 2
-        self.d_y = (max_y - min_y)
+    def parse_from_bpt(self, bpt: BPT):
+        temp_vertices = []
+        temp_normals = []
+        f_store = set()
+        parse_factor = 10
+        one_patch_point = (parse_factor + 1) ** 2
+        temp_index = []
+        for i, j in product(range(parse_factor), range(parse_factor)):
+            i1 = i * (parse_factor + 1) + j
+            i2 = i1 + 1
+            i3 = i1 + parse_factor + 1
+            i4 = i3 + 1
+            temp_index.append((i1, i2, i3))
+            temp_index.append((i3, i2, i4))
 
-        mid_z = (max_z + min_z) / 2
-        self.d_z = (max_z - min_z)
+        for i, b in enumerate(bpt.b_spline_patch):
+            for u, v in product(np.linspace(0, 1, parse_factor + 1), np.linspace(0, 1, parse_factor + 1)):
+                p, n = (b.sample(u, v))
 
-        # xyz三个维度中，模型跨度最大值
-        d = max(self.d_x, self.d_y, self.d_z) / 2
+                ##以下代码是特地给犹它茶壶用的
+                if i < 4 and u == 0:
+                    n = [0, 0, -1, 0]
+                elif i < 8 and u == 0:
+                    n = [0, 0, 1, 0]
 
-        # 首先深拷贝各个顶点的坐标, 用于计算各个顶点在b样条体中的参数
-        # self.parameters = deepcopy(self.vertices)
+                temp_vertices.append(p)
+                temp_normals.append(n)
+            for index in temp_index:
+                real_index = [ii + i * one_patch_point for ii in index]
+                p1, p2, p3 = [np.array(temp_vertices[ii], dtype='f4') for ii in real_index]
+                if equal_vec(p1, p2) or equal_vec(p1, p3) or equal_vec(p3, p2):
+                    continue
+                f_store.add("{0}//{0} {1}//{1} {2}//{2}".format(*real_index))
 
-        temp_vertices.pop(0)
+        self.handle_face(f_store, temp_normals, None, temp_vertices)
+
+    def handle_face(self, f_store, temp_normals, temp_tex_coords, temp_vertices):
+        model_range = [(-999999, 999999)] * 3
         for v in temp_vertices:
-            v[0] = (v[0] - mid_x) / d
-            v[1] = (v[1] - mid_y) / d
-            v[2] = (v[2] - mid_z) / d
+            for i in range(3):
+                model_range[i] = self.find_max_min(model_range[i], v[i])
 
-        self.d_x /= d
-        self.d_y /= d
-        self.d_z /= d
+        # 归一化，使模型坐标从-1,1
+        mid = []
+        self._length = []
+        for r in model_range:
+            mid.append((r[0] + r[1]) / 2)
+            self._length.append(r[1] - r[0])
+        # d 为 xyz三个维度中，模型跨度最大值
+        d = max(*self._length) / 2
 
+        # 归一化 self._length
+        self._length = [x / d for x in self._length]
+
+        # 归一化 temp_vertices
+        temp_vertices = [[(e - m) / d for e, m in zip(v, mid)] + [1] for v in temp_vertices]
+
+        # vertex 到 vertex_index map
+        aux_vertex_map = {}
+        # point 到 由该point构成的三角形index map, 这里的三角形index由该三角形的第一个顶点的self.index中的位置决定。
+        aux_point_map = {}
+        for l in f_store:
+            tokens = l.split()
+            if len(tokens) in (3, 4):
+                self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
+                                tokens[:3])
+                if len(tokens) == 4:
+                    self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords,
+                                    temp_vertices,
+                                    [tokens[0], tokens[2], tokens[3]])
+            else:
+                logging.error("this feature(face vertices = " + str(
+                    len(tokens)) + ") in wavefront .obj is not implement")
+                raise Exception()
         logging.info('load obj finish, has vertices:' + str(len(self._vertex)))
-        self.original_index_number = len(self._index)
-        self.original_triangle_number = self.original_index_number / 3
-        self.original_vertex_number = len(self._vertex)
-        self.original_normal_number = len(self._normal)
+        self._original_index_number = len(self._index)
+        self._original_triangle_number = self._original_index_number / 3
+        self._original_vertex_number = len(self._vertex)
+        self._original_normal_number = len(self._normal)
         self._triangles = None  # type: list[ACTriangle]
         self.reorganize()
-        print('OBJ:', 'original triangle number: %d' % self.original_triangle_number)
+        print('OBJ:', 'original triangle number: %d' % self._original_triangle_number)
 
     def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
         # 纪录该三角形的三个顶点
@@ -180,11 +266,11 @@ class OBJ:
             aux_point_map[vertex_index].add((current_triangle_index, ' '.join(tokens)))
 
     @staticmethod
-    def find_max_min(max_x, min_x, new_x):
-        return max(max_x, new_x), min(min_x, new_x)
+    def find_max_min(max_min, new_x):
+        return max(max_min[0], new_x), min(max_min[1], new_x)
 
     def get_length_xyz(self):
-        return self.d_x, self.d_y, self.d_z
+        return self._length
 
     @property
     def vertex(self):
@@ -243,7 +329,7 @@ class OBJ:
             triangle_data.append(triangle)
         return len(triangle_data), \
                np.array(triangle_data, ACTriangle.DATA_TYPE), \
-               np.array(pnp_data, dtype='f4'),\
+               np.array(pnp_data, dtype='f4'), \
                np.array(pnn_data, dtype='f4')
 
     def reorganize(self):
@@ -277,6 +363,8 @@ class OBJ:
         return self._has_texture
 
 
+from matplotlib.pylab import plot, show
+
 if __name__ == '__main__':
     import numpy as np
 
@@ -307,6 +395,18 @@ if __name__ == '__main__':
     # SPLITED_TRIANGLE_SIZE = 48 * 37 + 15 * 16 + 32
     # print(SPLITED_TRIANGLE_SIZE)
 
-    model = OBJ('../res/3d_model/test_2_triangle.obj')
+    model = BPT(file_path='../res/3d_model/t.bpt')
+    bsp = model.b_spline_patch[0]
+    x = np.linspace(0, 1, 100)
+    y1 = [bsp.b(xx, 3, 0) for xx in x]
+    y2 = [bsp.b(xx, 3, 1) for xx in x]
+    y3 = [bsp.b(xx, 3, 2) for xx in x]
+    y4 = [bsp.b(xx, 3, 3) for xx in x]
+    plot(x, y1)
+    plot(x, y2)
+    plot(x, y3)
+    plot(x, y4)
+    show()
+    model = OBJ(file_path='../res/3d_model/cube2.obj')
     bsb = BSplineBody(2, 2, 2)
     model.split(bsb)
