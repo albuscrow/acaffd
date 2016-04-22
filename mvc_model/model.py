@@ -43,6 +43,10 @@ class BSplinePatch:
     def b(self, t, n, i):
         return self.c(n, i) * pow(t, i) * pow(1 - t, n - i)
 
+    @property
+    def control_points(self):
+        return self._control_points
+
 
 class BPT:
     def __init__(self, file_path):
@@ -67,6 +71,7 @@ class OBJ:
         self._vertex = []
         self._normal = []
         self._tex_coord = []
+        self._bezier_uv = []
         self._has_texture = False
         self._index = []
         self._adjacency = []
@@ -76,6 +81,7 @@ class OBJ:
         self._original_normal_number = 0
         self._triangles = None  # type: list[ACTriangle]
         self._length = []
+        self._from_bezier = False
 
         if file_path:
             if file_path.endswith('.obj') or file_path.endswith('.OBJ'):
@@ -127,8 +133,11 @@ class OBJ:
         self.handle_face(f_store, temp_normals, temp_tex_coords, temp_vertices)
 
     def parse_from_bpt(self, bpt: BPT):
+        self._from_bezier = True
+        self._bezier_control_points = []
         temp_vertices = []
         temp_normals = []
+        temp_uv = []
         f_store = set()
         parse_factor = 10
         one_patch_point = (parse_factor + 1) ** 2
@@ -142,8 +151,10 @@ class OBJ:
             temp_index.append((i3, i2, i4))
 
         for i, b in enumerate(bpt.b_spline_patch):
+            self._bezier_control_points.append(b.control_points)
             for u, v in product(np.linspace(0, 1, parse_factor + 1), np.linspace(0, 1, parse_factor + 1)):
                 p, n = (b.sample(u, v))
+                p[3] = i
 
                 ##以下代码是特地给犹它茶壶用的
                 if i < 4 and u == 0:
@@ -153,6 +164,7 @@ class OBJ:
 
                 temp_vertices.append(p)
                 temp_normals.append(n)
+                temp_uv.append([u, v])
             for index in temp_index:
                 real_index = [ii + i * one_patch_point for ii in index]
                 p1, p2, p3 = [np.array(temp_vertices[ii], dtype='f4') for ii in real_index]
@@ -160,9 +172,9 @@ class OBJ:
                     continue
                 f_store.add("{0}//{0} {1}//{1} {2}//{2}".format(*real_index))
 
-        self.handle_face(f_store, temp_normals, None, temp_vertices)
+        self.handle_face(f_store, temp_normals, None, temp_vertices, temp_uv)
 
-    def handle_face(self, f_store, temp_normals, temp_tex_coords, temp_vertices):
+    def handle_face(self, f_store, temp_normals, temp_tex_coords, temp_vertices, temp_uv=None):
         model_range = [(-999999, 999999)] * 3
         for v in temp_vertices:
             for i in range(3):
@@ -191,11 +203,10 @@ class OBJ:
             tokens = l.split()
             if len(tokens) in (3, 4):
                 self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices,
-                                tokens[:3])
+                                tokens[:3], temp_uv)
                 if len(tokens) == 4:
                     self.parse_face(aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords,
-                                    temp_vertices,
-                                    [tokens[0], tokens[2], tokens[3]])
+                                    temp_vertices, [tokens[0], tokens[2], tokens[3]], temp_uv)
             else:
                 logging.error("this feature(face vertices = " + str(
                     len(tokens)) + ") in wavefront .obj is not implement")
@@ -209,7 +220,7 @@ class OBJ:
         self.reorganize()
         print('OBJ:', 'original triangle number: %d' % self._original_triangle_number)
 
-    def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens):
+    def parse_face(self, aux_vertex_map, aux_point_map, temp_normals, temp_tex_coords, temp_vertices, tokens, temp_uv):
         # 纪录该三角形的三个顶点
         point_indexes = []
         for v in tokens[:3]:
@@ -220,6 +231,8 @@ class OBJ:
             if v not in aux_vertex_map:
                 # 当前点还没有纪录的话先纪录当前点
                 self._vertex.append(temp_vertices[vertex_index])
+                if temp_uv:
+                    self._bezier_uv.append(temp_uv[vertex_index])
 
                 if len(index) == 2:
                     self._tex_coord.append(temp_tex_coords[int(index[1])])
@@ -361,6 +374,18 @@ class OBJ:
     @property
     def has_texture(self):
         return self._has_texture
+
+    @property
+    def from_bezier(self):
+        return self._from_bezier
+
+    @property
+    def bezier_control_points(self):
+        return np.array(self._bezier_control_points, dtype='f4')
+
+    @property
+    def bezier_uv(self):
+        return np.array(self._bezier_uv)
 
 
 from matplotlib.pylab import plot, show

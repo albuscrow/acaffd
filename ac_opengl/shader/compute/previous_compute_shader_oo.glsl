@@ -15,6 +15,11 @@ layout(std430, binding=22) buffer OrinigalTexCoordBuffer{
 };
 
 //input
+layout(std430, binding=24) buffer OrinigalUVBuffer{
+    vec2[] originalUV;
+};
+
+//input
 layout(std430, binding=2) buffer OriginalNormalBuffer{
     uint[] originalIndex;
 };
@@ -43,6 +48,8 @@ struct SplitedTriangle {
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original2_texcoord2[3];
     ivec4 adjacency_triangle_index3_original_triangle_index1;
+    vec2 bezier_uv[3];
+    uint bezier_patch_id;
     float triangle_quality;
 };
 
@@ -130,6 +137,9 @@ vec3 getPositionOrg(vec3 parameter);
 // 根据 parameter 获得普通插值TexCoord
 vec2 getTecCoordOrg(vec3 parameter);
 
+// 根据 parameter 获得普通插值UV
+vec2 getUV(vec3 parameter);
+
 // 根据 parameter 获得邻接PNTriangle中的法向
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_);
 
@@ -147,6 +157,8 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber);
 vec3 translate_parameter(vec3 parameter, uint edgeNo);
 
 uint triangleIndex;
+const int isBezier = -1;
+//const int isBezier = 1;
 void main() {
     triangleIndex = gl_GlobalInvocationID.x;
     if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
@@ -176,8 +188,10 @@ void main() {
     for (int i = 0; i < 6; ++i) {
         PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
     }
-    for (int i = 0; i < 10; ++i) {
-        PNTriangleP_shared[triangleIndex * 10  + i] = PNTriangleP[i];
+    if (isBezier < 0) {
+        for (int i = 0; i < 10; ++i) {
+            PNTriangleP_shared[triangleIndex * 10  + i] = PNTriangleP[i];
+        }
     }
 
     // 获取pattern
@@ -201,6 +215,9 @@ void main() {
             st.pn_normal[i] = vec4(getPNNormal(parameter_in_original[i]), 0);
             st.original_normal[i] = vec4(getNormalOrg(parameter_in_original[i]), 0);
             st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
+//            if (isBezier > 0) {
+//                st.bezier_uv[i] = getUV(parameter_in_original[i]);
+//            }
             edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
         }
 
@@ -238,7 +255,9 @@ void main() {
         float radius = double_area / perimeter;
         st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
         st.adjacency_triangle_index3_original_triangle_index1[3] = int(triangleIndex);
-
+        if (isBezier > 0) {
+            st.bezier_patch_id = uint(originalVertex[original_index[i]].w);
+        }
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }
@@ -278,6 +297,14 @@ vec2 getTecCoordOrg(vec3 parameter) {
     vec2 result = vec2(0);
     for (int i = 0; i < 3; ++i) {
         result += orinigalTexCoord[original_index[i]] * parameter[i];
+    }
+    return result;
+}
+
+vec2 getUV(vec3 parameter) {
+    vec2 result = vec2(0);
+    for (int i = 0; i < 3; ++i) {
+        result += originalUV[original_index[i]] * parameter[i];
     }
     return result;
 }

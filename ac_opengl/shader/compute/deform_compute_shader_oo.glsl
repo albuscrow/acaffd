@@ -21,6 +21,8 @@ struct SplitedTriangle {
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original2_texcoord2[3];
     ivec4 adjacency_triangle_index3_original_triangle_index1;
+    vec2 bezier_uv[3];
+    uint bezier_patch_id;
     float triangle_quality;
 };
 
@@ -39,7 +41,6 @@ layout(std430, binding=5) buffer TriangleBuffer{
 layout(std140, binding=1) uniform ControlPointForSample{
     uniform vec4[729] newControlPoints;
 };
-
 
 //output
 layout(std430, binding=6) buffer TesselatedVertexBuffer{
@@ -120,6 +121,7 @@ layout(std430, binding=13) buffer RealNormal{
 
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 const vec3 ZERO3 = vec3(0.000001);
+const float ZERO = 0.000001;
 const float Mr[370] = {
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.8333333333333334, 3.0, 0.0, -1.5, 0.0, 0.3333333333333333, 0.0, 0.0, 0.0,
@@ -703,4 +705,51 @@ vec4 getParameterInBSplineBody(vec3 pointParameter) {
         result += currentTriangle.original_position[i] * pointParameter[i];
     }
     return result;
+}
+
+float c(int n, int r){
+    return factorial(n) / factorial(r) / factorial(n - r);
+}
+
+float b(float t, int n, int i){
+    return c(n, i) * power(t, i) * power(1 - t, n - i);
+}
+
+void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 normal) {
+    position = vec3(0);
+    //todo 不通用
+    uint offsetId = id * 16;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            position += b(u, 3, i) * b(v, 3, j) * PNTriangleP_shared[offsetId + i * 4 + j].xyz;
+        }
+    }
+
+    //以下代码是特地给犹它茶壶用的
+    if (id < 4 && u < ZERO){
+        normal = vec3(0, 0, -1);
+    } else if (id < 8 && u < ZERO) {
+        normal = vec3(0, 0, 1);
+    } else {
+        vec3 n_u = vec3(0);
+        for (int j = 0; j < 4; ++j) {
+            vec3 temp = vec3(0);
+            for (int i = 0; i < 3; ++i) {
+                temp += b(u, 2, i) * (PNTriangleP_shared[offsetId + i * 4 + j] - PNTriangleP_shared[offsetId + (i + 1) * 4 + j]).xyz;
+            }
+            n_u += b(v, 3, j) * temp;
+        }
+
+        vec3 n_v = vec3(0);
+        for (int i = 0; i < 4; ++i) {
+            vec3 temp = vec3(0);
+            for (int j = 0; j < 3; ++j) {
+                temp += b(v, 2, j) * (PNTriangleP_shared[offsetId + i * 4 + j] - PNTriangleP_shared[offsetId + i * 4 + j + 1]).xyz;
+            }
+            n_v += b(u, 3, i) * temp;
+        }
+        normal = cross(n_u, n_v);
+        normalize(normal);
+    }
+    return;
 }
