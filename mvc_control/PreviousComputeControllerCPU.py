@@ -47,7 +47,7 @@ class PreviousComputeControllerCPU:
 
     @property
     def group_size(self):
-        return [int(self._model.original_triangle_number / 512 + 1), 1, 1]
+        return [int(self._model._original_triangle_number / 512 + 1), 1, 1]
 
     @property
     def splited_triangle_number(self):

@@ -104,12 +104,12 @@ class PreviousComputeControllerGPU:
         self.gl_async_update_buffer_about_output()
 
     def gl_async_update_buffer_about_output(self):
-        self._share_adjacency_pn_triangle_normal_ssbo.capacity = self._model.original_triangle_number \
+        self._share_adjacency_pn_triangle_normal_ssbo.capacity = self._model._original_triangle_number \
                                                                  * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
-        self._share_adjacency_pn_triangle_position_ssbo.capacity = self._model.original_triangle_number \
+        self._share_adjacency_pn_triangle_position_ssbo.capacity = self._model._original_triangle_number \
                                                                    * PER_TRIANGLE_PN_POSITION_TRIANGLE_SIZE
         # 用于储存原始三角面片的PN-triangle
-        self._splited_triangle_ssbo.capacity = self._model.original_triangle_number \
+        self._splited_triangle_ssbo.capacity = self._model._original_triangle_number \
                                                * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE \
                                                * SPLITED_TRIANGLE_SIZE
 
@@ -153,7 +153,7 @@ class PreviousComputeControllerGPU:
 
     @property
     def group_size(self):
-        return [int(self._model.original_triangle_number / 512 + 1), 1, 1]
+        return [int(self._model._original_triangle_number / 512 + 1), 1, 1]
 
     @split_factor.setter
     def split_factor(self, split_factor):

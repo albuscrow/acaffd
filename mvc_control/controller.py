@@ -1,7 +1,6 @@
-import threading
 from functools import reduce
 
-from mvc_model.model import OBJ, ModelFileFormatType
+from mvc_model.model import OBJ
 from math import *
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from OpenGL.GL import *
@@ -129,7 +128,7 @@ class Controller(QObject):
         self._loaded_file_path = self.check_file_path(file_path)
         if self._loaded_file_path is None:
             return
-        raw_obj = OBJ(self._loaded_file_path, ModelFileFormatType.obj)
+        raw_obj = OBJ(file_path=self._loaded_file_path)
         self._gl_proxy.change_model(raw_obj)
 
     @pyqtSlot()
@@ -389,7 +388,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    file_path = "res/3d_model/cube2.obj"
+    # file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
@@ -406,4 +405,5 @@ def get_test_file_name():
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"
+    file_path = "res/3d_model/t.bpt"
     return file_path
