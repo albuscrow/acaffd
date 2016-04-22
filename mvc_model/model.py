@@ -2,9 +2,9 @@ import logging
 from mvc_model.ACTriangle import ACTriangle, ACPoly
 from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec
-import numpy as np
 from itertools import product
-from math import factorial, isnan
+from math import factorial
+import numpy as np
 
 
 class BSplinePatch:
@@ -45,7 +45,8 @@ class BSplinePatch:
 
     @property
     def control_points(self):
-        return self._control_points
+        return np.hstack((self._control_points.reshape(16, 3), np.ones((16, 1))))
+        # return self._control_points.reshape(16, 3)
 
 
 class BPT:
@@ -68,6 +69,7 @@ class BPT:
 
 class OBJ:
     def __init__(self, file_path: str = None, bpt=None):
+        self._bezier_control_points = []
         self._vertex = []
         self._normal = []
         self._tex_coord = []
@@ -134,7 +136,6 @@ class OBJ:
 
     def parse_from_bpt(self, bpt: BPT):
         self._from_bezier = True
-        self._bezier_control_points = []
         temp_vertices = []
         temp_normals = []
         temp_uv = []
@@ -185,7 +186,7 @@ class OBJ:
         self._length = []
         for r in model_range:
             mid.append((r[0] + r[1]) / 2)
-            self._length.append(r[1] - r[0])
+            self._length.append(r[0] - r[1])
         # d 为 xyz三个维度中，模型跨度最大值
         d = max(*self._length) / 2
 
@@ -193,7 +194,7 @@ class OBJ:
         self._length = [x / d for x in self._length]
 
         # 归一化 temp_vertices
-        temp_vertices = [[(e - m) / d for e, m in zip(v, mid)] + [1] for v in temp_vertices]
+        temp_vertices = [[(e - m) / d for e, m in zip(v[:3], mid)] + v[3:] for v in temp_vertices]
 
         # vertex 到 vertex_index map
         aux_vertex_map = {}
@@ -385,7 +386,7 @@ class OBJ:
 
     @property
     def bezier_uv(self):
-        return np.array(self._bezier_uv)
+        return np.array(self._bezier_uv, dtype='f4')
 
 
 from matplotlib.pylab import plot, show

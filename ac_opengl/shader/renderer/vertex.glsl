@@ -20,8 +20,9 @@ out vec3 varying_diff_position;
 out vec3 varying_position;
 out vec2 varying_tex_coord;
 void main() {
+    vec4 p = vec4(vertice.xyz, 1);
     if (show_original > 0) {
-        gl_Position = wvp_matrix * vertice;
+        gl_Position = wvp_matrix * p;
         varying_position = gl_Position.xyz;
         varying_normal.xyz = normalize(vec3(wv_matrix * normal));
         varying_tex_coord = tex_coord;
@@ -30,14 +31,14 @@ void main() {
             gl_Position = wvp_matrix * real_position;
             varying_normal.xyz = normalize(vec3(wv_matrix * real_normal));
         } else {
-            gl_Position = wvp_matrix * vertice;
+            gl_Position = wvp_matrix * p;
             varying_normal.xyz = normalize(vec3(wv_matrix * normal));
         }
         varying_position = gl_Position.xyz;
         varying_parameter_in_original3_triangle_quality1 = parameter_in_original3_triangle_quality1;
         varying_parameter_in_splited_triangle = parameter_in_splited_edge;
         varying_diff_normal = abs((real_normal - normal).xyz*5.2);
-        varying_diff_position = abs((real_position - vertice).xyz*30);
+        varying_diff_position = abs((real_position - p).xyz*30);
 //        varying_diff_normal = abs((real_normal - normal).xyz*50000);
 //        varying_diff_position = (real_position - vertice).xyz*30000;
         varying_tex_coord = tex_coord;

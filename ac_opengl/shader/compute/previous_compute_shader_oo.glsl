@@ -36,7 +36,7 @@ layout(std430, binding=4) buffer PNTriangleNShareBuffer{
 
 //output
 layout(std430, binding=19) buffer PNTrianglePShareBuffer{
-    vec3[] PNTriangleP_shared;
+    vec4[] PNTriangleP_shared;
 };
 
 
@@ -157,8 +157,8 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber);
 vec3 translate_parameter(vec3 parameter, uint edgeNo);
 
 uint triangleIndex;
-const int isBezier = -1;
-//const int isBezier = 1;
+//const int isBezier = -1;
+const int isBezier = 1;
 void main() {
     triangleIndex = gl_GlobalInvocationID.x;
     if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
@@ -190,7 +190,7 @@ void main() {
     }
     if (isBezier < 0) {
         for (int i = 0; i < 10; ++i) {
-            PNTriangleP_shared[triangleIndex * 10  + i] = PNTriangleP[i];
+            PNTriangleP_shared[triangleIndex * 10  + i].xyz = PNTriangleP[i];
         }
     }
 
@@ -215,9 +215,9 @@ void main() {
             st.pn_normal[i] = vec4(getPNNormal(parameter_in_original[i]), 0);
             st.original_normal[i] = vec4(getNormalOrg(parameter_in_original[i]), 0);
             st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
-//            if (isBezier > 0) {
-//                st.bezier_uv[i] = getUV(parameter_in_original[i]);
-//            }
+            if (isBezier > 0) {
+                st.bezier_uv[i] = getUV(parameter_in_original[i]);
+            }
             edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
         }
 
@@ -256,7 +256,7 @@ void main() {
         st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
         st.adjacency_triangle_index3_original_triangle_index1[3] = int(triangleIndex);
         if (isBezier > 0) {
-            st.bezier_patch_id = uint(originalVertex[original_index[i]].w);
+            st.bezier_patch_id = uint(originalVertex[original_index[0]].w);
         }
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }

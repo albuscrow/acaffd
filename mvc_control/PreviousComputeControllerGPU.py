@@ -37,7 +37,7 @@ class PreviousComputeControllerGPU:
         self._model = model  # type: OBJ
 
         # init pattern data
-        self._split_factor = 0.45  # type: float
+        self._split_factor = 3  # type: float
         self.MAX_SEGMENTS = -1  # type: int
         self._pattern_offsets = None  # type: np.array
         self._pattern_indexes = None  # type: np.array

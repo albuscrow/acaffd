@@ -95,7 +95,7 @@ class DeformAndDrawController:
         self._tessellation_index = None  # type: list
         self._tessellation_factor_changed = False  # type: bool
         self._splited_triangle_number_changed = False  # type: bool
-        self.init_tessellation_pattern_data(10)
+        self.init_tessellation_pattern_data(1)
 
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False

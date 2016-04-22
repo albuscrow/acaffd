@@ -88,7 +88,7 @@ layout(std430, binding=18) buffer NormalSplitedTriangle{
 
 //input
 layout(std430, binding=19) buffer PNTrianglePShareBuffer{
-    vec3[] PNTriangleP_shared;
+    vec4[] PNTriangleP_shared;
 };
 
 
@@ -217,6 +217,7 @@ vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint original_triangle_index)
 vec3 getNormalInOriginal(vec3 parameter);
 vec3 getPositionInOriginal(vec3 parameter);
 vec2 getTexCoord(vec3 parameter);
+vec2 getUV(vec3 parameter);
 vec4 getNormal(vec3 parameter);
 vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter);
 vec2 getTessellatedSplitParameter(vec2[3] split_parameter, vec4 tessellatedParameter);
@@ -227,6 +228,7 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter);
 void sampleFast(inout SamplePoint spi);
 vec3 sampleFastNormal(in SamplePoint spi);
 vec4 getParameterInBSplineBody(vec3 pointParameter);
+void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 normal);
 
 // 代表三个方向B spline body的区间数
 float BSplineBodyMinParameter[3];
@@ -240,6 +242,7 @@ uint OrderProduct;
 
 SplitedTriangle currentTriangle;
 vec3 normalizedOriginalNormal[3];
+const int isBezier = 1;
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
     if (triangleIndex >= triangleNumber) {
@@ -380,13 +383,26 @@ void main() {
         // get background data
         vec3 temp = parameterInOriginal3_triangle_quality1[point_offset].xyz;
         SamplePoint sp;
-        if (adjust_control_point > 0) {
-            sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
-        } else {
-            sp.position = getPositionInOriginal(pointParameter);
-        }
-        sp.normal = getNormalInOriginal(pointParameter);
+        if (isBezier > 0) {
 //        sp.normal = getNormalInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
+            vec3 p, n;
+            vec2 uv = getUV(pointParameter);
+            sampleInBezier(currentTriangle.bezier_patch_id, uv[0], uv[1], p, n);
+            float d = 3.217;
+            float mid[3] = {0.21700000000000008, 0.0, 1.5750000000000004};
+            for (int i = 0; i < 3; ++i) {
+                p[i] = (p[i] - mid[i]) / d;
+            }
+            sp.position = p;
+            sp.normal = n;
+        } else {
+            if (adjust_control_point > 0) {
+                sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
+            } else {
+                sp.position = getPositionInOriginal(pointParameter);
+            }
+            sp.normal = getNormalInOriginal(pointParameter);
+        }
         getSamplePointHelper(sp);
         sampleFast(sp);
         realPosition[point_offset] = vec4(sp.position, 1);
@@ -624,6 +640,14 @@ vec2 getTexCoord(vec3 parameter) {
     return res;
 }
 
+vec2 getUV(vec3 parameter) {
+    vec2 res = vec2(0);
+    for (uint i = 0; i < 3; ++i) {
+        res += (currentTriangle.bezier_uv[i] * parameter[i]);
+    }
+    return res;
+}
+
 vec3 getNormalInOriginal(vec3 parameter) {
     vec3 normal = vec3(0);
     for (uint i = 0; i < 3; ++i) {
@@ -693,7 +717,7 @@ vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_inde
             int k = 3 - i - j;
             float n = 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
                     / factorial(i) / factorial(j) / factorial(k);
-            result += PNTriangleP_shared[offset ++] * n;
+            result += PNTriangleP_shared[offset ++].xyz * n;
         }
     }
     return result;
@@ -721,10 +745,11 @@ void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 norma
     uint offsetId = id * 16;
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
-            position += b(u, 3, i) * b(v, 3, j) * PNTriangleP_shared[offsetId + i * 4 + j].xyz;
+            position += b(u, 3, i) * b(v, 3, j) * PNTriangleP_shared[offsetId ++].xyz;
         }
     }
 
+    offsetId = id * 16;
     //以下代码是特地给犹它茶壶用的
     if (id < 4 && u < ZERO){
         normal = vec3(0, 0, -1);
@@ -735,7 +760,7 @@ void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 norma
         for (int j = 0; j < 4; ++j) {
             vec3 temp = vec3(0);
             for (int i = 0; i < 3; ++i) {
-                temp += b(u, 2, i) * (PNTriangleP_shared[offsetId + i * 4 + j] - PNTriangleP_shared[offsetId + (i + 1) * 4 + j]).xyz;
+                temp += b(u, 2, i) * (PNTriangleP_shared[offsetId + i * 4 + j].xyz - PNTriangleP_shared[offsetId + (i + 1) * 4 + j].xyz);
             }
             n_u += b(v, 3, j) * temp;
         }
@@ -744,7 +769,7 @@ void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 norma
         for (int i = 0; i < 4; ++i) {
             vec3 temp = vec3(0);
             for (int j = 0; j < 3; ++j) {
-                temp += b(v, 2, j) * (PNTriangleP_shared[offsetId + i * 4 + j] - PNTriangleP_shared[offsetId + i * 4 + j + 1]).xyz;
+                temp += b(v, 2, j) * (PNTriangleP_shared[offsetId + i * 4 + j].xyz - PNTriangleP_shared[offsetId + i * 4 + j + 1].xyz);
             }
             n_v += b(u, 3, i) * temp;
         }
