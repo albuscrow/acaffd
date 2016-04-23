@@ -72,13 +72,15 @@ class PreviousComputeControllerCPU:
         self._splited_triangle_ssbo.async_update(splited_triangle_data)
         self._splited_triangle_ssbo.gl_sync()
 
-        if self._model.from_bezier:
-            self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
-        else:
-            self._share_adjacency_pn_triangle_position_ssbo.async_update(pn_triangle_position_control_point)
-        self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
-        self._share_adjacency_pn_triangle_normal_ssbo.async_update(pn_triangle_normal_control_point)
-        self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()
+        # if self._model.from_bezier:
+        #     self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
+        #     print('upload bezier control points')
+        # else:
+        #     self._share_adjacency_pn_triangle_position_ssbo.async_update(pn_triangle_position_control_point)
+        # self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
+        # self._share_adjacency_pn_triangle_normal_ssbo.async_update(pn_triangle_normal_control_point.reshape(-1, 4))
+        # self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()
+
         return number
 
     def gl_async_update_buffer_about_output(self):

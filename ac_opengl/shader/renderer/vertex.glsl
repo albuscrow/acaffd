@@ -19,6 +19,7 @@ out vec3 varying_diff_normal;
 out vec3 varying_diff_position;
 out vec3 varying_position;
 out vec2 varying_tex_coord;
+out vec3 varying_debug;
 void main() {
     vec4 p = vec4(vertice.xyz, 1);
     if (show_original > 0) {
@@ -42,5 +43,12 @@ void main() {
 //        varying_diff_normal = abs((real_normal - normal).xyz*50000);
 //        varying_diff_position = (real_position - vertice).xyz*30000;
         varying_tex_coord = tex_coord;
+        if (mod(gl_VertexID, 3) == 0) {
+            varying_debug = vec3(1,0,0);
+        } else if (mod(gl_VertexID, 3) == 1) {
+            varying_debug = vec3(0,1,0);
+        } else {
+            varying_debug = vec3(0,0,1);
+        }
     }
 }

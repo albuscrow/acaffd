@@ -394,7 +394,7 @@ class Controller(QObject):
 
 def get_test_file_name():
     # todo
-    file_path = "res/3d_model/Mobile.obj"
+    # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
@@ -415,5 +415,5 @@ def get_test_file_name():
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"
-    # file_path = "res/3d_model/t.bpt"
+    file_path = "res/3d_model/t.bpt"
     return file_path

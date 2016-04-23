@@ -140,7 +140,7 @@ class OBJ:
         temp_normals = []
         temp_uv = []
         f_store = set()
-        parse_factor = 5
+        parse_factor = 10
         one_patch_point = (parse_factor + 1) ** 2
         temp_index = []
         for i, j in product(range(parse_factor), range(parse_factor)):
@@ -194,12 +194,12 @@ class OBJ:
         self._length = [x / d for x in self._length]
 
         # 归一化 temp_vertices
-        temp_vertices = [[(e - m) / d for e, m in zip(v[:3], mid)] + v[3:] for v in temp_vertices]
+        temp_vertices = [[(e - m) / d / 1.1 for e, m in zip(v[:3], mid)] + v[3:] for v in temp_vertices]
 
         # 归一化 bezier_control_points
         for c in self._bezier_control_points:
             for i in range(3):
-                c[:, i] = (c[:, i] - mid[i]) / d
+                c[:, i] = (c[:, i] - mid[i]) / d / 1.1
 
         # vertex 到 vertex_index map
         aux_vertex_map = {}
@@ -320,7 +320,6 @@ class OBJ:
             pnp, pnn = t.gen_pn_triangle()
             pnp_data.append(np.hstack((pnp, [[0]] * 10)))
             pnn_data.append(np.hstack((pnn, [[0]] * 6)))
-
         polygons = []
         for t in self._triangles:
             polygons.append(ACPoly(t))

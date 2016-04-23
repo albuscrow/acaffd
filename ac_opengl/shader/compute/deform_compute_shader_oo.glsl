@@ -28,7 +28,7 @@ struct SplitedTriangle {
 
 //input
 layout(std430, binding=4) buffer PNTriangleNShareBuffer{
-    vec3[] PNTriangleN_shared;
+    vec4[] PNTriangleN_shared;
 };
 
 //input
@@ -242,7 +242,6 @@ uint OrderProduct;
 
 SplitedTriangle currentTriangle;
 vec3 normalizedOriginalNormal[3];
-//const int isBezier = 1;
 const int isBezier = -1;
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
@@ -312,25 +311,36 @@ void main() {
             vec3 currentNormal = currentTriangle.pn_normal[i / 2].xyz;
             vec3 currentPosition = currentTriangle.pn_position[i / 2].xyz;
             vec3 controlPoint = bezierPositionControlPoint[move_control_point[i]];
-            vec3 result;
-            if (currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]] > 0) {
-                samplePointForNormal[i / 2].normal =
-                    getNormalInOriginalPNTriangle(currentTriangle.adjacency_pn_normal_parameter[i].xyz,
-                        currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]]);
-                vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
-                if (! all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
-                    vec3 n_ave = normalize(cross(currentNormal, adj_normal));
-                    result = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;
-                    temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
+            int adjacency_triangle_id = currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]];
+            if (adjacency_triangle_id >= 0) {
+                vec3 adjacency_normal_parameter = currentTriangle.adjacency_pn_normal_parameter[i].xyz;
+                if (any(lessThan(abs(adjacency_normal_parameter), ZERO3))) {
+                    samplePointForNormal[i / 2].normal =
+                        getNormalInOriginalPNTriangle(adjacency_normal_parameter, adjacency_triangle_id);
+                    vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
+                    if (!all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
+                        temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
+                        vec3 n_ave = normalize(cross(currentNormal, adj_normal));
+                        bezierPositionControlPoint[move_control_point[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;;
+                    } else {
+                        bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
+                    }
                 } else {
-                    currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]] = -1;
-                    result = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
+                    samplePointForNormal[i / 2].normal =
+                        getNormalInOriginalPNTriangle(adjacency_normal_parameter, adjacency_triangle_id);
+                    vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
+                    if (!all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
+                        temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
+                        vec3 n_ave = normalize(cross(currentNormal, adj_normal));
+                        bezierPositionControlPoint[move_control_point[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;;
+                    } else {
+                        bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
+                    }
                 }
             } else {
-                result = controlPoint - dot(controlPoint - currentPosition, currentNormal) * currentNormal;
+                bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot(controlPoint - currentPosition, currentNormal) * currentNormal;
             }
-            bezierPositionControlPoint[move_control_point[i]] = result;
-            E += result;
+            E += bezierPositionControlPoint[move_control_point[i]];
         }
         E /= 6;
         vec3 V = (bezierPositionControlPoint[0] + bezierPositionControlPoint[6] + bezierPositionControlPoint[9]) / 3;
@@ -535,7 +545,7 @@ vec3 sampleFastNormal(in SamplePoint samplePoint) {
 
     vec3 n = samplePoint.normal;
 
-    vec3 result = vec3(1);
+    vec3 result = vec3(0);
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
     float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
     float J_bar_star_T_1 = fw.y * fu.z - fu.y * fw.z;
@@ -697,7 +707,7 @@ vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint triangle_index) {
             int k = 2 - i - j;
             float n = 2.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
                     / factorial(i) / factorial(j) / factorial(k);
-            result += PNTriangleN_shared[ctrlPointIndex ++] * n;
+            result += PNTriangleN_shared[ctrlPointIndex ++].xyz * n;
         }
     }
     return normalize(result);

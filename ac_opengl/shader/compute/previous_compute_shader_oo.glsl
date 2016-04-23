@@ -31,7 +31,7 @@ layout(std430, binding=3) buffer AdjacencyBuffer{
 
 //share
 layout(std430, binding=4) buffer PNTriangleNShareBuffer{
-    vec3[] PNTriangleN_shared;
+    vec4[] PNTriangleN_shared;
 };
 
 //output
@@ -186,7 +186,7 @@ void main() {
     // 生成pn-triangle
     genPNTriangle();
     for (int i = 0; i < 6; ++i) {
-        PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
+        PNTriangleN_shared[triangleIndex * 6  + i].xyz = PNTriangleN[i];
     }
     if (isBezier < 0) {
         for (int i = 0; i < 10; ++i) {
@@ -336,7 +336,7 @@ vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
             int k = 2 - i - j;
             float n = 2f / factorial(i) / factorial(j) / factorial(k)
                 * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
-            result += PNTriangleN_shared[ctrlPointIndex ++] * n;
+            result += PNTriangleN_shared[ctrlPointIndex ++].xyz * n;
         }
     }
     return vec4(normalize(result), 0);

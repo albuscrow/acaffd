@@ -9,7 +9,7 @@ from numpy.linalg import LinAlgError
 from Constant import ZERO
 from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec
-from math import pow, factorial, sqrt, isnan
+from math import pow, factorial, sqrt
 
 SPLIT_PARAMETER_CHANGE_AUX = [[1, 0, 2], [0, 2, 1], [2, 1, 0]]
 
@@ -162,8 +162,10 @@ class ACPoly:
         res = []
         c, pre = self._points[:2]
         for p in self._points[2:]:
-            t = ACTriangle(self._triangle.id)
             ps = [c, pre, p]
+            if c == pre == p:
+                continue
+            t = ACTriangle(self._triangle.id)
             t.positionv4 = np.array([p.position for p in ps], dtype='f4')
             # original normal not need normalize
             t.normalv3 = np.array([p.normal for p in ps], dtype='f4')
@@ -190,15 +192,16 @@ class ACPoly:
         # if res[0] == res[-1]:
         #     res = res[1:]
 
-        res = []
-        for i, p in enumerate(points):
-            if p.is_new:
-                p.is_new = False
-                p1 = points[i - 1]
-                p2 = points[(i + 1) % len(points)]
-                if (p == p1 and not p1.is_new) or (p == p2 and not p2.is_new):
-                    continue
-            res.append(p)
+        # res = []
+        # for i, p in enumerate(points):
+        #     if p.is_new:
+        #         p.is_new = False
+        #         p1 = points[i - 1]
+        #         p2 = points[(i + 1) % len(points)]
+        #         if (p == p1 and not p1.is_new) or (p == p2 and not p2.is_new):
+        #             continue
+        #     res.append(p)
+        res = points
 
         if len(res) < 3:
             return None
@@ -245,80 +248,91 @@ class ACTriangle:
         return ','.join([str(x.id if x else None) + '-' + str(y) for x, y in self._neighbor])
 
     def as_element_for_shader(self) -> list:
-
         original_position = self.positionv4
         pn_position = [self.get_position_in_pn_triangle(x) for x in self._parameter]
         self.positionv4 = np.array(pn_position, dtype='f4')
 
         # v4
         pn_normal = [self.get_normal_in_pn_triangle(x) for x in self._parameter]
-        # v4
-        pn_normal_adjacent = np.zeros((6, 4), dtype='f4')
+
         pn_normal_parameter_adjacent = np.zeros((6, 4), dtype='f4')
-        is_sharp3_triangle_quality = []
         adjacency_triangle_index3_original_triangle_index1 = np.zeros((4,), dtype='i4')
-        aux1 = [2, 0, 0, 1, 1, 2]
         aux2 = [5, 0, 1, 2, 3, 4]
         occupy_edge_info = [ACTriangle.occupy_edge(p) for p in self.parameter]
         original_edge_info = [SPLIT_PARAMETER_EDGE_INFO_AUX[occupy_edge_info[i] & occupy_edge_info[i - 1]] for i in
                               range(3)]
-        for i in range(3):
-            if original_edge_info[i] == -1:
-                # 是内部三角形
-                is_sharp3_triangle_quality.append(-1)
-                adjacency_triangle_index3_original_triangle_index1[i] = -1
-            else:
-                if self.neighbor[original_edge_info[i]][0] is None:
-                    # 没有邻接三角形
-                    is_sharp3_triangle_quality.append(-1)
-                    adjacency_triangle_index3_original_triangle_index1[i] = -1
-                else:
-                    is_sharp3_triangle_quality.append(-1)
-                    adjacency_triangle_index3_original_triangle_index1[i] = -1
-                    for j in range(2):
-                        index = i * 2 + j
-                        adjacent_parameter = self.transform_parameter(self._parameter[aux1[index]],
-                                                                      original_edge_info[i])
-                        adjacent_normal = self.neighbor[original_edge_info[i]][0] \
-                            .get_normal_in_pn_triangle(adjacent_parameter)
-                        pn_normal_adjacent[aux2[index]] = adjacent_normal
-                        pn_normal_parameter_adjacent[aux2[index]] = np.append(adjacent_parameter, 0)
-                        if not equal_vec(adjacent_normal, pn_normal[aux1[index]]):
-                            is_sharp3_triangle_quality[-1] = 1
-                            adjacency_triangle_index3_original_triangle_index1[i] = \
-                                self.neighbor[original_edge_info[i]][0].id
 
-        adjacency_triangle_index3_original_triangle_index1[3] = self._id
+        for i in range(3):
+            current_edge = original_edge_info[i]
+            adjacency_triangle_index3_original_triangle_index1[i] = -1
+            if current_edge != -1 and self.neighbor[current_edge][0]:
+                adjacency_triangle_index3_original_triangle_index1[i] = self.neighbor[current_edge][0].id
+            if adjacency_triangle_index3_original_triangle_index1[i] != -1:
+                for j in range(2):
+                    index = i * 2 + j
+                    adjacent_normal_parameter_index = aux2[index]
+                    adjacent_parameter = self.transform_parameter(self._parameter[adjacent_normal_parameter_index//2],
+                                                                  current_edge)
+                    pn_normal_parameter_adjacent[adjacent_normal_parameter_index] = np.append(adjacent_parameter, 0)
+
+        # for i in range(3):
+        #     if original_edge_info[i] == -1:
+        #         # 是内部三角形
+        #         adjacency_triangle_index3_original_triangle_index1[i] = -1
+        #     else:
+        #         if self.neighbor[original_edge_info[i]][0] is None:
+        #             # 没有邻接三角形
+        #             adjacency_triangle_index3_original_triangle_index1[i] = -1
+        #         else:
+        #             adjacency_triangle_index3_original_triangle_index1[i] = -1
+        #             for j in range(2):
+        #                 index = i * 2 + j
+        #                 adjacent_parameter = self.transform_parameter(self._parameter[aux1[index]],
+        #                                                               original_edge_info[i])
+        #                 adjacent_normal = self.neighbor[original_edge_info[i]][0] \
+        #                     .get_normal_in_pn_triangle(adjacent_parameter)
+        #                 pn_normal_adjacent[aux2[index]] = adjacent_normal
+        #                 pn_normal_parameter_adjacent[aux2[index]] = np.append(adjacent_parameter, 0)
+        #                 if not equal_vec(adjacent_normal, pn_normal[aux1[index]]):
+        #                     adjacency_triangle_index3_original_triangle_index1[i] = \
+        #                         self.neighbor[original_edge_info[i]][0].id
+
+        adjacency_triangle_index3_original_triangle_index1[3] = self.id
         t = [self.positionv3[i - 1] - self.positionv3[i] for i in [1, 2, 0]]
         l = [sqrt(sum([y * y for y in x])) for x in t]
         perimeter = sum(l)
-        double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2
-        radius = double_area / perimeter
-        triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4
-        is_sharp3_triangle_quality.append(triangle_quality)
-        data = []
+        temp = (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])
+        if temp <= 0:
+            triangle_quality = 0
+        else:
+            double_area = sqrt(perimeter * temp) / 2
+            radius = double_area / perimeter
+            triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4
+            #todo
+        #
+        # if not 0 <= adjacency_triangle_index3_original_triangle_index1[3] <= 1800:
+        #     print(adjacency_triangle_index3_original_triangle_index1)
+        #
+        # if not -1 <= adjacency_triangle_index3_original_triangle_index1[0] <= 1800:
+        #     print(adjacency_triangle_index3_original_triangle_index1)
+        #
+        # if not -1 <= adjacency_triangle_index3_original_triangle_index1[1] <= 1800:
+        #     print(adjacency_triangle_index3_original_triangle_index1)
+        #
+        # if not -1 <= adjacency_triangle_index3_original_triangle_index1[2] <= 1800:
+        #     print(adjacency_triangle_index3_original_triangle_index1)
 
-        # [('pn_position', '4f4', 3),
-        # ('pn_normal', '4f4', 3),
-        # ('original_position', '4f4', 3),
-        # ('original_normal', '4f4', 3),
-        # ('adjacency_pn_normal_parameter', '4f4', 6),
-        # ('parameter_in_original2_texcoord2', '4f4', 3),
-        # ('adjacency_triangle_index3_original_triangle_index1', 'i4', 4),
-        # ('bezier_uv', '2f4', 3),
-        # ('bezier_patch_id', 'u4', 1),
-        # ('triangle_quality_and_padding', 'f4', 1)]
+        data = [pn_position,
+                pn_normal,
+                original_position,
+                self.normalv4,
+                pn_normal_parameter_adjacent,
+                np.hstack((self.parameter[:, :2], self._tex_coord)),
+                adjacency_triangle_index3_original_triangle_index1,
+                self.bezier_uv,
+                self.bezier_id,
+                triangle_quality]
 
-        data.append(pn_position)
-        data.append(pn_normal)
-        data.append(original_position)
-        data.append(self.normalv4)
-        data.append(pn_normal_parameter_adjacent)
-        data.append(np.hstack((self.parameter[:, :2], self._tex_coord)))
-        data.append(adjacency_triangle_index3_original_triangle_index1)
-        data.append(self.bezier_uv)
-        data.append(self.bezier_id)
-        data.append(triangle_quality)
         return tuple(data)
 
     @staticmethod
@@ -412,7 +426,7 @@ class ACTriangle:
         n = n_s + n_e
         v = p_e - p_s
         if all(abs(v) < ZERO):
-            return n
+            return normalize(n)
         else:
             return normalize(n - 2 * np.dot(n, v) / np.dot(v, v) * v)
 
