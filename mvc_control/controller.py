@@ -361,30 +361,40 @@ class Controller(QObject):
         self._gl_proxy.gl_init_global()
 
     def gl_on_frame_draw(self) -> None:
+        print('beging begin draw')
         glEnable(GL_SCISSOR_TEST)
+        print('beging begin draw1')
         glScissor(*self.window_size.xywh)
+        print('beging begin draw2')
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        print('beging begin draw3')
         glViewport(*self.window_size.xywh)
+        print('beging begin draw4')
 
         if self._gl_proxy:
             if self.gl_task:
                 self.gl_task()
+            print('begin draw')
             self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
 
+        print('beging begin draw5')
         glDisable(GL_SCISSOR_TEST)
+        print('finish draw')
 
     @pyqtSlot()
     def paint(self):
+        print('begin paint')
         if not self._inited:
             self.gl_init()
             self._inited = True
         self.gl_on_frame_draw()
+        print('end paint')
 
 
 def get_test_file_name():
     # todo
-    # file_path = "res/3d_model/Mobile.obj"
+    file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
@@ -405,5 +415,5 @@ def get_test_file_name():
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"
-    file_path = "res/3d_model/t.bpt"
+    # file_path = "res/3d_model/t.bpt"
     return file_path

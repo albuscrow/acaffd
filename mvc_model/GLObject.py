@@ -79,3 +79,8 @@ class ACVBO:
 
     def as_element_array_buffer(self):
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.buffer_name)
+
+    def __del__(self):
+        if self._buffer_name != -1:
+            print('delete vbo')
+            glDeleteBuffers(1, self._buffer_name)

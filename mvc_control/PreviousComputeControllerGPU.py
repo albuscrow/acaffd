@@ -20,6 +20,8 @@ class PreviousComputeShader(ShaderWrap):
 
     def pre_compile(self):
         self._source_code = self._source_code \
+            .replace('const int isBezier = -1',
+                     'const int isBezier = ' + str(1 if self._controller.model.from_bezier else -1)) \
             .replace('uvec4 splitIndex[]', 'uvec4 splitIndex[%d]' % (self._controller.pattern_indexes.size / 4)) \
             .replace('vec4 splitParameter[]',
                      'vec4 splitParameter[%d]' % (self._controller.pattern_parameters.size / 4)) \
@@ -134,7 +136,9 @@ class PreviousComputeControllerGPU:
         self._splited_triangle_ssbo.gl_sync()
 
     def gl_compute(self) -> int:
+        print('begin recompute')
         if not self._need_recompute:
+            print('no need recompute')
             return self._splited_triangle_number, False
         self.gl_sync()
         if self._need_update_split_factor:
@@ -143,6 +147,7 @@ class PreviousComputeControllerGPU:
         self._program.use()
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
+        print('recompute ok')
         glUseProgram(0)
         self._splited_triangle_number = self.get_splited_triangles_number()
         self._need_recompute = False
@@ -160,6 +165,10 @@ class PreviousComputeControllerGPU:
     @property
     def split_factor(self):
         return self._split_factor
+
+    @property
+    def model(self):
+        return self._model
 
     @property
     def group_size(self):

@@ -37,6 +37,7 @@ class PreviousComputeControllerCPU:
         if not self._need_recompute:
             return self._splited_triangle_number, False
         self._splited_triangle_number = self.compute_cpu()
+        glFinish()
         self._need_recompute = False
         print('gl_compute:', 'cpu splited triangle number: %d' % self._splited_triangle_number)
         return self._splited_triangle_number, True

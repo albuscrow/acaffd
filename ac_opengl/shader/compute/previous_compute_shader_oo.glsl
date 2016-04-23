@@ -106,7 +106,7 @@ const uint look_up_table_for_i[0] = {0};
 
 layout(location=0) uniform float split_factor;
 
-const int splitParameterEdgeInfoAux[5] = {-1,2,0,-2,1};
+const int splitParameterEdgeInfoAux[7] = {-1,2,0,-1,1,-1,-1};
 
 const uint splitParameterChangeAux[3][3] =
 {{1,0,2},
@@ -217,6 +217,8 @@ void main() {
             st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
             if (isBezier > 0) {
                 st.bezier_uv[i] = getUV(parameter_in_original[i]);
+            } else {
+                st.bezier_uv[i] = vec2(0,0);
             }
             edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
         }
@@ -412,9 +414,9 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
     j /= split_factor;
     k /= split_factor;
     int i_i, j_i, k_i;
-    i_i = int(ceil(i));
-    j_i = int(ceil(j));
-    k_i = int(ceil(k));
+    i_i = max(int(ceil(i)), 1);
+    j_i = max(int(ceil(j)), 1);
+    k_i = max(int(ceil(k)), 1);
 
     uint offset = get_offset(i_i, j_i, k_i);
     indexOffset = offset_number[offset * 2];
@@ -459,7 +461,11 @@ vec3 genPNControlPoint(vec3 p_s, vec3 p_e, vec3 n, vec3 n_adj) {
 vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
     vec3 n = n_s + n_e;
     vec3 v = p_e - p_s;
-    return normalize(n - 2 * dot(v, n) / dot(v,v) * v);
+    if (all(lessThan(abs(v), ZERO3))) {
+        return normalize(n);
+    } else {
+        return normalize(n - 2 * dot(v, n) / dot(v,v) * v);
+    }
 }
 
 void genPNTriangle(){

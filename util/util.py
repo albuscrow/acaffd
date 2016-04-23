@@ -12,6 +12,8 @@ def static_var(**kwargs):
 
 def normalize(n):
     l = (n[0] ** 2 + n[1] ** 2 + n[2] ** 2) ** 0.5
+    if l < ZERO:
+        return n
     for i in range(3):
         n[i] /= l
     return n

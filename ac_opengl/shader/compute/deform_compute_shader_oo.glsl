@@ -385,15 +385,9 @@ void main() {
         vec3 temp = parameterInOriginal3_triangle_quality1[point_offset].xyz;
         SamplePoint sp;
         if (isBezier > 0) {
-//        sp.normal = getNormalInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
             vec3 p, n;
             vec2 uv = getUV(pointParameter);
             sampleInBezier(currentTriangle.bezier_patch_id, uv[0], uv[1], p, n);
-//            float d = 3.217;
-//            float mid[3] = {0.21700000000000008, 0.0, 1.5750000000000004};
-//            for (int i = 0; i < 3; ++i) {
-//                p[i] = (p[i] - mid[i]) / d;
-//            }
             sp.position = p;
             sp.normal = n;
         } else {
@@ -753,9 +747,9 @@ void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 norma
     offsetId = id * 16;
     //以下代码是特地给犹它茶壶用的
     if (id < 4 && u < ZERO){
-        normal = vec3(0, 0, -1);
-    } else if (id < 8 && u < ZERO) {
         normal = vec3(0, 0, 1);
+    } else if (id < 8 && u < ZERO) {
+        normal = vec3(0, 0, -1);
     } else {
         vec3 n_u = vec3(0);
         for (int j = 0; j < 4; ++j) {
@@ -774,7 +768,7 @@ void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 norma
             }
             n_v += b(u, 3, i) * temp;
         }
-        normal = cross(n_u, n_v);
+        normal = cross(n_v, n_u);
         normalize(normal);
     }
     return;

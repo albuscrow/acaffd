@@ -123,3 +123,33 @@
 [-0.21976499  0.20753995  0.3030774   1.        ]
 [-0.19181365  0.16945322  0.31016475  1.        ]
 [ 0.10447446 -0.10447446 -0.98902488  0.        ]
+
+beging begin draw
+beging begin draw1
+beging begin draw2
+beging begin draw3
+beging begin draw4
+begin draw
+pre compute
+real deform
+update uniform
+renderer
+deformation
+aux draw
+beging begin draw5
+finish draw
+
+beging begin draw
+beging begin draw1
+beging begin draw2
+beging begin draw3
+beging begin draw4
+begin draw
+pre compute
+real deform
+update uniform
+renderer
+deformation
+aux draw
+beging begin draw5
+finish draw

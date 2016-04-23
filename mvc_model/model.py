@@ -33,7 +33,7 @@ class BSplinePatch:
                 temp += self.b(v, 2, j) * (self._control_points[i, j] - self._control_points[i, j + 1])
             result_v += self.b(u, 3, i) * temp
 
-        cross = np.cross(result_u, result_v)
+        cross = np.cross(result_v, result_u)
 
         return result.tolist() + [1], normalize(cross).tolist() + [0]
 
@@ -159,18 +159,18 @@ class OBJ:
 
                 ##以下代码是特地给犹它茶壶用的
                 if i < 4 and u == 0:
-                    n = [0, 0, -1, 0]
-                elif i < 8 and u == 0:
                     n = [0, 0, 1, 0]
+                elif i < 8 and u == 0:
+                    n = [0, 0, -1, 0]
 
                 temp_vertices.append(p)
                 temp_normals.append(n)
                 temp_uv.append([u, v])
             for index in temp_index:
                 real_index = [ii + i * one_patch_point for ii in index]
-                p1, p2, p3 = [np.array(temp_vertices[ii], dtype='f4') for ii in real_index]
-                if equal_vec(p1, p2) or equal_vec(p1, p3) or equal_vec(p3, p2):
-                    continue
+                # p1, p2, p3 = [np.array(temp_vertices[ii], dtype='f4') for ii in real_index]
+                # if equal_vec(p1, p2) or equal_vec(p1, p3) or equal_vec(p3, p2):
+                #     continue
                 f_store.add("{0}//{0} {1}//{1} {2}//{2}".format(*real_index))
 
         self.handle_face(f_store, temp_normals, None, temp_vertices, temp_uv)
@@ -195,6 +195,11 @@ class OBJ:
 
         # 归一化 temp_vertices
         temp_vertices = [[(e - m) / d for e, m in zip(v[:3], mid)] + v[3:] for v in temp_vertices]
+
+        # 归一化 bezier_control_points
+        for c in self._bezier_control_points:
+            for i in range(3):
+                c[:, i] = (c[:, i] - mid[i]) / d
 
         # vertex 到 vertex_index map
         aux_vertex_map = {}
@@ -235,7 +240,7 @@ class OBJ:
                 if temp_uv:
                     self._bezier_uv.append(temp_uv[vertex_index])
                 else:
-                    self._bezier_uv.append([0,0])
+                    self._bezier_uv.append([0, 0])
 
                 if len(index) == 2:
                     self._tex_coord.append(temp_tex_coords[int(index[1])])
@@ -352,8 +357,11 @@ class OBJ:
         self._triangles = []  # type: list[ACTriangle]
         for i, index in enumerate(zip(*([iter(self._index)] * 3))):
             t = ACTriangle(i)  # type: ACTriangle
-            t.positionv4, t.normalv4, t.tex_coord, t.bezier_uv = [np.array([lst[x] for x in index], dtype='f4') for lst in
-                                                     [self._vertex, self._normal, self._tex_coord, self._bezier_uv]]
+            t.positionv4, t.normalv4, t.tex_coord, t.bezier_uv = [np.array([lst[x] for x in index], dtype='f4') for lst
+                                                                  in
+                                                                  [self._vertex, self._normal, self._tex_coord,
+                                                                   self._bezier_uv]]
+            t.bezier_id = int(t.positionv4[0][3])
             self._triangles.append(t)
         for i, triangle in enumerate(self._triangles):
             triangle.neighbor = []
