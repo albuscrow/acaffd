@@ -12,12 +12,6 @@ import sys
 
 from mvc_model.plain_class import ACRect
 
-if len(sys.argv) > 1 and sys.argv[1] == 'cpu':
-    PreviousComputeController = PreviousComputeControllerCPU
-else:
-    PreviousComputeController = PreviousComputeControllerGPU
-
-
 class GLProxy:
     def __init__(self, controller=None):
         self._controller = controller
@@ -46,6 +40,8 @@ class GLProxy:
             self._previous_compute_controller_CYM = \
                 PreviousComputeControllerCPU(model, self._aux_controller.b_spline_body,
                                              self._previous_compute_controller_AC)
+            if self._algorithm == ALGORITHM_AC:
+                self._previous_compute_controller_CYM.need_upload_control_points = False
         else:
             self.previous_compute_controller.change_model(model)
             self.previous_compute_controller.b_spline_body = self._aux_controller.b_spline_body

@@ -46,7 +46,6 @@ class DeformComputeProgram(ProgramWrap):
         self.update_uniform_about_adjust_control_point_flag()
 
     def update_uniform_triangle_number(self):
-        print('update_uniform_triangle_number', self._controller.splited_triangle_number)
         glProgramUniform1ui(self._gl_program_name, 0, int(self._controller.splited_triangle_number))
 
     def update_uniform_about_tessellation(self):

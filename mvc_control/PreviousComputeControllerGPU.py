@@ -113,7 +113,6 @@ class PreviousComputeControllerGPU:
         self._share_adjacency_pn_triangle_normal_ssbo.capacity = self._model._original_triangle_number \
                                                                  * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
         if self._model.from_bezier:
-            print('upload bezier_control_points ok')
             self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
         else:
             self._share_adjacency_pn_triangle_position_ssbo.capacity = self._model._original_triangle_number \
@@ -136,9 +135,7 @@ class PreviousComputeControllerGPU:
         self._splited_triangle_ssbo.gl_sync()
 
     def gl_compute(self) -> int:
-        print('begin recompute')
         if not self._need_recompute:
-            print('no need recompute')
             return self._splited_triangle_number, False
         self.gl_sync()
         if self._need_update_split_factor:
@@ -147,7 +144,6 @@ class PreviousComputeControllerGPU:
         self._program.use()
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
-        print('recompute ok!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         glUseProgram(0)
         self._splited_triangle_number = self.get_splited_triangles_number()
         self._need_recompute = False
