@@ -316,8 +316,6 @@ class DeformAndDrawController:
         if not self.need_deform:
             return
         operator()
-        glFinish()
-        print('update outter')
         self._deform_program.use()
         if self._tessellation_factor_changed:
             self._deform_program.update_uniform_about_tessellation()
@@ -331,12 +329,7 @@ class DeformAndDrawController:
         if self._need_update_use_pn_normal_for_renderer:
             self._deform_program.update_uniform_about_use_pn_triangle()
             self._need_update_use_pn_normal_for_renderer = False
-        print('update uniform')
-        glFinish()
-        print('begin glDispatchCompute')
         glDispatchCompute(*self.group_size)
-        glFinish()
-        print('real real deformation')
         self._need_deform = False
         glUseProgram(0)
 
@@ -345,7 +338,6 @@ class DeformAndDrawController:
         glFinish()
         self.gl_deform(operator)
         glFinish()
-        print('real deform')
         self._renderer_program.use()
         if self._need_update_show_splited_edge_flag:
             self._renderer_program.update_uniform_about_split_edge()
@@ -370,8 +362,6 @@ class DeformAndDrawController:
         if self._need_update_show_real_flag:
             self._renderer_program.update_uniform_about_real()
             self._need_update_show_real_flag = False
-        print('update uniform')
-        glFinish()
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
@@ -388,8 +378,6 @@ class DeformAndDrawController:
             glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
         glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
-        glFinish()
-        print('renderer')
         glActiveTexture(GL_TEXTURE0)
         glBindVertexArray(0)
         glUseProgram(0)
