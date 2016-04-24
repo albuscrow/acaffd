@@ -361,26 +361,18 @@ class Controller(QObject):
         self._gl_proxy.gl_init_global()
 
     def gl_on_frame_draw(self) -> None:
-        print('beging begin draw')
         glEnable(GL_SCISSOR_TEST)
-        print('beging begin draw1')
         glScissor(*self.window_size.xywh)
-        print('beging begin draw2')
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        print('beging begin draw3')
         glViewport(*self.window_size.xywh)
-        print('beging begin draw4')
 
         if self._gl_proxy:
             if self.gl_task:
                 self.gl_task()
-            print('begin draw')
             self._gl_proxy.draw(self._model_view_matrix, self._perspective_matrix)
 
-        print('beging begin draw5')
         glDisable(GL_SCISSOR_TEST)
-        print('finish draw')
 
     @pyqtSlot()
     def paint(self):

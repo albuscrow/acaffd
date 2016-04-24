@@ -53,15 +53,10 @@ class GLProxy:
     def draw(self, model_view_matrix, perspective_matrix):
         number, need_deform = self.previous_compute_controller.gl_compute()
         glFinish()
-        print('pre compute')
         self._deform_and_renderer_controller.set_number_and_need_deform(number, need_deform)
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
                                                          self._aux_controller.gl_sync_buffer_for_deformation)
-        glFinish()
-        print('deformation')
         self._aux_controller.gl_draw(model_view_matrix, perspective_matrix)
-        glFinish()
-        print('aux draw')
 
     def gl_init_global(self):
         glClearColor(1, 1, 1, 1)
