@@ -21,7 +21,19 @@ def add_renderer_prefix(file_name: str):
     return 'ac_opengl/shader/renderer/' + file_name
 
 
-class DeformComputeShader(ProgramWrap):
+class DeformComputeShader(ShaderWrap):
+    def __init__(self, shader_type: int, file_name: str, controller):
+        super().__init__(shader_type, file_name)
+        self._controller = controller  # type : PreviousComputeController
+
+    def pre_compile(self):
+        self._source_code = self._source_code \
+            .replace('const int isBezier = -1',
+                     'const int isBezier = ' + str(1 if self._controller.model.from_bezier else -1))
+        return self
+
+
+class DeformComputeProgram(ProgramWrap):
     def __init__(self, controller):
         super().__init__()
         self._controller = controller  # type: DeformAndDrawController
@@ -83,7 +95,8 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, has_texture, previous_controller, controller=None):
+    def __init__(self, has_texture, previous_controller, model, controller=None):
+        self.model = model
         self._previous_controller = previous_controller  # type: PreviousComputeControllerGPU
         self._controller = controller
         self._splited_triangle_number = -1
@@ -95,7 +108,7 @@ class DeformAndDrawController:
         self._tessellation_index = None  # type: list
         self._tessellation_factor_changed = False  # type: bool
         self._splited_triangle_number_changed = False  # type: bool
-        self.init_tessellation_pattern_data(10)
+        self.init_tessellation_pattern_data(3)
 
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False
@@ -153,8 +166,9 @@ class DeformAndDrawController:
         self._show_normal_vao = -1  # type: int
 
         # program
-        self._deform_program = DeformComputeShader(self) \
-            .add_shader(ShaderWrap(GL_COMPUTE_SHADER, add_compute_prefix('deform_compute_shader_oo.glsl')))
+        self._deform_program = DeformComputeProgram(self) \
+            .add_shader(
+            DeformComputeShader(GL_COMPUTE_SHADER, add_compute_prefix('deform_compute_shader_oo.glsl'), self))
 
         self._renderer_program = ModelRendererShader(self) \
             .add_shader(ShaderWrap(GL_VERTEX_SHADER, add_renderer_prefix('vertex.glsl'))) \
@@ -314,14 +328,15 @@ class DeformAndDrawController:
         if self._need_update_use_pn_normal_for_renderer:
             self._deform_program.update_uniform_about_use_pn_triangle()
             self._need_update_use_pn_normal_for_renderer = False
-
         glDispatchCompute(*self.group_size)
         self._need_deform = False
         glUseProgram(0)
 
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
         self.gl_sync_buffer()
+        glFinish()
         self.gl_deform(operator)
+        glFinish()
         self._renderer_program.use()
         if self._need_update_show_splited_edge_flag:
             self._renderer_program.update_uniform_about_split_edge()
@@ -372,6 +387,7 @@ class DeformAndDrawController:
             glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
             number = int(self.splited_triangle_number * CONTROL_POINT_TRIANGLE_NUMBER * 3)
             glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
+            glFinish()
             glBindVertexArray(0)
             glUseProgram(0)
 
@@ -382,6 +398,7 @@ class DeformAndDrawController:
             glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
             number = int(self.splited_triangle_number * 3)
             glDrawArrays(GL_TRIANGLES, 0, number)
+            glFinish()
             glUseProgram(0)
             glBindVertexArray(0)
 

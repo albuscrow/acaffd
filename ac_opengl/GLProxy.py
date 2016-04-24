@@ -12,12 +12,6 @@ import sys
 
 from mvc_model.plain_class import ACRect
 
-if len(sys.argv) > 1 and sys.argv[1] == 'cpu':
-    PreviousComputeController = PreviousComputeControllerCPU
-else:
-    PreviousComputeController = PreviousComputeControllerGPU
-
-
 class GLProxy:
     def __init__(self, controller=None):
         self._controller = controller
@@ -46,12 +40,15 @@ class GLProxy:
             self._previous_compute_controller_CYM = \
                 PreviousComputeControllerCPU(model, self._aux_controller.b_spline_body,
                                              self._previous_compute_controller_AC)
+            if self._algorithm == ALGORITHM_AC:
+                self._previous_compute_controller_CYM.need_upload_control_points = False
         else:
             self.previous_compute_controller.change_model(model)
             self.previous_compute_controller.b_spline_body = self._aux_controller.b_spline_body
 
     def draw(self, model_view_matrix, perspective_matrix):
         number, need_deform = self.previous_compute_controller.gl_compute()
+        glFinish()
         self._deform_and_renderer_controller.set_number_and_need_deform(number, need_deform)
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
                                                          self._aux_controller.gl_sync_buffer_for_deformation)
@@ -70,11 +67,13 @@ class GLProxy:
         self._previous_compute_controller_CYM.gl_init()
 
         self.previous_compute_controller.gl_compute()
+        glFinish()
 
         # alloc memory in gpu for tessellated vertex
         self._deform_and_renderer_controller = DeformAndDrawController(
             self._model.has_texture,
             self.previous_compute_controller,
+            self._model,
             self._controller)
         self._deform_and_renderer_controller.gl_init()
 

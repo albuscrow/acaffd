@@ -19,12 +19,26 @@ class PreviousComputeControllerCPU:
         self._splited_triangle_ssbo = ac.splited_triangle_ssbo
         self._share_adjacency_pn_triangle_normal_ssbo = ac.share_adjacency_pn_triangle_normal_ssbo
         self._share_adjacency_pn_triangle_position_ssbo = ac.share_adjacency_pn_triangle_position_ssbo
+        self.original_vertex_ssbo = ac.original_vertex_ssbo
+        self.original_normal_ssbo = ac.original_normal_ssbo
+        self.original_tex_coord_ssbo = ac.original_tex_coord_ssbo
+        self.original_index_ssbo = ac.original_index_ssbo
 
         self._b_spline_body = b_spline_body
+        self._need_upload_control_points = True
+
+    @property
+    def need_upload_control_points(self):
+        return self._need_upload_control_points
+
+    @need_upload_control_points.setter
+    def need_upload_control_points(self, b):
+        self.need_upload_control_points = b
 
     def change_model(self, model):
         self._model = model
         self._need_recompute = True  # type: bool
+        self.need_upload_control_points = True
 
     def gl_init(self):
         pass
@@ -33,6 +47,7 @@ class PreviousComputeControllerCPU:
         if not self._need_recompute:
             return self._splited_triangle_number, False
         self._splited_triangle_number = self.compute_cpu()
+        glFinish()
         self._need_recompute = False
         print('gl_compute:', 'cpu splited triangle number: %d' % self._splited_triangle_number)
         return self._splited_triangle_number, True
@@ -66,10 +81,18 @@ class PreviousComputeControllerCPU:
             = self._model.split(self._b_spline_body)  # type: np.array
         self._splited_triangle_ssbo.async_update(splited_triangle_data)
         self._splited_triangle_ssbo.gl_sync()
-        self._share_adjacency_pn_triangle_position_ssbo.async_update(pn_triangle_position_control_point)
+
+        if self._need_upload_control_points:
+            if self._model.from_bezier:
+                self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
+            else:
+                self._share_adjacency_pn_triangle_position_ssbo.async_update(pn_triangle_position_control_point)
+            self._share_adjacency_pn_triangle_normal_ssbo.async_update(pn_triangle_normal_control_point.reshape(-1, 4))
+            self._need_upload_control_points = False
+
         self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
-        self._share_adjacency_pn_triangle_normal_ssbo.async_update(pn_triangle_normal_control_point)
         self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()
+
         return number
 
     def gl_async_update_buffer_about_output(self):

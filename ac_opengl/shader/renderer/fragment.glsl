@@ -15,6 +15,7 @@ in vec3 varying_diff_normal;
 in vec3 varying_diff_position;
 in vec3 varying_position;
 in vec2 varying_tex_coord;
+in vec3 varying_debug;
 out vec4 color;
 
 void main() {

@@ -20,6 +20,8 @@ class PreviousComputeShader(ShaderWrap):
 
     def pre_compile(self):
         self._source_code = self._source_code \
+            .replace('const int isBezier = -1',
+                     'const int isBezier = ' + str(1 if self._controller.model.from_bezier else -1)) \
             .replace('uvec4 splitIndex[]', 'uvec4 splitIndex[%d]' % (self._controller.pattern_indexes.size / 4)) \
             .replace('vec4 splitParameter[]',
                      'vec4 splitParameter[%d]' % (self._controller.pattern_parameters.size / 4)) \
@@ -37,7 +39,7 @@ class PreviousComputeControllerGPU:
         self._model = model  # type: OBJ
 
         # init pattern data
-        self._split_factor = 0.45  # type: float
+        self._split_factor = 0.2  # type: float
         self.MAX_SEGMENTS = -1  # type: int
         self._pattern_offsets = None  # type: np.array
         self._pattern_indexes = None  # type: np.array
@@ -48,15 +50,17 @@ class PreviousComputeControllerGPU:
         self.init_pattern_data()
 
         # declare buffer
-        self._original_vertex_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 0, None, GL_STATIC_DRAW)
-        self._original_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 1, None, GL_STATIC_DRAW)
-        self._original_tex_coord_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 22, None, GL_STATIC_DRAW)
-        self._original_index_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 2, None, GL_STATIC_DRAW)
+        self._original_vertex_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 0, None, GL_DYNAMIC_DRAW)
+        self._original_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 1, None, GL_DYNAMIC_DRAW)
+        self._original_tex_coord_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 22, None, GL_DYNAMIC_DRAW)
+        if self._model.from_bezier:
+            self._original_uv_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 24, None, GL_DYNAMIC_DRAW)
+        self._original_index_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 2, None, GL_DYNAMIC_DRAW)
         self._splited_triangle_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 0, None, GL_DYNAMIC_DRAW)
-        self._adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_STATIC_DRAW)
-        self._share_adjacency_pn_triangle_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_DYNAMIC_COPY)
-        self._share_adjacency_pn_triangle_position_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 19, None, GL_DYNAMIC_COPY)
-        self._splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_STATIC_DRAW)
+        self._adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_DYNAMIC_DRAW)
+        self._share_adjacency_pn_triangle_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_DYNAMIC_DRAW)
+        self._share_adjacency_pn_triangle_position_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 19, None, GL_DYNAMIC_DRAW)
+        self._splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_DYNAMIC_DRAW)
 
         # init shader
         self._program = ProgramWrap().add_shader(
@@ -99,6 +103,8 @@ class PreviousComputeControllerGPU:
         self._original_vertex_ssbo.async_update(self._model.vertex)
         self._original_normal_ssbo.async_update(self._model.normal)
         self._original_tex_coord_ssbo.async_update(self._model.tex_coord)
+        if self._model.from_bezier:
+            self._original_uv_ssbo.async_update(self._model.bezier_uv)
         self._original_index_ssbo.async_update(self._model.index)
         self._adjacency_info_ssbo.async_update(self._model.adjacency)
         self.gl_async_update_buffer_about_output()
@@ -106,8 +112,11 @@ class PreviousComputeControllerGPU:
     def gl_async_update_buffer_about_output(self):
         self._share_adjacency_pn_triangle_normal_ssbo.capacity = self._model._original_triangle_number \
                                                                  * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
-        self._share_adjacency_pn_triangle_position_ssbo.capacity = self._model._original_triangle_number \
-                                                                   * PER_TRIANGLE_PN_POSITION_TRIANGLE_SIZE
+        if self._model.from_bezier:
+            self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
+        else:
+            self._share_adjacency_pn_triangle_position_ssbo.capacity = self._model._original_triangle_number \
+                                                                       * PER_TRIANGLE_PN_POSITION_TRIANGLE_SIZE
         # 用于储存原始三角面片的PN-triangle
         self._splited_triangle_ssbo.capacity = self._model._original_triangle_number \
                                                * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE \
@@ -117,6 +126,8 @@ class PreviousComputeControllerGPU:
         self._original_vertex_ssbo.gl_sync()
         self._original_normal_ssbo.gl_sync()
         self._original_tex_coord_ssbo.gl_sync()
+        if self._model.from_bezier:
+            self._original_uv_ssbo.gl_sync()
         self._original_index_ssbo.gl_sync()
         self._adjacency_info_ssbo.gl_sync()
         self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()
@@ -150,6 +161,10 @@ class PreviousComputeControllerGPU:
     @property
     def split_factor(self):
         return self._split_factor
+
+    @property
+    def model(self):
+        return self._model
 
     @property
     def group_size(self):

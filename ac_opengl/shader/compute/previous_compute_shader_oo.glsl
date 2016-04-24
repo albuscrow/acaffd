@@ -15,6 +15,11 @@ layout(std430, binding=22) buffer OrinigalTexCoordBuffer{
 };
 
 //input
+layout(std430, binding=24) buffer OrinigalUVBuffer{
+    vec2[] originalUV;
+};
+
+//input
 layout(std430, binding=2) buffer OriginalNormalBuffer{
     uint[] originalIndex;
 };
@@ -26,12 +31,12 @@ layout(std430, binding=3) buffer AdjacencyBuffer{
 
 //share
 layout(std430, binding=4) buffer PNTriangleNShareBuffer{
-    vec3[] PNTriangleN_shared;
+    vec4[] PNTriangleN_shared;
 };
 
 //output
 layout(std430, binding=19) buffer PNTrianglePShareBuffer{
-    vec3[] PNTriangleP_shared;
+    vec4[] PNTriangleP_shared;
 };
 
 
@@ -43,6 +48,8 @@ struct SplitedTriangle {
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original2_texcoord2[3];
     ivec4 adjacency_triangle_index3_original_triangle_index1;
+    vec2 bezier_uv[3];
+    uint bezier_patch_id;
     float triangle_quality;
 };
 
@@ -99,7 +106,7 @@ const uint look_up_table_for_i[0] = {0};
 
 layout(location=0) uniform float split_factor;
 
-const int splitParameterEdgeInfoAux[5] = {-1,2,0,-2,1};
+const int splitParameterEdgeInfoAux[7] = {-1,2,0,-1,1,-1,-1};
 
 const uint splitParameterChangeAux[3][3] =
 {{1,0,2},
@@ -130,6 +137,9 @@ vec3 getPositionOrg(vec3 parameter);
 // 根据 parameter 获得普通插值TexCoord
 vec2 getTecCoordOrg(vec3 parameter);
 
+// 根据 parameter 获得普通插值UV
+vec2 getUV(vec3 parameter);
+
 // 根据 parameter 获得邻接PNTriangle中的法向
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_);
 
@@ -147,6 +157,8 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber);
 vec3 translate_parameter(vec3 parameter, uint edgeNo);
 
 uint triangleIndex;
+const int isBezier = -1;
+//const int isBezier = 1;
 void main() {
     triangleIndex = gl_GlobalInvocationID.x;
     if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
@@ -174,10 +186,12 @@ void main() {
     // 生成pn-triangle
     genPNTriangle();
     for (int i = 0; i < 6; ++i) {
-        PNTriangleN_shared[triangleIndex * 6  + i] = PNTriangleN[i];
+        PNTriangleN_shared[triangleIndex * 6  + i].xyz = PNTriangleN[i];
     }
-    for (int i = 0; i < 10; ++i) {
-        PNTriangleP_shared[triangleIndex * 10  + i] = PNTriangleP[i];
+    if (isBezier < 0) {
+        for (int i = 0; i < 10; ++i) {
+            PNTriangleP_shared[triangleIndex * 10  + i].xyz = PNTriangleP[i];
+        }
     }
 
     // 获取pattern
@@ -201,6 +215,11 @@ void main() {
             st.pn_normal[i] = vec4(getPNNormal(parameter_in_original[i]), 0);
             st.original_normal[i] = vec4(getNormalOrg(parameter_in_original[i]), 0);
             st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
+            if (isBezier > 0) {
+                st.bezier_uv[i] = getUV(parameter_in_original[i]);
+            } else {
+                st.bezier_uv[i] = vec2(0,0);
+            }
             edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
         }
 
@@ -238,7 +257,9 @@ void main() {
         float radius = double_area / perimeter;
         st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
         st.adjacency_triangle_index3_original_triangle_index1[3] = int(triangleIndex);
-
+        if (isBezier > 0) {
+            st.bezier_patch_id = uint(originalVertex[original_index[0]].w);
+        }
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }
@@ -282,6 +303,14 @@ vec2 getTecCoordOrg(vec3 parameter) {
     return result;
 }
 
+vec2 getUV(vec3 parameter) {
+    vec2 result = vec2(0);
+    for (int i = 0; i < 3; ++i) {
+        result += originalUV[original_index[i]] * parameter[i];
+    }
+    return result;
+}
+
 vec3 getPositionOrg(vec3 parameter) {
     vec3 result = vec3(0);
     for (int i = 0; i < 3; ++i) {
@@ -307,7 +336,7 @@ vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
             int k = 2 - i - j;
             float n = 2f / factorial(i) / factorial(j) / factorial(k)
                 * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
-            result += PNTriangleN_shared[ctrlPointIndex ++] * n;
+            result += PNTriangleN_shared[ctrlPointIndex ++].xyz * n;
         }
     }
     return vec4(normalize(result), 0);
@@ -385,9 +414,9 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
     j /= split_factor;
     k /= split_factor;
     int i_i, j_i, k_i;
-    i_i = int(ceil(i));
-    j_i = int(ceil(j));
-    k_i = int(ceil(k));
+    i_i = max(int(ceil(i)), 1);
+    j_i = max(int(ceil(j)), 1);
+    k_i = max(int(ceil(k)), 1);
 
     uint offset = get_offset(i_i, j_i, k_i);
     indexOffset = offset_number[offset * 2];
@@ -432,7 +461,11 @@ vec3 genPNControlPoint(vec3 p_s, vec3 p_e, vec3 n, vec3 n_adj) {
 vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
     vec3 n = n_s + n_e;
     vec3 v = p_e - p_s;
-    return normalize(n - 2 * dot(v, n) / dot(v,v) * v);
+    if (all(lessThan(abs(v), ZERO3))) {
+        return normalize(n);
+    } else {
+        return normalize(n - 2 * dot(v, n) / dot(v,v) * v);
+    }
 }
 
 void genPNTriangle(){

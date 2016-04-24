@@ -92,11 +92,14 @@ class AuxController:
         self._renderer_program.use()
         glBindVertexArray(self._vao_control_point)
         self.gl_pick_control_point(model_view_matrix, perspective_matrix)
+        glFinish()
         self.gl_sync_buffer_for_self()
         self.gl_draw_control_points(model_view_matrix, perspective_matrix)
+        glFinish()
         glBindVertexArray(0)
         glUseProgram(0)
         self.gl_select_point_gpu()
+        glFinish()
 
     def gl_draw_control_points(self, model_view_matrix, perspective_matrix):
         glUniformMatrix4fv(0, 1, GL_FALSE, multiply(model_view_matrix, perspective_matrix))
