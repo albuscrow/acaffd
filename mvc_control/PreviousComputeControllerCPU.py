@@ -33,7 +33,7 @@ class PreviousComputeControllerCPU:
 
     @need_upload_control_points.setter
     def need_upload_control_points(self, b):
-        self.need_upload_control_points = b
+        self._need_upload_control_points = b
 
     def change_model(self, model):
         self._model = model

@@ -160,6 +160,7 @@ class Controller(QObject):
         if file_path is None:
             return
         load = np.load(file_path)
+        print(load.shape)
         self._gl_proxy.set_control_points(load)
         self.updateScene.emit()
 
@@ -236,7 +237,7 @@ class Controller(QObject):
         self.diff_result.clear()
         step = self._gl_proxy.aux_controller.get_bspline_body_size()
         cage_length = reduce(lambda p, x: p + x ** 2, step, 0) ** 0.5
-        self.factors = np.arange(0.5, 1.2, 0.05, dtype='f4')
+        self.factors = np.arange(0.5, 2, 0.05, dtype='f4')
         indices = 0
         original_split_factor = self._gl_proxy.previous_compute_controller.split_factor
 
@@ -403,7 +404,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
-    file_path = "res/3d_model/wheel.obj"
+    # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"
-    # file_path = "res/3d_model/t.bpt"
+    file_path = "res/3d_model/t.bpt"
     return file_path
