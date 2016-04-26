@@ -8,8 +8,10 @@ from PyQt5.QtWidgets import QApplication
 from mvc_control.controller import Controller
 import sys
 from mvc_view.FFDScene import FFDScene
+from util.util import filter_for_speed
 
 __author__ = 'ac'
+
 # logging.basicConfig(level=logging.DEBUG)
 app = QApplication(sys.argv)
 
@@ -17,7 +19,7 @@ qmlRegisterType(FFDScene, 'FFD', 1, 0, "FFDScene")
 # controller = Controller()
 
 engine = QQmlApplicationEngine()
-engine.load(QUrl('res/ui/main.qml'))
+engine.load(QUrl(filter_for_speed('res/ui/main.qml')))
 scene = engine.rootObjects()[0].findChild(FFDScene, 'scene')
 
 controller = scene.controller  # type: Controller

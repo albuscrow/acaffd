@@ -1,4 +1,5 @@
 import numpy as np
+import config as conf
 
 
 def static_var(**kwargs):
@@ -24,3 +25,22 @@ ZERO = 0.000001
 
 def equal_vec(v1, v2):
     return all(abs(v1 - v2) < ZERO)
+
+
+def filter_for_speed(file_name: str):
+    with open(file_name) as file:
+        if not conf.IS_FAST_MODE:
+            src = file.read()
+        remove = False
+        remain = []
+        for l in file:
+            if l.startswith(conf.QML_COMMENT_FOR_TIME):
+                remove = not remove
+                continue
+            if not remove:
+                remain.append(l)
+        src = ''.join(remain)
+    output_file_name = file_name + '.tmp'
+    with open(output_file_name, 'w') as file:
+        file.write(src)
+    return output_file_name
