@@ -280,6 +280,13 @@ ApplicationWindow {
                             controller.set_show_position_diff_flag(checked)
                         }
                     }
+                    CheckBox {
+                        text: qsTr("显示PN法向")
+                        checked: false
+                        onClicked: {
+                            controller.set_show_normal(checked)
+                        }
+                    }
                     ?!end
 
 
@@ -291,14 +298,8 @@ ApplicationWindow {
                         }
                     }
 
-                    CheckBox {
-                        text: qsTr("显示PN法向")
-                        checked: false
-                        onClicked: {
-                            controller.set_show_normal(checked)
-                        }
-                    }
-
+                    ?!iftime
+                    ?!else
                     CheckBox {
                         text: qsTr("显示原始模型")
                         checked: false
@@ -306,9 +307,6 @@ ApplicationWindow {
                             controller.set_show_original(checked)
                         }
                     }
-
-                    ?!iftime
-                    ?!else
                     CheckBox {
                         text: qsTr("显示上采样直接变形结果")
                         checked: false

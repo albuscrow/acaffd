@@ -134,10 +134,6 @@ class DeformAndDrawController:
         self._need_update_adjust_control_point_flag = True
         self._adjust_control_point = True
 
-
-        self._need_update_show_real_flag = True
-        self._show_real = False
-
         self._need_comparison = False
 
         self._need_update_show_original = True
@@ -145,6 +141,9 @@ class DeformAndDrawController:
 
         self._need_update_use_pn_normal_for_renderer = True
         self._use_pn_normal_for_renderer = False
+
+        self._need_update_show_real_flag = True
+        self._show_real = False
 
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -216,13 +215,14 @@ class DeformAndDrawController:
         # unbind program
         glBindVertexArray(0)
 
-        self._original_model_vao = glGenVertexArrays(1)  # type: int
-        glBindVertexArray(self._original_model_vao)
-        self._previous_controller.original_vertex_ssbo.as_array_buffer(0, 4, GL_FLOAT)
-        self._previous_controller.original_normal_ssbo.as_array_buffer(1, 4, GL_FLOAT)
-        self._previous_controller.original_tex_coord_ssbo.as_array_buffer(6, 2, GL_FLOAT)
-        self._previous_controller.original_index_ssbo.as_element_array_buffer()
-        glBindVertexArray(0)
+        if not conf.IS_FAST_MODE:
+            self._original_model_vao = glGenVertexArrays(1)  # type: int
+            glBindVertexArray(self._original_model_vao)
+            self._previous_controller.original_vertex_ssbo.as_array_buffer(0, 4, GL_FLOAT)
+            self._previous_controller.original_normal_ssbo.as_array_buffer(1, 4, GL_FLOAT)
+            self._previous_controller.original_tex_coord_ssbo.as_array_buffer(6, 2, GL_FLOAT)
+            self._previous_controller.original_index_ssbo.as_element_array_buffer()
+            glBindVertexArray(0)
 
         if not conf.IS_FAST_MODE:
             self._control_point_vao = glGenVertexArrays(1)
@@ -388,10 +388,13 @@ class DeformAndDrawController:
         glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
 
         glActiveTexture(GL_TEXTURE1)
-        if self._show_original:
-            glBindVertexArray(self._original_model_vao)
-        else:
+        if conf.IS_FAST_MODE:
             glBindVertexArray(self._model_vao)
+        else:
+            if self._show_original:
+                glBindVertexArray(self._original_model_vao)
+            else:
+                glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
         glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
         glActiveTexture(GL_TEXTURE0)

@@ -300,16 +300,28 @@ class ACTriangle:
             radius = double_area / perimeter
             triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4
 
-        data = [pn_position,
-                pn_normal,
-                original_position,
-                self.normalv4,
-                pn_normal_parameter_adjacent,
-                np.hstack((self.parameter[:, :2], self._tex_coord)),
-                adjacency_triangle_index3_original_triangle_index1,
-                # self.bezier_uv,
-                # self.bezier_id,
-                (triangle_quality, 0, 0, 0)]
+        if conf.IS_FAST_MODE:
+            data = [pn_position,
+                    pn_normal,
+                    original_position,
+                    self.normalv4,
+                    pn_normal_parameter_adjacent,
+                    np.hstack((self.parameter[:, :2], self._tex_coord)),
+                    adjacency_triangle_index3_original_triangle_index1,
+                    # self.bezier_uv,
+                    # self.bezier_id,
+                    (triangle_quality, 0, 0, 0)]
+        else:
+            data = [pn_position,
+                    pn_normal,
+                    original_position,
+                    self.normalv4,
+                    pn_normal_parameter_adjacent,
+                    np.hstack((self.parameter[:, :2], self._tex_coord)),
+                    adjacency_triangle_index3_original_triangle_index1,
+                    self.bezier_uv,
+                    self.bezier_id,
+                    triangle_quality]
 
         return tuple(data)
 

@@ -250,21 +250,6 @@ ApplicationWindow {
                         }
                     }
 
-                    CheckBox {
-                        text: qsTr("显示PN法向")
-                        checked: false
-                        onClicked: {
-                            controller.set_show_normal(checked)
-                        }
-                    }
-
-                    CheckBox {
-                        text: qsTr("显示原始模型")
-                        checked: false
-                        onClicked: {
-                            controller.set_show_original(checked)
-                        }
-                    }
 
 
                     ExclusiveGroup { id: group }
@@ -283,7 +268,6 @@ ApplicationWindow {
                             controller.change_algorithm(1)
                         }
                     }
-
 
                     CheckBox {
                         text: qsTr("pn法向绘制")
