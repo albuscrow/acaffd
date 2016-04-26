@@ -9,6 +9,7 @@ layout(location=9) uniform int show_original;
 ?!time
 
 layout(location=8) uniform int has_texture;
+
 layout(binding=1) uniform sampler2D acTextureSampler;
 
 ?!time
@@ -16,7 +17,6 @@ in vec4 varying_parameter_in_original3_triangle_quality1;
 in vec4 varying_parameter_in_splited_triangle;
 in vec3 varying_diff_normal;
 in vec3 varying_diff_position;
-in vec3 varying_debug;
 ?!time
 
 in vec3 varying_position;
@@ -50,8 +50,14 @@ void main() {
     vec4 Idiff2 = vec4(0.2) * max(dot(varying_normal,L), 0.0);
     Idiff2 = clamp(Idiff2, 0.0, 1.0);
 
-    color = Iamb + Idiff + Ispec + Idiff2;
+    color = vec4(0);
+    if (has_texture > 0) {
+        color += texture(acTextureSampler, varying_tex_coord);
+    }
+
+    color += Iamb + Idiff + Ispec + Idiff2;
     color.w = 1;
+
     ?!time
     if (show_original > 0) {
         return;
@@ -93,10 +99,5 @@ void main() {
         color = vec4(l, 1-l, 0, 1);
         return;
     }
-    if (has_texture > 0) {
-        color = texture(acTextureSampler, varying_tex_coord);
-        return;
-    }
     ?!time
-    return;
 }

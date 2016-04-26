@@ -19,7 +19,7 @@ qmlRegisterType(FFDScene, 'FFD', 1, 0, "FFDScene")
 # controller = Controller()
 
 engine = QQmlApplicationEngine()
-engine.load(QUrl(filter_for_speed('res/ui/main.qml')))
+engine.load(QUrl(filter_for_speed(file_name='res/ui/main.qml')))
 scene = engine.rootObjects()[0].findChild(FFDScene, 'scene')
 
 controller = scene.controller  # type: Controller

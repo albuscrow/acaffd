@@ -11,6 +11,7 @@ from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from pyrr.matrix44 import *
+import config as conf
 
 
 def add_compute_prefix(file_name: str):
@@ -76,22 +77,28 @@ class ModelRendererShader(ProgramWrap):
         glProgramUniform1i(self._gl_program_name, 8, 1 if self._controller.has_texture else -1)
 
     def update_uniform_about_show_original(self):
-        glProgramUniform1i(self._gl_program_name, 9, 1 if self._controller.show_original else -1)
+        if not conf.IS_FAST_MODE:
+            glProgramUniform1i(self._gl_program_name, 9, 1 if self._controller.show_original else -1)
 
     def update_uniform_about_split_edge(self):
-        glProgramUniform1i(self._gl_program_name, 3, 1 if self._controller.splited_edge_visibility else -1)
+        if not conf.IS_FAST_MODE:
+            glProgramUniform1i(self._gl_program_name, 3, 1 if self._controller.splited_edge_visibility else -1)
 
     def update_uniform_about_triangle_quality(self):
-        glProgramUniform1i(self._gl_program_name, 4, 1 if self._controller.show_quality else -1)
+        if not conf.IS_FAST_MODE:
+            glProgramUniform1i(self._gl_program_name, 4, 1 if self._controller.show_quality else -1)
 
     def update_uniform_about_normal_diff(self):
-        glProgramUniform1i(self._gl_program_name, 5, 1 if self._controller.show_normal_diff else -1)
+        if not conf.IS_FAST_MODE:
+            glProgramUniform1i(self._gl_program_name, 5, 1 if self._controller.show_normal_diff else -1)
 
     def update_uniform_about_position_diff(self):
-        glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.show_position_diff else -1)
+        if not conf.IS_FAST_MODE:
+            glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.show_position_diff else -1)
 
     def update_uniform_about_real(self):
-        glProgramUniform1i(self._gl_program_name, 7, 1 if self._controller.show_real else -1)
+        if not conf.IS_FAST_MODE:
+            glProgramUniform1i(self._gl_program_name, 7, 1 if self._controller.show_real else -1)
 
 
 class DeformAndDrawController:
@@ -193,15 +200,17 @@ class DeformAndDrawController:
         self._vertex_vbo.as_array_buffer(0, 4, GL_FLOAT)
         # set normal attribute
         self._normal_vbo.as_array_buffer(1, 4, GL_FLOAT)
-        # set tessellate parameter attribute
-        self._parameter_in_splited_triangle_vbo.as_array_buffer(2, 4, GL_FLOAT)
-        # set split parameter attribute
-        self._parameter_in_original_vbo.as_array_buffer(3, 4, GL_FLOAT)
-        self._real_normal_vbo.as_array_buffer(4, 4, GL_FLOAT)
-        self._real_position_vbo.as_array_buffer(5, 4, GL_FLOAT)
         self._tex_coord_vbo.as_array_buffer(6, 2, GL_FLOAT)
         # specific index buffer
         self._index_vbo.as_element_array_buffer()
+
+        if not conf.IS_FAST_MODE:
+            # set tessellate parameter attribute
+            self._parameter_in_splited_triangle_vbo.as_array_buffer(2, 4, GL_FLOAT)
+            # set split parameter attribute
+            self._parameter_in_original_vbo.as_array_buffer(3, 4, GL_FLOAT)
+            self._real_normal_vbo.as_array_buffer(4, 4, GL_FLOAT)
+            self._real_position_vbo.as_array_buffer(5, 4, GL_FLOAT)
         # unbind program
         glBindVertexArray(0)
 
@@ -328,39 +337,55 @@ class DeformAndDrawController:
         if self._need_update_use_pn_normal_for_renderer:
             self._deform_program.update_uniform_about_use_pn_triangle()
             self._need_update_use_pn_normal_for_renderer = False
+
+        print('begin3.1')
         glDispatchCompute(*self.group_size)
+        glFinish()
+        print('begin3.2')
         self._need_deform = False
+        print('begin3.3')
         glUseProgram(0)
+        print('begin3.4')
 
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
+        print('begin')
         self.gl_sync_buffer()
-        glFinish()
+        print('begin1')
+        print('begin2')
         self.gl_deform(operator)
-        glFinish()
+        print('begin3')
+        print('begin5')
         self._renderer_program.use()
+        print('begin5')
         if self._need_update_show_splited_edge_flag:
             self._renderer_program.update_uniform_about_split_edge()
             self._need_update_show_splited_edge_flag = False
+        print('begin6')
 
         if self._need_update_show_original:
             self._renderer_program.update_uniform_about_show_original()
             self._need_update_show_original = False
+        print('begin7')
 
         if self._need_update_triangle_quality_flag:
             self._renderer_program.update_uniform_about_triangle_quality()
             self._need_update_triangle_quality_flag = False
+        print('begin8')
 
         if self._need_update_normal_diff_flag:
             self._renderer_program.update_uniform_about_normal_diff()
             self._need_update_normal_diff_flag = False
+        print('begin9')
 
         if self._need_update_position_diff_flag:
             self._renderer_program.update_uniform_about_position_diff()
             self._need_update_position_diff_flag = False
+        print('begin10')
 
         if self._need_update_show_real_flag:
             self._renderer_program.update_uniform_about_real()
             self._need_update_show_real_flag = False
+        print('begin11')
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
@@ -377,10 +402,12 @@ class DeformAndDrawController:
             glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
         glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
+        print('begin12')
         glActiveTexture(GL_TEXTURE0)
         glBindVertexArray(0)
         glUseProgram(0)
 
+        print('begin13')
         if self._show_control_point:
             glBindVertexArray(self._control_point_vao)
             self._renderer_control_point_program.use()
@@ -390,6 +417,7 @@ class DeformAndDrawController:
             glFinish()
             glBindVertexArray(0)
             glUseProgram(0)
+        print('begin14')
 
         if self._show_normal:
             glBindVertexArray(self._show_normal_vao)
@@ -401,12 +429,14 @@ class DeformAndDrawController:
             glFinish()
             glUseProgram(0)
             glBindVertexArray(0)
+        print('begin15')
 
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
         if self._vertex_vbo.capacity == 0:
             return
         self.comparison()
+        print('begin16')
 
     @property
     def splited_triangle_number(self):

@@ -1,5 +1,6 @@
 from OpenGL.GL.shaders import *
 from OpenGL.GL import *
+from util.util import filter_for_speed
 
 __author__ = 'ac'
 
@@ -17,7 +18,7 @@ class ShaderWrap:
         return self
 
     def compile(self):
-        self._gl_shader_name = compileShader(self._source_code, self._shader_type)
+        self._gl_shader_name = compileShader(filter_for_speed(self._source_code), self._shader_type)
         return self
 
     @property

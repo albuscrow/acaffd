@@ -1,2 +1,2 @@
-IS_FAST_MODE = True
+IS_FAST_MODE = False
 QML_COMMENT_FOR_TIME = '?!time'
