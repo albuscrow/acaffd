@@ -289,7 +289,8 @@ ApplicationWindow {
                     }
                     ?!end
 
-
+                    ?!iftime
+                    ?!else
                     CheckBox {
                         text: qsTr("调整控制定点")
                         checked: true
@@ -297,9 +298,6 @@ ApplicationWindow {
                             controller.set_adjust_control_point(checked)
                         }
                     }
-
-                    ?!iftime
-                    ?!else
                     CheckBox {
                         text: qsTr("显示原始模型")
                         checked: false

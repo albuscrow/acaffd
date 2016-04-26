@@ -68,8 +68,9 @@ layout(std430, binding=23) buffer TesselatedTexCoordBuffer{
 layout(std430, binding=8) buffer TesselatedIndexBuffer{
     uint[] tessellatedIndex;
 };
-
-
+//output
+?!iftime
+?!else
 //output
 layout(std430, binding=10) buffer ParameterInOriginalBuffer{
     vec4[] parameterInOriginal3_triangle_quality1;
@@ -79,10 +80,6 @@ layout(std430, binding=10) buffer ParameterInOriginalBuffer{
 layout(std430, binding=11) buffer ParameterInSplitBuffer{
     vec4[] parameter_in_split2_is_sharp_info_2;
 };
-
-//output
-?!iftime
-?!else
 //output
 layout(std430, binding=17) buffer PositionSplitedTriangle{
     vec4[] positionSplitedTriangle;
@@ -310,7 +307,10 @@ void main() {
         temp_sharp_parameter[i] = vec2(0.333, 0.333);
     }
 
+    ?!iftime
+    ?!else
     if (adjust_control_point > 0) {
+    ?!end
         //调整控制顶点
         uint move_control_point[6] =  {2,1,3,7,8,5};
         uint adjacency_normal_index_to_edge_index[6] = {0,1,1,2,2,0};
@@ -340,7 +340,11 @@ void main() {
         E /= 6;
         vec3 V = (bezierPositionControlPoint[0] + bezierPositionControlPoint[6] + bezierPositionControlPoint[9]) / 3;
         bezierPositionControlPoint[4] = E + (E - V) / 2;
+
+    ?!iftime
+    ?!else
     }
+    ?!end
 
     uint point_index[210];
     ?!iftime
@@ -373,6 +377,13 @@ void main() {
     for (int i = 0; i < tessellatedParameterLength; ++i) {
         vec3 pointParameter = tessellatedParameter[i].xyz;
         uint point_offset = triangleIndex * tessellatedParameterLength + i;
+
+        tessellatedVertex[point_offset] = getPosition(pointParameter);
+        tessellatedNormal[point_offset] = getNormal(pointParameter);
+        tessellatedTexCoord[point_offset] = getTexCoord(pointParameter);
+
+        ?!iftime
+        ?!else
         parameter_in_split2_is_sharp_info_2[point_offset] = tessellatedParameter[i];
         parameter_in_split2_is_sharp_info_2[point_offset].zw =
             getTessellatedSplitParameter(temp_sharp_parameter, tessellatedParameter[i]);
@@ -384,13 +395,8 @@ void main() {
             parameterInOriginal3_triangle_quality1[point_offset].z = 0;
         }
         parameterInOriginal3_triangle_quality1[point_offset].w = currentTriangle.triangle_quality;
-        tessellatedVertex[point_offset] = getPosition(pointParameter);
-        tessellatedNormal[point_offset] = getNormal(pointParameter);
-        tessellatedTexCoord[point_offset] = getTexCoord(pointParameter);
         tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(pointParameter);
         // get background data
-        ?!iftime
-        ?!else
         vec3 temp = parameterInOriginal3_triangle_quality1[point_offset].xyz;
         SamplePoint sp;
         if (isBezier > 0) {
