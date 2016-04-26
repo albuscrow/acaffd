@@ -240,7 +240,8 @@ ApplicationWindow {
                             controller.set_control_point_visibility(checked)
                         }
                     }
-
+                    ?!iftime
+                    ?!else
                     CheckBox {
                         text: qsTr("显示切割边界")
                         checked: false
@@ -248,7 +249,10 @@ ApplicationWindow {
                             controller.set_splited_edge_visibility(checked)
                         }
                     }
+                    ?!end
 
+                    ?!iftime
+                    ?!else
                     CheckBox {
                         text: qsTr("显示三角形质量")
                         checked: false
@@ -256,6 +260,7 @@ ApplicationWindow {
                             controller.set_show_triangle_quality_flag(checked)
                         }
                     }
+                    ?!end
 
                     CheckBox {
                         text: qsTr("显示控制顶点")
@@ -264,6 +269,9 @@ ApplicationWindow {
                             controller.set_show_control_point(checked)
                         }
                     }
+
+                    ?!iftime
+                    ?!else
                     CheckBox {
                         text: qsTr("显示法向差异")
                         checked: false
@@ -271,7 +279,10 @@ ApplicationWindow {
                             controller.set_show_normal_diff_flag(checked)
                         }
                     }
+                    ?!end
 
+                    ?!iftime
+                    ?!else
                     CheckBox {
                         text: qsTr("显示位置差异")
                         checked: false
@@ -279,6 +290,7 @@ ApplicationWindow {
                             controller.set_show_position_diff_flag(checked)
                         }
                     }
+                    ?!end
 
 
                     CheckBox {
@@ -305,6 +317,8 @@ ApplicationWindow {
                         }
                     }
 
+                    ?!iftime
+                    ?!else
                     CheckBox {
                         text: qsTr("显示上采样直接变形结果")
                         checked: false
@@ -325,6 +339,7 @@ ApplicationWindow {
                             controller.begin_test_split_factor()
                         }
                     }
+                    ?!end
 
                     ExclusiveGroup { id: group }
                     RadioButton {

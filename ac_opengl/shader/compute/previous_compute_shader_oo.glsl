@@ -35,9 +35,12 @@ layout(std430, binding=4) buffer PNTriangleNShareBuffer{
 };
 
 //output
+?!iftime
+?!else
 layout(std430, binding=19) buffer PNTrianglePShareBuffer{
     vec4[] PNTriangleP_shared;
 };
+?!end
 
 
 struct SplitedTriangle {
@@ -187,11 +190,14 @@ void main() {
     for (int i = 0; i < 6; ++i) {
         PNTriangleN_shared[triangleIndex * 6  + i].xyz = PNTriangleN[i];
     }
+    ?!iftime
+    ?!else
     if (isBezier < 0) {
         for (int i = 0; i < 10; ++i) {
             PNTriangleP_shared[triangleIndex * 10  + i].xyz = PNTriangleP[i];
         }
     }
+    ?!end
 
     // 获取pattern
     uint splitIndexOffset;

@@ -240,7 +240,6 @@ ApplicationWindow {
                             controller.set_control_point_visibility(checked)
                         }
                     }
-
                     CheckBox {
                         text: qsTr("显示切割边界")
                         checked: false
@@ -264,6 +263,7 @@ ApplicationWindow {
                             controller.set_show_control_point(checked)
                         }
                     }
+
                     CheckBox {
                         text: qsTr("显示法向差异")
                         checked: false

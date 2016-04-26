@@ -404,7 +404,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
-    file_path = "res/3d_model/wheel.obj"
+    # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"
-    # file_path = "res/3d_model/t.bpt"
+    file_path = "res/3d_model/t.bpt"
     return file_path

@@ -158,8 +158,10 @@ class DeformAndDrawController:
         self._parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None,
                                                         GL_DYNAMIC_DRAW)  # type: ACVBO
         self._parameter_in_original_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 11, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._real_position_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 12, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._real_normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 13, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        if not conf.IS_FAST_MODE:
+            #todo
+            self._real_position_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 12, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+            self._real_normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 13, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._model_vao = -1  # type: int
         self._original_model_vao = -1  # type: int
 
@@ -282,12 +284,13 @@ class DeformAndDrawController:
             self._parameter_in_original_vbo.capacity = self.splited_triangle_number \
                                                        * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
 
-        if self._real_normal_vbo is not None:
-            self._real_normal_vbo.capacity = self.splited_triangle_number \
-                                             * self.tessellated_point_number_pre_splited_triangle * NORMAL_SIZE
-        if self._real_position_vbo is not None:
-            self._real_position_vbo.capacity = self.splited_triangle_number \
-                                               * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+        if not conf.IS_FAST_MODE:
+            if self._real_normal_vbo is not None:
+                self._real_normal_vbo.capacity = self.splited_triangle_number \
+                                                 * self.tessellated_point_number_pre_splited_triangle * NORMAL_SIZE
+            if self._real_position_vbo is not None:
+                self._real_position_vbo.capacity = self.splited_triangle_number \
+                                                   * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
         if self._index_vbo is not None:
             self._index_vbo.capacity = self.splited_triangle_number \
                                        * self.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
@@ -311,8 +314,9 @@ class DeformAndDrawController:
         self._tex_coord_vbo.gl_sync()
         self._parameter_in_splited_triangle_vbo.gl_sync()
         self._parameter_in_original_vbo.gl_sync()
-        self._real_normal_vbo.gl_sync()
-        self._real_position_vbo.gl_sync()
+        if not conf.IS_FAST_MODE:
+            self._real_normal_vbo.gl_sync()
+            self._real_position_vbo.gl_sync()
         self._index_vbo.gl_sync()
         self._control_point_vbo.gl_sync()
         self._control_point_index_vbo.gl_sync()
@@ -337,54 +341,38 @@ class DeformAndDrawController:
             self._deform_program.update_uniform_about_use_pn_triangle()
             self._need_update_use_pn_normal_for_renderer = False
 
-        print('begin3.1')
         glDispatchCompute(*self.group_size)
         glFinish()
-        print('begin3.2')
         self._need_deform = False
-        print('begin3.3')
         glUseProgram(0)
-        print('begin3.4')
 
     def gl_renderer(self, model_view_matrix: np.array, perspective_matrix: np.array, operator):
-        print('begin')
         self.gl_sync_buffer()
-        print('begin1')
-        print('begin2')
         self.gl_deform(operator)
-        print('begin3')
-        print('begin5')
         self._renderer_program.use()
-        print('begin5')
         if self._need_update_show_splited_edge_flag:
             self._renderer_program.update_uniform_about_split_edge()
             self._need_update_show_splited_edge_flag = False
-        print('begin6')
 
         if self._need_update_show_original:
             self._renderer_program.update_uniform_about_show_original()
             self._need_update_show_original = False
-        print('begin7')
 
         if self._need_update_triangle_quality_flag:
             self._renderer_program.update_uniform_about_triangle_quality()
             self._need_update_triangle_quality_flag = False
-        print('begin8')
 
         if self._need_update_normal_diff_flag:
             self._renderer_program.update_uniform_about_normal_diff()
             self._need_update_normal_diff_flag = False
-        print('begin9')
 
         if self._need_update_position_diff_flag:
             self._renderer_program.update_uniform_about_position_diff()
             self._need_update_position_diff_flag = False
-        print('begin10')
 
         if self._need_update_show_real_flag:
             self._renderer_program.update_uniform_about_real()
             self._need_update_show_real_flag = False
-        print('begin11')
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
@@ -401,12 +389,10 @@ class DeformAndDrawController:
             glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
         glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
-        print('begin12')
         glActiveTexture(GL_TEXTURE0)
         glBindVertexArray(0)
         glUseProgram(0)
 
-        print('begin13')
         if self._show_control_point:
             glBindVertexArray(self._control_point_vao)
             self._renderer_control_point_program.use()
@@ -416,7 +402,6 @@ class DeformAndDrawController:
             glFinish()
             glBindVertexArray(0)
             glUseProgram(0)
-        print('begin14')
 
         if self._show_normal:
             glBindVertexArray(self._show_normal_vao)
@@ -428,14 +413,12 @@ class DeformAndDrawController:
             glFinish()
             glUseProgram(0)
             glBindVertexArray(0)
-        print('begin15')
 
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
         if self._vertex_vbo.capacity == 0:
             return
         self.comparison()
-        print('begin16')
 
     @property
     def splited_triangle_number(self):
