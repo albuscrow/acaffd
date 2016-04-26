@@ -29,13 +29,21 @@ def equal_vec(v1, v2):
 
 def filter_for_speed(src: str = None, file_name: str = None) -> str:
     if src:
-        remove = False
+        status = conf.NORMAL
         remain = []
         for l in src.splitlines():
-            if l.strip().startswith(conf.QML_COMMENT_FOR_TIME):
-                remove = not remove
+            if l.strip().startswith(conf.IF):
+                status = conf.IF
                 continue
-            if conf.IS_FAST_MODE or not remove:
+            if l.strip().startswith(conf.ELSE):
+                status = conf.ELSE
+                continue
+            if l.strip().startswith(conf.ENDIF):
+                status = conf.NORMAL
+                continue
+            if status == conf.NORMAL \
+                    or (status == conf.IF and conf.IS_FAST_MODE) \
+                    or (status == conf.ELSE and not conf.IS_FAST_MODE):
                 remain.append(l)
         return '\n'.join(remain)
     else:

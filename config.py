@@ -1,2 +1,5 @@
-IS_FAST_MODE = False
-QML_COMMENT_FOR_TIME = '?!time'
+IS_FAST_MODE = True
+IF = '?!iftime'
+ELSE = '?!else'
+ENDIF = '?!end'
+NORMAL = ''

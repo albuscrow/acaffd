@@ -150,12 +150,6 @@ class PreviousComputeControllerGPU:
         self._splited_triangle_number = self.get_splited_triangles_number()
         glFinish()
 
-        value = self._splited_triangle_ssbo.get_value(ctypes.c_float, shape=(self._splited_triangle_number * 96,))
-        value.dtype = ACTriangle.DATA_TYPE
-        for i in value:
-            print(i["adjacency_triangle_index3_original_triangle_index1"])
-            print(i["adjacency_pn_normal_parameter"])
-
         self._need_recompute = False
         print('gl_compute:', 'gpu splited triangle number: %d' % self._splited_triangle_number)
         return self._splited_triangle_number, True
