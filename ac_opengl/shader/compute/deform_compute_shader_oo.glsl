@@ -21,8 +21,11 @@ struct SplitedTriangle {
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original2_texcoord2[3];
     ivec4 adjacency_triangle_index3_original_triangle_index1;
+    ?!iftime
+    ?!else
     vec2 bezier_uv[3];
     uint bezier_patch_id;
+    ?!end
     float triangle_quality;
 };
 
@@ -67,16 +70,6 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
 };
 
 //output
-layout(std430, binding=15) buffer ControlPoint{
-    vec4[] controlPoint3pointParameter1;
-};
-
-//output
-layout(std430, binding=16) buffer ControlPointIndex{
-    uint[] controlPointIndex;
-};
-
-//output
 layout(std430, binding=17) buffer PositionSplitedTriangle{
     vec4[] positionSplitedTriangle;
 };
@@ -115,6 +108,17 @@ layout(std430, binding=19) buffer PNTrianglePShareBuffer{
 layout(std430, binding=13) buffer RealNormal{
     vec4[] realNormal;
 };
+
+//output
+layout(std430, binding=15) buffer ControlPoint{
+    vec4[] controlPoint3pointParameter1;
+};
+
+//output
+layout(std430, binding=16) buffer ControlPointIndex{
+    uint[] controlPointIndex;
+};
+
 ?!end
 
 
@@ -346,9 +350,11 @@ void main() {
         normalSplitedTriangle[triangleIndex * 3 + i] =  currentTriangle.pn_normal[i];
     }
 
-    // 细分
-    // 生成顶点数据
     uint point_index[210];
+    ?!iftime
+    ?!else
+    // 细分显示控制顶点
+    // 生成顶点数据
     for (int i = 0; i < 10; ++i) {
         uint point_offset = triangleIndex * 10 + i;
         controlPoint3pointParameter1[point_offset].xyz = bezierPositionControlPoint[i];
@@ -364,6 +370,7 @@ void main() {
             controlPointIndex[index_offset * 3 + j] = point_index[index[j]];
         }
     }
+    ?!end
 
     // 细分
     // 生成顶点数据

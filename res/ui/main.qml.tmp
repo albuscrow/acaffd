@@ -240,45 +240,6 @@ ApplicationWindow {
                             controller.set_control_point_visibility(checked)
                         }
                     }
-                    CheckBox {
-                        text: qsTr("显示切割边界")
-                        checked: false
-                        onClicked: {
-                            controller.set_splited_edge_visibility(checked)
-                        }
-                    }
-
-                    CheckBox {
-                        text: qsTr("显示三角形质量")
-                        checked: false
-                        onClicked: {
-                            controller.set_show_triangle_quality_flag(checked)
-                        }
-                    }
-
-                    CheckBox {
-                        text: qsTr("显示控制顶点")
-                        checked: false
-                        onClicked: {
-                            controller.set_show_control_point(checked)
-                        }
-                    }
-
-                    CheckBox {
-                        text: qsTr("显示法向差异")
-                        checked: false
-                        onClicked: {
-                            controller.set_show_normal_diff_flag(checked)
-                        }
-                    }
-
-                    CheckBox {
-                        text: qsTr("显示位置差异")
-                        checked: false
-                        onClicked: {
-                            controller.set_show_position_diff_flag(checked)
-                        }
-                    }
 
 
                     CheckBox {
@@ -305,26 +266,6 @@ ApplicationWindow {
                         }
                     }
 
-                    CheckBox {
-                        text: qsTr("显示上采样直接变形结果")
-                        checked: false
-                        onClicked: {
-                            controller.set_show_real(checked)
-                        }
-                    }
-                    Button {
-                        text: "打印精度对比"
-                        onClicked: {
-                            controller.begin_diff_comparison()
-                        }
-                    }
-
-                    Button {
-                        text: "测试分割尺度"
-                        onClicked: {
-                            controller.begin_test_split_factor()
-                        }
-                    }
 
                     ExclusiveGroup { id: group }
                     RadioButton {

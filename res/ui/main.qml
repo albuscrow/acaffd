@@ -249,10 +249,7 @@ ApplicationWindow {
                             controller.set_splited_edge_visibility(checked)
                         }
                     }
-                    ?!end
 
-                    ?!iftime
-                    ?!else
                     CheckBox {
                         text: qsTr("显示三角形质量")
                         checked: false
@@ -260,7 +257,6 @@ ApplicationWindow {
                             controller.set_show_triangle_quality_flag(checked)
                         }
                     }
-                    ?!end
 
                     CheckBox {
                         text: qsTr("显示控制顶点")
@@ -270,8 +266,6 @@ ApplicationWindow {
                         }
                     }
 
-                    ?!iftime
-                    ?!else
                     CheckBox {
                         text: qsTr("显示法向差异")
                         checked: false
@@ -279,10 +273,6 @@ ApplicationWindow {
                             controller.set_show_normal_diff_flag(checked)
                         }
                     }
-                    ?!end
-
-                    ?!iftime
-                    ?!else
                     CheckBox {
                         text: qsTr("显示位置差异")
                         checked: false
@@ -357,7 +347,6 @@ ApplicationWindow {
                             controller.change_algorithm(1)
                         }
                     }
-
 
                     CheckBox {
                         text: qsTr("pn法向绘制")

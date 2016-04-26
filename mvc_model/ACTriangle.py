@@ -10,6 +10,7 @@ from Constant import ZERO
 from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec
 from math import pow, factorial, sqrt
+import config as conf
 
 SPLIT_PARAMETER_CHANGE_AUX = [[1, 0, 2], [0, 2, 1], [2, 1, 0]]
 
@@ -210,27 +211,39 @@ class ACPoly:
 
 
 class ACTriangle:
-    #vec4 pn_position[3];
-    #vec4 pn_normal[3];
-    #vec4 original_position[3];
-    #vec4 original_normal[3];
-    #vec4 adjacency_pn_normal_parameter[6];
-    #vec4 parameter_in_original2_texcoord2[3];
-    #ivec4 adjacency_triangle_index3_original_triangle_index1;
-    #vec2 bezier_uv[3];
-    #uint bezier_patch_id;
-    #float triangle_quality;
+    # vec4 pn_position[3];
+    # vec4 pn_normal[3];
+    # vec4 original_position[3];
+    # vec4 original_normal[3];
+    # vec4 adjacency_pn_normal_parameter[6];
+    # vec4 parameter_in_original2_texcoord2[3];
+    # ivec4 adjacency_triangle_index3_original_triangle_index1;
+    # vec2 bezier_uv[3];
+    # uint bezier_patch_id;
+    # float triangle_quality;
 
-    DATA_TYPE = [('pn_position', '4f4', 3),
-                 ('pn_normal', '4f4', 3),
-                 ('original_position', '4f4', 3),
-                 ('original_normal', '4f4', 3),
-                 ('adjacency_pn_normal_parameter', '4f4', 6),
-                 ('parameter_in_original2_texcoord2', '4f4', 3),
-                 ('adjacency_triangle_index3_original_triangle_index1', '4i4'),
-                 ('bezier_uv', '2f4', 3),
-                 ('bezier_patch_id', 'u4'),
-                 ('triangle_quality_and_padding', 'f4')]
+    if conf.IS_FAST_MODE:
+        DATA_TYPE = [('pn_position', '4f4', 3),
+                     ('pn_normal', '4f4', 3),
+                     ('original_position', '4f4', 3),
+                     ('original_normal', '4f4', 3),
+                     ('adjacency_pn_normal_parameter', '4f4', 6),
+                     ('parameter_in_original2_texcoord2', '4f4', 3),
+                     ('adjacency_triangle_index3_original_triangle_index1', '4i4'),
+                     # ('bezier_uv', '2f4', 3),
+                     # ('bezier_patch_id', 'u4'),
+                     ('triangle_quality_and_padding', '4f4')]
+    else:
+        DATA_TYPE = [('pn_position', '4f4', 3),
+                     ('pn_normal', '4f4', 3),
+                     ('original_position', '4f4', 3),
+                     ('original_normal', '4f4', 3),
+                     ('adjacency_pn_normal_parameter', '4f4', 6),
+                     ('parameter_in_original2_texcoord2', '4f4', 3),
+                     ('adjacency_triangle_index3_original_triangle_index1', '4i4'),
+                     ('bezier_uv', '2f4', 3),
+                     ('bezier_patch_id', 'u4'),
+                     ('triangle_quality_and_padding', 'f4')]
 
     def __init__(self, i):
         self._id = i
@@ -271,31 +284,9 @@ class ACTriangle:
                 for j in range(2):
                     index = i * 2 + j
                     adjacent_normal_parameter_index = aux2[index]
-                    adjacent_parameter = self.transform_parameter(self._parameter[adjacent_normal_parameter_index//2],
+                    adjacent_parameter = self.transform_parameter(self._parameter[adjacent_normal_parameter_index // 2],
                                                                   current_edge)
                     pn_normal_parameter_adjacent[adjacent_normal_parameter_index] = np.append(adjacent_parameter, 0)
-
-        # for i in range(3):
-        #     if original_edge_info[i] == -1:
-        #         # 是内部三角形
-        #         adjacency_triangle_index3_original_triangle_index1[i] = -1
-        #     else:
-        #         if self.neighbor[original_edge_info[i]][0] is None:
-        #             # 没有邻接三角形
-        #             adjacency_triangle_index3_original_triangle_index1[i] = -1
-        #         else:
-        #             adjacency_triangle_index3_original_triangle_index1[i] = -1
-        #             for j in range(2):
-        #                 index = i * 2 + j
-        #                 adjacent_parameter = self.transform_parameter(self._parameter[aux1[index]],
-        #                                                               original_edge_info[i])
-        #                 adjacent_normal = self.neighbor[original_edge_info[i]][0] \
-        #                     .get_normal_in_pn_triangle(adjacent_parameter)
-        #                 pn_normal_adjacent[aux2[index]] = adjacent_normal
-        #                 pn_normal_parameter_adjacent[aux2[index]] = np.append(adjacent_parameter, 0)
-        #                 if not equal_vec(adjacent_normal, pn_normal[aux1[index]]):
-        #                     adjacency_triangle_index3_original_triangle_index1[i] = \
-        #                         self.neighbor[original_edge_info[i]][0].id
 
         adjacency_triangle_index3_original_triangle_index1[3] = self.id
         t = [self.positionv3[i - 1] - self.positionv3[i] for i in [1, 2, 0]]
@@ -308,19 +299,6 @@ class ACTriangle:
             double_area = sqrt(perimeter * temp) / 2
             radius = double_area / perimeter
             triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4
-            #todo
-        #
-        # if not 0 <= adjacency_triangle_index3_original_triangle_index1[3] <= 1800:
-        #     print(adjacency_triangle_index3_original_triangle_index1)
-        #
-        # if not -1 <= adjacency_triangle_index3_original_triangle_index1[0] <= 1800:
-        #     print(adjacency_triangle_index3_original_triangle_index1)
-        #
-        # if not -1 <= adjacency_triangle_index3_original_triangle_index1[1] <= 1800:
-        #     print(adjacency_triangle_index3_original_triangle_index1)
-        #
-        # if not -1 <= adjacency_triangle_index3_original_triangle_index1[2] <= 1800:
-        #     print(adjacency_triangle_index3_original_triangle_index1)
 
         data = [pn_position,
                 pn_normal,
@@ -329,9 +307,9 @@ class ACTriangle:
                 pn_normal_parameter_adjacent,
                 np.hstack((self.parameter[:, :2], self._tex_coord)),
                 adjacency_triangle_index3_original_triangle_index1,
-                self.bezier_uv,
-                self.bezier_id,
-                triangle_quality]
+                # self.bezier_uv,
+                # self.bezier_id,
+                (triangle_quality, 0, 0, 0)]
 
         return tuple(data)
 

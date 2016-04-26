@@ -51,8 +51,11 @@ struct SplitedTriangle {
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original2_texcoord2[3];
     ivec4 adjacency_triangle_index3_original_triangle_index1;
+    ?!iftime
+    ?!else
     vec2 bezier_uv[3];
     uint bezier_patch_id;
+    ?!end
     float triangle_quality;
 };
 
@@ -220,9 +223,12 @@ void main() {
             st.pn_normal[i] = vec4(getPNNormal(parameter_in_original[i]), 0);
             st.original_normal[i] = vec4(getNormalOrg(parameter_in_original[i]), 0);
             st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
+            ?!iftime
+            ?!else
             if (isBezier > 0) {
                 st.bezier_uv[i] = getUV(parameter_in_original[i]);
             }
+            ?!end
             edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
         }
 
@@ -260,9 +266,12 @@ void main() {
         float radius = double_area / perimeter;
         st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
         st.adjacency_triangle_index3_original_triangle_index1[3] = int(triangleIndex);
+        ?!iftime
+        ?!else
         if (isBezier > 0) {
             st.bezier_patch_id = uint(originalVertex[original_index[0]].w);
         }
+        ?!end
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }

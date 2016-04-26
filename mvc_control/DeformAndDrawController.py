@@ -134,8 +134,6 @@ class DeformAndDrawController:
         self._need_update_adjust_control_point_flag = True
         self._adjust_control_point = True
 
-        self._show_control_point = False
-
         self._show_normal = False
 
         self._need_update_show_real_flag = True
@@ -157,17 +155,19 @@ class DeformAndDrawController:
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None,
                                                         GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._parameter_in_original_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 11, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        if not conf.IS_FAST_MODE:
-            #todo
-            self._real_position_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 12, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-            self._real_normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 13, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+
         self._model_vao = -1  # type: int
         self._original_model_vao = -1  # type: int
 
-        self._control_point_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 15, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._control_point_index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 16, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._control_point_vao = -1  # type: int
+        self._parameter_in_original_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 11, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        if not conf.IS_FAST_MODE:
+            self._real_position_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 12, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+            self._real_normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 13, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+
+            self._show_control_point = False
+            self._control_point_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 15, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+            self._control_point_index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 16, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+            self._control_point_vao = -1  # type: int
 
         self._show_normal_position_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 17, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._show_normal_normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 18, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -223,11 +223,12 @@ class DeformAndDrawController:
         self._previous_controller.original_index_ssbo.as_element_array_buffer()
         glBindVertexArray(0)
 
-        self._control_point_vao = glGenVertexArrays(1)
-        glBindVertexArray(self._control_point_vao)
-        self._control_point_vbo.as_array_buffer(0, 4, GL_FLOAT)
-        self._control_point_index_vbo.as_element_array_buffer()
-        glBindVertexArray(0)
+        if not conf.IS_FAST_MODE:
+            self._control_point_vao = glGenVertexArrays(1)
+            glBindVertexArray(self._control_point_vao)
+            self._control_point_vbo.as_array_buffer(0, 4, GL_FLOAT)
+            self._control_point_index_vbo.as_element_array_buffer()
+            glBindVertexArray(0)
 
         self._show_normal_vao = glGenVertexArrays(1)
         glBindVertexArray(self._show_normal_vao)
@@ -291,15 +292,17 @@ class DeformAndDrawController:
             if self._real_position_vbo is not None:
                 self._real_position_vbo.capacity = self.splited_triangle_number \
                                                    * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
+
+            if self._control_point_vbo is not None:
+                self._control_point_vbo.capacity = self.splited_triangle_number * CONTROL_POINT_NUMBER * VERTEX_SIZE
+
+            if self._control_point_index_vbo is not None:
+                self._control_point_index_vbo.capacity = self.splited_triangle_number * CONTROL_POINT_TRIANGLE_NUMBER * PER_TRIANGLE_INDEX_SIZE
+
         if self._index_vbo is not None:
             self._index_vbo.capacity = self.splited_triangle_number \
                                        * self.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
 
-        if self._control_point_vbo is not None:
-            self._control_point_vbo.capacity = self.splited_triangle_number * CONTROL_POINT_NUMBER * VERTEX_SIZE
-
-        if self._control_point_index_vbo is not None:
-            self._control_point_index_vbo.capacity = self.splited_triangle_number * CONTROL_POINT_TRIANGLE_NUMBER * PER_TRIANGLE_INDEX_SIZE
 
         if self._show_normal_position_vbo is not None:
             self._show_normal_position_vbo.capacity = self.splited_triangle_number * SHOW_NORMAL_POINT_NUMBER_PER_TRIANGLE * VERTEX_SIZE
@@ -317,9 +320,9 @@ class DeformAndDrawController:
         if not conf.IS_FAST_MODE:
             self._real_normal_vbo.gl_sync()
             self._real_position_vbo.gl_sync()
+            self._control_point_vbo.gl_sync()
+            self._control_point_index_vbo.gl_sync()
         self._index_vbo.gl_sync()
-        self._control_point_vbo.gl_sync()
-        self._control_point_index_vbo.gl_sync()
         self._show_normal_position_vbo.gl_sync()
         self._show_normal_normal_vbo.gl_sync()
 
@@ -393,15 +396,16 @@ class DeformAndDrawController:
         glBindVertexArray(0)
         glUseProgram(0)
 
-        if self._show_control_point:
-            glBindVertexArray(self._control_point_vao)
-            self._renderer_control_point_program.use()
-            glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
-            number = int(self.splited_triangle_number * CONTROL_POINT_TRIANGLE_NUMBER * 3)
-            glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
-            glFinish()
-            glBindVertexArray(0)
-            glUseProgram(0)
+        if not conf.IS_FAST_MODE:
+            if self._show_control_point:
+                glBindVertexArray(self._control_point_vao)
+                self._renderer_control_point_program.use()
+                glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
+                number = int(self.splited_triangle_number * CONTROL_POINT_TRIANGLE_NUMBER * 3)
+                glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
+                glFinish()
+                glBindVertexArray(0)
+                glUseProgram(0)
 
         if self._show_normal:
             glBindVertexArray(self._show_normal_vao)
