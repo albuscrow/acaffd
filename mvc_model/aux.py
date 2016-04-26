@@ -364,10 +364,55 @@ if __name__ == '__main__':
          0.02023218919188071, 0.020232189191880707, 0.0202321891918807, 0.0202321891918807, 0.020232189191880724]
 
     # plot(x[:len(y)], y)
-    n = 20
-    x = range(2, n)
-    print(x)
-    y = [(n / xi) ** xi for xi in x]
-    print(y)
-    plot(x, y)
-    show()
+    # n = 20
+    # x = range(2, n)
+    # print(x)
+    # y = [(n / xi) ** xi for xi in x]
+    # print(y)
+    # plot(x, y)
+    # show()
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    n_groups = 2
+
+#控制定点1,模仿催师兄，细分3
+#位置比对: 平均/最大/标准差
+#ac 5.752603e-04 / 5.219847e-03 / 7.229708e-04
+#cym 5.903321e-04 / 5.219847e-03 / 6.966572e-04
+#法向比对: 平均/最大/标准差
+#ac  4.229602e-01 / 1.817897e+01 / 9.888768e-01
+#cym 3.899257e-01 / 1.817897e+01 / 9.406744e-01
+#
+#控制定点1,模仿催师兄，细分19
+#位置比对: 平均/最大/标准差
+#ac 7.713016e-04 / 5.825970e-03 / 6.874181e-04
+#cym 7.434905e-04 / 5.825970e-03 / 6.721014e-04
+#法向比对: 平均/最大/标准差
+#ac  5.712922e-01 / 1.951176e+01 / 1.060998e+00
+#cym 5.080633e-01 / 1.951176e+01 / 1.010110e+00
+
+    # means_men = (5.752603e-04, 7.713016e-04)
+    # means_women = (5.903321e-04, 7.434905e-04)
+
+    means_men =   (4.229602e-01, 5.712922e-01)
+    means_women = (3.899257e-01, 5.080633e-01)
+
+    fig, ax = plt.subplots()
+    index = np.arange(n_groups)
+    bar_width = 0.35
+
+    opacity = 0.4
+    rects1 = plt.bar(index, means_men, bar_width, alpha=opacity, color='b', label='LZQ')
+    rects2 = plt.bar(index + bar_width, means_women, bar_width, alpha=opacity, color='r', label='CYM')
+
+    plt.xlabel('group')
+    plt.ylabel('error')
+    plt.title('position error')
+    plt.xticks(index + bar_width, ('tessellation 3', 'tessellation 19'))
+    #plt.ylim(0, 40)
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()

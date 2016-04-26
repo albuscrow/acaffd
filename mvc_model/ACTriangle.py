@@ -210,16 +210,16 @@ class ACPoly:
 
 
 class ACTriangle:
-    # vec4 pn_position[3];
-    # vec4 pn_normal[3];
-    # vec4 original_position[3];
-    # vec4 original_normal[3];
-    # vec4 adjacency_pn_normal_parameter[6];
-    # vec4 parameter_in_original2_texcoord2[3];
-    # ivec4 adjacency_triangle_index3_original_triangle_index1;
-    # vec2 bezier_uv[3];
-    # uint bezier_patch_id;
-    # float triangle_quality;
+    #vec4 pn_position[3];
+    #vec4 pn_normal[3];
+    #vec4 original_position[3];
+    #vec4 original_normal[3];
+    #vec4 adjacency_pn_normal_parameter[6];
+    #vec4 parameter_in_original2_texcoord2[3];
+    #ivec4 adjacency_triangle_index3_original_triangle_index1;
+    #vec2 bezier_uv[3];
+    #uint bezier_patch_id;
+    #float triangle_quality;
 
     DATA_TYPE = [('pn_position', '4f4', 3),
                  ('pn_normal', '4f4', 3),
@@ -227,10 +227,10 @@ class ACTriangle:
                  ('original_normal', '4f4', 3),
                  ('adjacency_pn_normal_parameter', '4f4', 6),
                  ('parameter_in_original2_texcoord2', '4f4', 3),
-                 ('adjacency_triangle_index3_original_triangle_index1', 'i4', 4),
+                 ('adjacency_triangle_index3_original_triangle_index1', '4i4'),
                  ('bezier_uv', '2f4', 3),
-                 ('bezier_patch_id', 'u4', 1),
-                 ('triangle_quality_and_padding', 'f4', 1)]
+                 ('bezier_patch_id', 'u4'),
+                 ('triangle_quality_and_padding', 'f4')]
 
     def __init__(self, i):
         self._id = i

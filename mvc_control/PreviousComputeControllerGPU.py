@@ -5,6 +5,7 @@ from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from pyrr.matrix44 import *
+from mvc_model.ACTriangle import ACTriangle
 
 PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/pattern_data.txt'
 
@@ -39,7 +40,7 @@ class PreviousComputeControllerGPU:
         self._model = model  # type: OBJ
 
         # init pattern data
-        self._split_factor = 0.2  # type: float
+        self._split_factor = 0.4  # type: float
         self.MAX_SEGMENTS = -1  # type: int
         self._pattern_offsets = None  # type: np.array
         self._pattern_indexes = None  # type: np.array
@@ -145,7 +146,16 @@ class PreviousComputeControllerGPU:
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)
         glUseProgram(0)
+
         self._splited_triangle_number = self.get_splited_triangles_number()
+        glFinish()
+
+        value = self._splited_triangle_ssbo.get_value(ctypes.c_float, shape=(self._splited_triangle_number * 96,))
+        value.dtype = ACTriangle.DATA_TYPE
+        for i in value:
+            print(i["adjacency_triangle_index3_original_triangle_index1"])
+            print(i["adjacency_pn_normal_parameter"])
+
         self._need_recompute = False
         print('gl_compute:', 'gpu splited triangle number: %d' % self._splited_triangle_number)
         return self._splited_triangle_number, True
