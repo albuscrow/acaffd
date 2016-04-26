@@ -69,17 +69,6 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
     uint[] tessellatedIndex;
 };
 
-//output
-layout(std430, binding=17) buffer PositionSplitedTriangle{
-    vec4[] positionSplitedTriangle;
-};
-
-//output
-layout(std430, binding=18) buffer NormalSplitedTriangle{
-    vec4[] normalSplitedTriangle;
-};
-
-
 
 //output
 layout(std430, binding=10) buffer ParameterInOriginalBuffer{
@@ -91,10 +80,18 @@ layout(std430, binding=11) buffer ParameterInSplitBuffer{
     vec4[] parameter_in_split2_is_sharp_info_2;
 };
 
-
 //output
 ?!iftime
 ?!else
+//output
+layout(std430, binding=17) buffer PositionSplitedTriangle{
+    vec4[] positionSplitedTriangle;
+};
+
+//output
+layout(std430, binding=18) buffer NormalSplitedTriangle{
+    vec4[] normalSplitedTriangle;
+};
 layout(std430, binding=12) buffer RealPosition{
     vec4[] realPosition;
 };
@@ -345,14 +342,13 @@ void main() {
         bezierPositionControlPoint[4] = E + (E - V) / 2;
     }
 
+    uint point_index[210];
+    ?!iftime
+    ?!else
     for (int i = 0; i < 3; ++i) {
         positionSplitedTriangle[triangleIndex * 3 + i] = currentTriangle.pn_position[i];
         normalSplitedTriangle[triangleIndex * 3 + i] =  currentTriangle.pn_normal[i];
     }
-
-    uint point_index[210];
-    ?!iftime
-    ?!else
     // 细分显示控制顶点
     // 生成顶点数据
     for (int i = 0; i < 10; ++i) {
