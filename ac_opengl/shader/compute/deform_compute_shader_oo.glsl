@@ -314,7 +314,19 @@ void main() {
             int adjacency_triangle_id = currentTriangle.adjacency_triangle_index3_original_triangle_index1[adjacency_normal_index_to_edge_index[i]];
             if (adjacency_triangle_id >= 0) {
                 vec3 adjacency_normal_parameter = currentTriangle.adjacency_pn_normal_parameter[i].xyz;
-                if (any(lessThan(abs(adjacency_normal_parameter), ZERO3))) {
+//                adjacency_normal_parameter.x = 0.3333
+//                if (any(lessThan(abs(adjacency_normal_parameter), ZERO3))) {
+//                    samplePointForNormal[i / 2].normal =
+//                        getNormalInOriginalPNTriangle(adjacency_normal_parameter, adjacency_triangle_id);
+//                    vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
+//                    if (!all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
+//                        temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
+//                        vec3 n_ave = normalize(cross(currentNormal, adj_normal));
+//                        bezierPositionControlPoint[move_control_point[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;;
+//                    } else {
+//                        bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
+//                    }
+//                } else {
                     samplePointForNormal[i / 2].normal =
                         getNormalInOriginalPNTriangle(adjacency_normal_parameter, adjacency_triangle_id);
                     vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
@@ -325,18 +337,7 @@ void main() {
                     } else {
                         bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
                     }
-                } else {
-                    samplePointForNormal[i / 2].normal =
-                        getNormalInOriginalPNTriangle(adjacency_normal_parameter, adjacency_triangle_id);
-                    vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
-                    if (!all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
-                        temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
-                        vec3 n_ave = normalize(cross(currentNormal, adj_normal));
-                        bezierPositionControlPoint[move_control_point[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;;
-                    } else {
-                        bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
-                    }
-                }
+//                }
             } else {
                 bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot(controlPoint - currentPosition, currentNormal) * currentNormal;
             }
@@ -433,11 +434,13 @@ float factorial(int n) {
 }
 
 float power(float b, int n) {
-    if (b == 0 && n == 0) {
+    if (n == 0) {
         return 1;
-    } else {
-        return pow(b, n);
     }
+    if (b < ZERO) {
+        return 0;
+    }
+    return pow(b, n);
 }
 
 vec2 getTessellatedSplitParameter(vec2[3] parameterInOriginal, vec4 tessellatedParameter){

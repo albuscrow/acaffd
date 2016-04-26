@@ -158,7 +158,6 @@ vec3 translate_parameter(vec3 parameter, uint edgeNo);
 
 uint triangleIndex;
 const int isBezier = -1;
-//const int isBezier = 1;
 void main() {
     triangleIndex = gl_GlobalInvocationID.x;
     if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
@@ -217,8 +216,6 @@ void main() {
             st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
             if (isBezier > 0) {
                 st.bezier_uv[i] = getUV(parameter_in_original[i]);
-            } else {
-                st.bezier_uv[i] = vec2(0,0);
             }
             edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
         }
