@@ -1,4 +1,5 @@
 import numpy as np
+import config as conf
 
 
 def static_var(**kwargs):
@@ -24,3 +25,31 @@ ZERO = 0.000001
 
 def equal_vec(v1, v2):
     return all(abs(v1 - v2) < ZERO)
+
+
+def filter_for_speed(src: str = None, file_name: str = None) -> str:
+    if src:
+        status = conf.NORMAL
+        remain = []
+        for l in src.splitlines():
+            if l.strip().startswith(conf.IF):
+                status = conf.IF
+                continue
+            if l.strip().startswith(conf.ELSE):
+                status = conf.ELSE
+                continue
+            if l.strip().startswith(conf.ENDIF):
+                status = conf.NORMAL
+                continue
+            if status == conf.NORMAL \
+                    or (status == conf.IF and conf.IS_FAST_MODE) \
+                    or (status == conf.ELSE and not conf.IS_FAST_MODE):
+                remain.append(l)
+        return '\n'.join(remain)
+    else:
+        with open(file_name) as file:
+            src = filter_for_speed(src=file.read())
+        output_file_name = file_name + '.tmp'
+        with open(output_file_name, 'w') as file:
+            file.write(src)
+        return output_file_name

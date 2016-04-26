@@ -3,8 +3,8 @@ import numpy as np
 from mvc_control.PreviousComputeControllerGPU import PreviousComputeControllerGPU
 from mvc_model.aux import BSplineBody
 from mvc_model.model import OBJ
-from mvc_model.GLObject import ACVBO
 from OpenGL.GL import *
+import config as conf
 
 
 class PreviousComputeControllerCPU:
@@ -18,7 +18,8 @@ class PreviousComputeControllerCPU:
         # declare buffer
         self._splited_triangle_ssbo = ac.splited_triangle_ssbo
         self._share_adjacency_pn_triangle_normal_ssbo = ac.share_adjacency_pn_triangle_normal_ssbo
-        self._share_adjacency_pn_triangle_position_ssbo = ac.share_adjacency_pn_triangle_position_ssbo
+        if not conf.IS_FAST_MODE:
+            self._share_adjacency_pn_triangle_position_ssbo = ac.share_adjacency_pn_triangle_position_ssbo
         self.original_vertex_ssbo = ac.original_vertex_ssbo
         self.original_normal_ssbo = ac.original_normal_ssbo
         self.original_tex_coord_ssbo = ac.original_tex_coord_ssbo
@@ -83,15 +84,16 @@ class PreviousComputeControllerCPU:
         self._splited_triangle_ssbo.gl_sync()
 
         if self._need_upload_control_points:
-            if self._model.from_bezier:
-                self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
-            else:
-                self._share_adjacency_pn_triangle_position_ssbo.async_update(pn_triangle_position_control_point)
+            if not conf.IS_FAST_MODE:
+                if self._model.from_bezier:
+                    self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
+                else:
+                    self._share_adjacency_pn_triangle_position_ssbo.async_update(pn_triangle_position_control_point)
+                self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
             self._share_adjacency_pn_triangle_normal_ssbo.async_update(pn_triangle_normal_control_point.reshape(-1, 4))
+            self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()
             self._need_upload_control_points = False
 
-        self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
-        self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()
 
         return number
 

@@ -1,21 +1,29 @@
 #version 450
 
+?!iftime
+?!else
 layout(location=3) uniform int show_splited_edge;
 layout(location=4) uniform int show_triangle_quality;
 layout(location=5) uniform int show_normal_diff;
 layout(location=6) uniform int show_position_diff;
-layout(location=8) uniform int has_texture;
 layout(location=9) uniform int show_original;
+?!end
+
+layout(location=8) uniform int has_texture;
+
 layout(binding=1) uniform sampler2D acTextureSampler;
 
-in vec3 varying_normal;
+?!iftime
+?!else
 in vec4 varying_parameter_in_original3_triangle_quality1;
 in vec4 varying_parameter_in_splited_triangle;
 in vec3 varying_diff_normal;
 in vec3 varying_diff_position;
+?!end
+
 in vec3 varying_position;
+in vec3 varying_normal;
 in vec2 varying_tex_coord;
-in vec3 varying_debug;
 out vec4 color;
 
 void main() {
@@ -44,8 +52,16 @@ void main() {
     vec4 Idiff2 = vec4(0.2) * max(dot(varying_normal,L), 0.0);
     Idiff2 = clamp(Idiff2, 0.0, 1.0);
 
-    color = Iamb + Idiff + Ispec + Idiff2;
+    color = vec4(0);
+    if (has_texture > 0) {
+        color += texture(acTextureSampler, varying_tex_coord);
+    }
+
+    color += Iamb + Idiff + Ispec + Idiff2;
     color.w = 1;
+
+    ?!iftime
+    ?!else
     if (show_original > 0) {
         return;
     }
@@ -86,9 +102,5 @@ void main() {
         color = vec4(l, 1-l, 0, 1);
         return;
     }
-    if (has_texture > 0) {
-        color = texture(acTextureSampler, varying_tex_coord);
-        return;
-    }
-    return;
+    ?!end
 }
