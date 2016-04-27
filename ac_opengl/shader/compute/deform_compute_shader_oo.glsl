@@ -121,7 +121,7 @@ layout(std430, binding=16) buffer ControlPointIndex{
 //    vec4[] myOutputBuffer;
 //};
 
-layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 const vec3 ZERO3 = vec3(0.000001);
 const float ZERO = 0.000001;
 const float Mr[370] = {
@@ -244,8 +244,6 @@ float BSplineBodyStep[3];
 uint BSplineBodyIntervalNumber[3];
 uint IntervalNumberVW;
 uint IntervalNumberW;
-uint OrderVW;
-uint OrderW;
 uint OrderProduct;
 
 SplitedTriangle currentTriangle;
@@ -266,8 +264,6 @@ void main() {
     }
     IntervalNumberVW = BSplineBodyIntervalNumber[1] * BSplineBodyIntervalNumber[2];
     IntervalNumberW = BSplineBodyIntervalNumber[2];
-    OrderVW = uint(BSplineBodyOrder[1] * BSplineBodyOrder[2]);
-    OrderW = uint(BSplineBodyOrder[2]);
 
     currentTriangle = input_triangles[triangleIndex];
     for (int i = 0; i < 3; ++i) {
@@ -279,7 +275,7 @@ void main() {
         samplePoint[i] = getSamplePointBeforeSample(sampleParameter[i]);
     }
 
-    uint vertexIndexInSamplePoint[3] = {0,21,27};
+    const uint vertexIndexInSamplePoint[3] = {0,21,27};
     SamplePoint samplePointForNormal[3];
     for (int i = 0; i < 3; ++i) {
         samplePointForNormal[i] = samplePoint[vertexIndexInSamplePoint[i]];
@@ -296,27 +292,31 @@ void main() {
     }
 
     // 计算Bezier曲面片控制顶点
+    int tempindex = -1;
     for (int i = 0; i < 10; ++i) {
         bezierPositionControlPoint[i] = vec3(0);
         bezierNormalControlPoint[i] = vec3(0);
         for (int j = 0; j < 37; ++j) {
-            bezierPositionControlPoint[i] += samplePoint[j].position * Mr[i * 37 + j];
-            bezierNormalControlPoint[i] += samplePoint[j].normal * Mr[i * 37 + j];
+            bezierPositionControlPoint[i] += samplePoint[j].position * Mr[++tempindex];
+            bezierNormalControlPoint[i] += samplePoint[j].normal * Mr[tempindex];
         }
     }
 
+    ?!iftime
+    ?!else
     vec2 temp_sharp_parameter[3];
     for (int i = 0; i < 3; ++i) {
         temp_sharp_parameter[i] = vec2(0.333, 0.333);
     }
+    ?!end
 
     ?!iftime
     ?!else
     if (adjust_control_point > 0) {
     ?!end
         //调整控制顶点
-        uint move_control_point[6] =  {2,1,3,7,8,5};
-        uint adjacency_normal_index_to_edge_index[6] = {0,1,1,2,2,0};
+        const uint move_control_point[6] =  {2,1,3,7,8,5};
+        const uint adjacency_normal_index_to_edge_index[6] = {0,1,1,2,2,0};
         vec3 E = vec3(0);
         for (int i = 0; i < 6; ++i) {
             vec3 currentNormal = currentTriangle.pn_normal[i / 2].xyz;
@@ -329,7 +329,10 @@ void main() {
                     getNormalInOriginalPNTriangle(adjacency_normal_parameter, adjacency_triangle_id);
                 vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
                 if (!all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
+                    ?!iftime
+                    ?!else
                     temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
+                    ?!end
                     vec3 n_ave = normalize(cross(currentNormal, adj_normal));
                     bezierPositionControlPoint[move_control_point[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;;
                 } else {
@@ -340,16 +343,26 @@ void main() {
             }
             E += bezierPositionControlPoint[move_control_point[i]];
         }
+        ?!iftime
+        E /= 4;
+        vec3 V = (bezierPositionControlPoint[0] + bezierPositionControlPoint[6] + bezierPositionControlPoint[9]) / 6;
+        bezierPositionControlPoint[4] = E - V;
+        ?!else
         E /= 6;
         vec3 V = (bezierPositionControlPoint[0] + bezierPositionControlPoint[6] + bezierPositionControlPoint[9]) / 3;
         bezierPositionControlPoint[4] = E + (E - V) / 2;
+        ?!end
 
     ?!iftime
     ?!else
     }
     ?!end
 
+    ?!iftime
+    uint point_index[30];
+    ?!else
     uint point_index[210];
+    ?!end
     ?!iftime
     ?!else
     for (int i = 0; i < 3; ++i) {
@@ -377,14 +390,13 @@ void main() {
 
     // 细分
     // 生成顶点数据
+    uint point_offset = triangleIndex * tessellatedParameterLength - 1;
     for (int i = 0; i < tessellatedParameterLength; ++i) {
-        vec3 pointParameter = tessellatedParameter[i].xyz;
-        uint point_offset = triangleIndex * tessellatedParameterLength + i;
-
-        tessellatedVertex[point_offset] = getPosition(pointParameter);
-        tessellatedNormal[point_offset] = getNormal(pointParameter);
-        tessellatedTexCoord[point_offset] = getTexCoord(pointParameter);
-        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(pointParameter);
+        ++ point_offset;
+        tessellatedVertex[point_offset] = getPosition(tessellatedParameter[i].xyz);
+        tessellatedNormal[point_offset] = getNormal(tessellatedParameter[i].xyz);
+        tessellatedTexCoord[point_offset] = getTexCoord(tessellatedParameter[i].xyz);
+        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(tessellatedParameter[i].xyz);
 
         ?!iftime
         ?!else
@@ -404,7 +416,7 @@ void main() {
         SamplePoint sp;
         if (isBezier > 0) {
             vec3 p, n;
-            vec2 uv = getUV(pointParameter);
+            vec2 uv = getUV(tessellatedParameter[i].xyz);
             sampleInBezier(currentTriangle.bezier_patch_id, uv[0], uv[1], p, n);
             sp.position = p;
             sp.normal = n;
@@ -412,9 +424,9 @@ void main() {
             if (adjust_control_point > 0) {
                 sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
             } else {
-                sp.position = getPositionInOriginal(pointParameter);
+                sp.position = getPositionInOriginal(tessellatedParameter[i].xyz);
             }
-            sp.normal = getNormalInOriginal(pointParameter);
+            sp.normal = getNormalInOriginal(tessellatedParameter[i].xyz);
         }
         getSamplePointHelper(sp);
         sampleFast(sp);
@@ -424,13 +436,19 @@ void main() {
         point_index[i] = point_offset;
     }
     // 生成index数据
+    uint index_offset = triangleIndex * tessellateIndexLength * 3 - 1;
     for (int i = 0; i < tessellateIndexLength; ++i) {
-        uvec4 index = tessellateIndex[i];
-        uint index_offset = triangleIndex * tessellateIndexLength + i;
         for (int j = 0; j < 3; ++j) {
-            tessellatedIndex[index_offset * 3 + j] = point_index[index[j]];
+            tessellatedIndex[++index_offset] = point_index[tessellateIndex[i][j]];
         }
     }
+
+//    uint index_offset = triangleIndex * tessellateIndexLength - 1;
+//    for (int i = 0; i < tessellateIndexLength; ++i) {
+//        for (int j = 0; j < 3; ++j) {
+//            tessellatedIndex[++index_offset] = point_index[tessellateIndex[i][j]];
+//        }
+//    }
 }
 
 const int factorial_temp[4] = {1,1,2,6};
@@ -468,12 +486,12 @@ vec4 getTessellatedSplitParameter(vec4[3] parameterInOriginal, vec4 tessellatedP
 vec4 getNormal(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
+    int k;
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
-            int k = 3 - i - j;
-            float n = 6f / factorial(i) / factorial(j) / factorial(k)
+            k = 3 - i - j;
+            result += bezierNormalControlPoint[ctrlPointIndex ++] *  6f / factorial(i) / factorial(j) / factorial(k)
                 * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
-            result += bezierNormalControlPoint[ctrlPointIndex ++] * n;
         }
     }
     return vec4(normalize(result), 0);
@@ -482,55 +500,74 @@ vec4 getNormal(vec3 parameter) {
 vec4 getPosition(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
+    int k;
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
-            int k = 3 - i - j;
-            float n = 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
+            k = 3 - i - j;
+            result += bezierPositionControlPoint[ctrlPointIndex ++] * 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
                     / factorial(i) / factorial(j) / factorial(k);
-            result += bezierPositionControlPoint[ctrlPointIndex ++] * n;
         }
     }
     return vec4(result, 1);
 }
 
+
+
+
+?!iftime
+vec3 sample_helper(uvec3 knot_left_index, float[3] un, float[3] vn, float[3] wn){
+?!else
 vec3 sample_helper(uvec3 knot_left_index, float[4] un, float[4] vn, float[4] wn){
-    uint uli = knot_left_index.x;
-    uint vli = knot_left_index.y;
-    uint wli = knot_left_index.z;
+?!end
+    uint controlPointOffset = (knot_left_index.x * IntervalNumberVW
+                             + knot_left_index.y * IntervalNumberW
+                             + knot_left_index.z) * OrderProduct - 1;
+    ?!iftime
+    vec3 tempcp2[3][3];
+    for (int i = 0; i < 3; ++i){
+        for (int j = 0; j < 3; ++j){
+            tempcp2[i][j] = vec3(0.0f);
+            for (int k = 0; k < 3; ++k) {
+                vec4 cp = newControlPoints[++controlPointOffset];
+                tempcp2[i][j] += cp.xyz * wn[k];
+            }
+        }
+    }
+    vec3 tempcp1[3];
+    for (int i = 0; i < 3; ++i) {
+        tempcp1[i] = vec3(0);
+        for (int j = 0; j < 3; ++j) {
+            tempcp1[i] += tempcp2[i][j] * vn[j];
+        }
+    }
 
-    uint controlPointOffset = (uli * IntervalNumberVW
-                             + vli * IntervalNumberW
-                             + wli) * OrderProduct;
-
+    vec3 result = vec3(0);
+    for (int i = 0; i < 3; ++i) {
+        result += tempcp1[i] * un[i];
+    }
+    ?!else
     vec3 tempcp2[4][4];
     for (int i = 0; i < BSplineBodyOrder[0]; ++i){
         for (int j = 0; j < BSplineBodyOrder[1]; ++j){
             tempcp2[i][j] = vec3(0.0f);
             for (int k = 0; k < BSplineBodyOrder[2]; ++k) {
-                vec4 cp = newControlPoints[controlPointOffset + i * OrderVW + j * OrderW + k];
-                tempcp2[i][j].x += cp.x * wn[k];
-                tempcp2[i][j].y += cp.y * wn[k];
-                tempcp2[i][j].z += cp.z * wn[k];
+                vec4 cp = newControlPoints[++controlPointOffset];
+                tempcp2[i][j] += cp.xyz * wn[k];
             }
         }
     }
-
     vec3 tempcp1[4];
-    for (int i = 0; i < BSplineBodyOrder[0]; ++i) {
-        tempcp1[i] = vec3(0.0);
-        for (int j = 0; j < BSplineBodyOrder[1]; ++j) {
-            tempcp1[i].x += tempcp2[i][j].x * vn[j];
-            tempcp1[i].y += tempcp2[i][j].y * vn[j];
-            tempcp1[i].z += tempcp2[i][j].z * vn[j];
+    for (int i = 0; i < BSplineBodyOrder[0]; ++i){
+        tempcp1[i] = vec3(0);
+        for (int j = 0; j < BSplineBodyOrder[1]; ++j){
+            tempcp1[i] += tempcp2[i][j] * vn[j];
         }
     }
-
     vec3 result = vec3(0);
-    for (int i = 0; i < BSplineBodyOrder[0]; ++i) {
-        result.x += tempcp1[i].x * un[i];
-        result.y += tempcp1[i].y * un[i];
-        result.z += tempcp1[i].z * un[i];
+    for (int i = 0; i < BSplineBodyOrder[0]; ++i){
+        result += tempcp1[i] * un[i];
     }
+    ?!end
     return result;
 }
 
@@ -539,6 +576,15 @@ vec3 sampleFastNormal(in SamplePoint samplePoint) {
     float v = samplePoint.position.y;
     float w = samplePoint.position.z;
 
+    ?!iftime
+    float un[3] = {1, u, u * u};
+    float vn[3] = {1, v, v * v};
+    float wn[3] = {1, w, w * w};
+
+    float un_[3] = {0, 1, 2 * u};
+    float vn_[3] = {0, 1, 2 * v};
+    float wn_[3] = {0, 1, 2 * w};
+    ?!else
     float un[4] = {1, u, u * u, u * u * u};
     float vn[4] = {1, v, v * v, v * v * v};
     float wn[4] = {1, w, w * w, w * w * w};
@@ -546,6 +592,7 @@ vec3 sampleFastNormal(in SamplePoint samplePoint) {
     float un_[4] = {0, 1, 2 * u, 3 * u * u};
     float vn_[4] = {0, 1, 2 * v, 3 * v * v};
     float wn_[4] = {0, 1, 2 * w, 3 * w * w};
+    ?!end
 
     vec3 fu = sample_helper(samplePoint.knot_left_index, un_, vn, wn);
     vec3 fv = sample_helper(samplePoint.knot_left_index, un, vn_, wn);
@@ -579,25 +626,34 @@ void sampleFast(inout SamplePoint samplePoint) {
     float v = samplePoint.position.y;
     float w = samplePoint.position.z;
 
+    ?!iftime
 
+    float un[3] = {1, u, u * u};
+    float vn[3] = {1, v, v * v};
+    float wn[3] = {1, w, w * w};
+
+    float un_[3] = {0, 1, 2 * u};
+    float vn_[3] = {0, 1, 2 * v};
+    float wn_[3] = {0, 1, 2 * w};
+    ?!else
     float un[4] = {1, u, u * u, u * u * u};
     float vn[4] = {1, v, v * v, v * v * v};
     float wn[4] = {1, w, w * w, w * w * w};
 
-    //sample position
-    samplePoint.position = sample_helper(samplePoint.knot_left_index, un, vn, wn);
-
     float un_[4] = {0, 1, 2 * u, 3 * u * u};
     float vn_[4] = {0, 1, 2 * v, 3 * v * v};
     float wn_[4] = {0, 1, 2 * w, 3 * w * w};
+    ?!end
 
+    samplePoint.position = sample_helper(samplePoint.knot_left_index, un, vn, wn);
     vec3 fu = sample_helper(samplePoint.knot_left_index, un_, vn, wn);
     vec3 fv = sample_helper(samplePoint.knot_left_index, un, vn_, wn);
     vec3 fw = sample_helper(samplePoint.knot_left_index, un, vn, wn_);
 
+
     vec3 n = samplePoint.normal;
 
-    vec3 result = vec3(1);
+    vec3 result;
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
     float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
     float J_bar_star_T_1 = fw.y * fu.z - fu.y * fw.z;

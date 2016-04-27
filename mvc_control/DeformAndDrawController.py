@@ -353,7 +353,7 @@ class DeformAndDrawController:
         start_time = time.time()
         glDispatchCompute(*self.group_size)
         glFinish()
-        print("---deform shader run time: %s seconds ---" % (time.time() - start_time))
+        print("---deform shader run time: %s ms ---" % ((time.time() - start_time) * 1000))
         self._need_deform = False
         glUseProgram(0)
 
@@ -452,7 +452,7 @@ class DeformAndDrawController:
 
     @property
     def group_size(self):
-        return [int(self.splited_triangle_number / 512 + 1), 1, 1]
+        return [int(self.splited_triangle_number / 128 + 1), 1, 1]
 
     @property
     def tessellation_level(self):
