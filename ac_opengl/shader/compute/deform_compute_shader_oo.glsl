@@ -200,8 +200,11 @@ const vec3 sampleParameter[37] = {
 layout(location=0) uniform uint triangleNumber;
 layout(location=4) uniform uint tessellatedParameterLength;
 layout(location=5) uniform uint tessellateIndexLength;
+?!iftime
+?!else
 layout(location=6) uniform int adjust_control_point;
 layout(location=1) uniform int use_pn_normal;
+?!end
 
 layout(std140, binding=2) uniform TessellatedParameter{
     uniform vec4[66] tessellatedParameter;
@@ -381,6 +384,7 @@ void main() {
         tessellatedVertex[point_offset] = getPosition(pointParameter);
         tessellatedNormal[point_offset] = getNormal(pointParameter);
         tessellatedTexCoord[point_offset] = getTexCoord(pointParameter);
+        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(pointParameter);
 
         ?!iftime
         ?!else
@@ -395,7 +399,6 @@ void main() {
             parameterInOriginal3_triangle_quality1[point_offset].z = 0;
         }
         parameterInOriginal3_triangle_quality1[point_offset].w = currentTriangle.triangle_quality;
-        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(pointParameter);
         // get background data
         vec3 temp = parameterInOriginal3_triangle_quality1[point_offset].xyz;
         SamplePoint sp;
@@ -430,12 +433,9 @@ void main() {
     }
 }
 
+const int factorial_temp[4] = {1,1,2,6};
 float factorial(int n) {
-    int result = 1;
-    for (int i = 2; i <= n; ++i) {
-        result *= i;
-    }
-    return float(result);
+    return factorial_temp[n];
 }
 
 float power(float b, int n) {
@@ -627,7 +627,6 @@ void getSamplePointHelper(inout SamplePoint samplePoint) {
             samplePoint.knot_left_index[i] -= 1;
         }
         samplePoint.position[i] = temp - samplePoint.knot_left_index[i];
-//        samplePoint.knot_left_index[i] += uint(BSplineBodyOrder[i] - 1);
     }
 }
 
@@ -656,6 +655,11 @@ vec2 getTexCoord(vec3 parameter) {
 SamplePoint getSamplePointBeforeSample(vec3 parameter) {
     SamplePoint result;
     result.position = vec3(0);
+    ?!iftime
+        for (int i = 0; i < 3; ++i) {
+            result.position += (currentTriangle.original_position[i] * parameter[i]).xyz;
+        }
+    ?!else
     if (adjust_control_point > 0) {
         for (int i = 0; i < 3; ++i) {
             result.position += (currentTriangle.pn_position[i] * parameter[i]).xyz;
@@ -665,8 +669,14 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
             result.position += (currentTriangle.original_position[i] * parameter[i]).xyz;
         }
     }
+    ?!end
 
     result.normal = vec3(0);
+    ?!iftime
+        for (int i = 0; i < 3; ++i) {
+            result.normal += (currentTriangle.pn_normal[i] * parameter[i]).xyz;
+        }
+    ?!else
     if (use_pn_normal > 0) {
         for (int i = 0; i < 3; ++i) {
             result.normal += (currentTriangle.pn_normal[i] * parameter[i]).xyz;
@@ -676,6 +686,7 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
             result.normal += normalizedOriginalNormal[i] * parameter[i];
         }
     }
+    ?!end
     normalize(result.normal);
     getSamplePointHelper(result);
 
