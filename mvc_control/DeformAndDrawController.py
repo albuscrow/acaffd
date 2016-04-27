@@ -12,6 +12,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from pyrr.matrix44 import *
 import config as conf
+import time
 
 
 def add_compute_prefix(file_name: str):
@@ -60,10 +61,12 @@ class DeformComputeProgram(ProgramWrap):
         self._tessellation_indexes.gl_sync()
 
     def update_uniform_about_adjust_control_point_flag(self):
-        glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.adjust_control_point else -1)
+        if not conf.IS_FAST_MODE:
+            glProgramUniform1i(self._gl_program_name, 6, 1 if self._controller.adjust_control_point else -1)
 
     def update_uniform_about_use_pn_triangle(self):
-        glProgramUniform1i(self._gl_program_name, 1, 1 if self._controller.use_pn_normal_for_renderer else -1)
+        if not conf.IS_FAST_MODE:
+            glProgramUniform1i(self._gl_program_name, 1, 1 if self._controller.use_pn_normal_for_renderer else -1)
 
 
 class ModelRendererShader(ProgramWrap):
@@ -346,8 +349,11 @@ class DeformAndDrawController:
             self._deform_program.update_uniform_about_use_pn_triangle()
             self._need_update_use_pn_normal_for_renderer = False
 
+        glFinish()
+        start_time = time.time()
         glDispatchCompute(*self.group_size)
         glFinish()
+        print("---deform shader run time: %s ms ---" % ((time.time() - start_time) * 1000))
         self._need_deform = False
         glUseProgram(0)
 
@@ -446,7 +452,7 @@ class DeformAndDrawController:
 
     @property
     def group_size(self):
-        return [int(self.splited_triangle_number / 512 + 1), 1, 1]
+        return [int(self.splited_triangle_number / 128 + 1), 1, 1]
 
     @property
     def tessellation_level(self):
