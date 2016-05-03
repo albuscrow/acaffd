@@ -119,7 +119,7 @@ class PreviousComputeControllerGPU:
                 self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
             else:
                 self._share_adjacency_pn_triangle_position_ssbo.capacity = self._model._original_triangle_number \
-                                                                       * PER_TRIANGLE_PN_POSITION_TRIANGLE_SIZE
+                                                                           * PER_TRIANGLE_PN_POSITION_TRIANGLE_SIZE
         # 用于储存原始三角面片的PN-triangle
         self._splited_triangle_ssbo.capacity = self._model._original_triangle_number \
                                                * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE \
