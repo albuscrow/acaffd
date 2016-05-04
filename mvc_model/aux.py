@@ -197,6 +197,27 @@ class BSplineBody:
         return temp[0]
 
     @staticmethod
+    def b_recursion(t, k, i, x):
+        def helper(i, k):
+            if k == 1:
+                if t[i] <= x < t[i + 1] or x == t[-1]:
+                    return 1
+                else:
+                    return 0
+            else:
+                temp1 = t[i + k - 1] - t[i]
+                if temp1 != 0:
+                    temp1 = (x - t[i]) / temp1
+
+                temp2 = t[i + k] - t[i + 1]
+                if temp2 != 0:
+                    temp2 = (t[i + k] - x) / temp2
+
+                return temp1 * helper(i, k - 1) + temp2 * helper(i + 1, k - 1)
+
+        return helper(i, k)
+
+    @staticmethod
     def get_knots(length, order, internal_number):
         res = [- length / 2] * order
         step = length / internal_number
@@ -377,26 +398,26 @@ if __name__ == '__main__':
 
     n_groups = 2
 
-#控制定点1,模仿催师兄，细分3
-#位置比对: 平均/最大/标准差
-#ac 5.752603e-04 / 5.219847e-03 / 7.229708e-04
-#cym 5.903321e-04 / 5.219847e-03 / 6.966572e-04
-#法向比对: 平均/最大/标准差
-#ac  4.229602e-01 / 1.817897e+01 / 9.888768e-01
-#cym 3.899257e-01 / 1.817897e+01 / 9.406744e-01
-#
-#控制定点1,模仿催师兄，细分19
-#位置比对: 平均/最大/标准差
-#ac 7.713016e-04 / 5.825970e-03 / 6.874181e-04
-#cym 7.434905e-04 / 5.825970e-03 / 6.721014e-04
-#法向比对: 平均/最大/标准差
-#ac  5.712922e-01 / 1.951176e+01 / 1.060998e+00
-#cym 5.080633e-01 / 1.951176e+01 / 1.010110e+00
+    # 控制定点1,模仿催师兄，细分3
+    # 位置比对: 平均/最大/标准差
+    # ac 5.752603e-04 / 5.219847e-03 / 7.229708e-04
+    # cym 5.903321e-04 / 5.219847e-03 / 6.966572e-04
+    # 法向比对: 平均/最大/标准差
+    # ac  4.229602e-01 / 1.817897e+01 / 9.888768e-01
+    # cym 3.899257e-01 / 1.817897e+01 / 9.406744e-01
+    #
+    # 控制定点1,模仿催师兄，细分19
+    # 位置比对: 平均/最大/标准差
+    # ac 7.713016e-04 / 5.825970e-03 / 6.874181e-04
+    # cym 7.434905e-04 / 5.825970e-03 / 6.721014e-04
+    # 法向比对: 平均/最大/标准差
+    # ac  5.712922e-01 / 1.951176e+01 / 1.060998e+00
+    # cym 5.080633e-01 / 1.951176e+01 / 1.010110e+00
 
     # means_men = (5.752603e-04, 7.713016e-04)
     # means_women = (5.903321e-04, 7.434905e-04)
 
-    means_men =   (4.229602e-01, 5.712922e-01)
+    means_men = (4.229602e-01, 5.712922e-01)
     means_women = (3.899257e-01, 5.080633e-01)
 
     fig, ax = plt.subplots()
@@ -411,7 +432,7 @@ if __name__ == '__main__':
     plt.ylabel('error')
     plt.title('position error')
     plt.xticks(index + bar_width, ('tessellation 3', 'tessellation 19'))
-    #plt.ylim(0, 40)
+    # plt.ylim(0, 40)
     plt.legend()
 
     plt.tight_layout()
