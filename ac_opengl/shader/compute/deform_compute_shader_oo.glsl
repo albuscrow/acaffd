@@ -124,44 +124,14 @@ layout(std430, binding=16) buffer ControlPointIndex{
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 const vec3 ZERO3 = vec3(0.000001);
 const float ZERO = 0.000001;
-//const float Mr[370] = {
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.8333333333333334, 3.0, 0.0, -1.5, 0.0, 0.3333333333333333, 0.0, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.8333333333333334, 0.0, 3.0, 0.0, -1.5, 0.0, 0.0, 0.0, 0.3333333333333333,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3333333333333333, -1.5, 0.0, 3.0, 0.0, -0.8333333333333334, 0.0, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.4390243902439024, 0.0, 0.0, 0.6585365853658537, 0.6585365853658537, 0.0, 0.0, 0.6585365853658537, 0.8780487804878049, 0.6585365853658537, 0.0, 0.0, 0.4390243902439024, 0.6585365853658537, 0.6585365853658537, 0.4390243902439024, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2784552845528455, -0.9969512195121951, -0.9969512195121951, -0.9969512195121951, -0.9969512195121951, 0.2784552845528455, -0.9969512195121951, -0.9969512195121951, 0.2784552845528455,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3333333333333333, 0.0, -1.5, 0.0, 3.0, 0.0, 0.0, 0.0, -0.8333333333333334,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.8333333333333334, 3.0, -1.5, 0.3333333333333333,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3333333333333333, -1.5, 3.0, -0.8333333333333334,
-//0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0
-//};
-
-//const float Mr[190] = {
-//  1.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
-// -0.8333333,  3.0000000,  0.0000000, -1.5000000,  0.0000000,  0.3333333,  0.0000000,  0.0000000,  0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
-// -0.8333333,  0.0000000,  3.0000000,  0.0000000, -1.5000000,  0.0000000,  0.0000000,  0.0000000,  0.3333333, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
-//  0.3333333, -1.5000000,  0.0000000,  3.0000000,  0.0000000, -0.8333333,  0.0000000,  0.0000000,  0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
-//  0.2784553, -0.9969512, -0.9969512, -0.9969512, -0.9969512,  0.2784553, -0.9969512, -0.9969512,  0.2784553, 0.4390244, 0.6585366, 0.6585366, 0.6585366, 0.8780488, 0.6585366, 0.4390244, 0.6585366, 0.6585366, 0.4390244,
-//  0.3333333,  0.0000000, -1.5000000,  0.0000000,  3.0000000,  0.0000000,  0.0000000,  0.0000000, -0.8333333, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
-//  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  1.0000000,  0.0000000,  0.0000000,  0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
-//  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000, -0.8333333,  3.0000000, -1.5000000,  0.3333333, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
-//  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.3333333, -1.5000000,  3.0000000, -0.8333333, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
-//  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  1.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000
-//};
-
-const float Mr[81] = {
-       1.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.0000000,        0.0000000,        0.0000000,        0.0000000,
+const float Mr[54] = {
       -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
       -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
        0.3333333,       -1.5000000,         0.0000000,         3.0000000,         0.0000000,        -0.8333333,        0.0000000,        0.0000000,        0.0000000,
        0.3333333,        0.0000000,        -1.5000000,         0.0000000,         3.0000000,         0.0000000,        0.0000000,        0.0000000,       -0.8333333,
-       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         1.0000000,        0.0000000,        0.0000000,        0.0000000,
        0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,        -0.8333333,        3.0000000,       -1.5000000,        0.3333333,
        0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
-       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.0000000,        0.0000000,        0.0000000,        1.0000000,
 };
-
 const float Mr_4[19] = {
 0.2784553,
 -0.9969512,
@@ -327,20 +297,68 @@ void main() {
     }
 
     // 计算Bezier曲面片控制顶点
-//    int tempindex = -1;
-//    for (int i = 0; i < 10; ++i) {
-//        bezierPositionControlPoint[i] = vec3(0);
-//        bezierNormalControlPoint[i] = vec3(0);
-//        for (int j = 0; j < 19; ++j) {
-//            bezierPositionControlPoint[i] += samplePoint[j].position * Mr[++tempindex];
-//            bezierNormalControlPoint[i] += samplePoint[j].normal * Mr[tempindex];
-//        }
+
+//const float Mr[54] = {
+//      -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
+//      -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
+//       0.3333333,       -1.5000000,         0.0000000,         3.0000000,         0.0000000,        -0.8333333,        0.0000000,        0.0000000,        0.0000000,
+//       0.3333333,        0.0000000,        -1.5000000,         0.0000000,         3.0000000,         0.0000000,        0.0000000,        0.0000000,       -0.8333333,
+//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,        -0.8333333,        3.0000000,       -1.5000000,        0.3333333,
+//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
+//};
+    bezierPositionControlPoint[0] = samplePoint[0].position;
+    bezierNormalControlPoint[0] = samplePoint[0].normal;
+
+    bezierPositionControlPoint[6] = samplePoint[5].position;
+    bezierNormalControlPoint[6] = samplePoint[5].normal;
+
+    bezierPositionControlPoint[9] = samplePoint[8].position;
+    bezierNormalControlPoint[9] = samplePoint[8].normal;
+
+//    vec4 aux = vec4(-0.8333333, 3, -1.5, 1/3);
+//    ivec4 aux2 = ivec4(0, 1, 3, 5);
+//    bezierPositionControlPoint[1] = vec3(0);
+//    bezierPositionControlPoint[3] = vec3(0);
+//    bezierNormalControlPoint[1] = vec3(0);
+//    bezierNormalControlPoint[3] = vec3(0);
+//    for (int i = 0; i < 4; ++i) {
+//        bezierPositionControlPoint[1] += samplePoint[aux2[i]].position * aux[i];
+//        bezierPositionControlPoint[3] += samplePoint[aux2[i]].position * aux[3 - i];
+//
+//        bezierNormalControlPoint[1] += samplePoint[aux2[i]].normal * aux[i];
+//        bezierNormalControlPoint[3] += samplePoint[aux2[i]].normal * aux[3 - i];
+//    }
+//
+//    aux2 = ivec4(0, 2, 4, 8);
+//    bezierPositionControlPoint[2] = vec3(0);
+//    bezierPositionControlPoint[5] = vec3(0);
+//    bezierNormalControlPoint[2] = vec3(0);
+//    bezierNormalControlPoint[5] = vec3(0);
+//    for (int i = 0; i < 4; ++i) {
+//        bezierPositionControlPoint[2] += samplePoint[aux2[i]].position * aux[i];
+//        bezierPositionControlPoint[5] += samplePoint[aux2[i]].position * aux[3 - i];
+//
+//        bezierNormalControlPoint[2] += samplePoint[aux2[i]].normal * aux[i];
+//        bezierNormalControlPoint[5] += samplePoint[aux2[i]].normal * aux[3 - i];
+//    }
+//
+//    aux2 = ivec4(5, 6, 7, 8);
+//    bezierPositionControlPoint[7] = vec3(0);
+//    bezierPositionControlPoint[8] = vec3(0);
+//    bezierNormalControlPoint[7] = vec3(0);
+//    bezierNormalControlPoint[8] = vec3(0);
+//    for (int i = 0; i < 4; ++i) {
+//        bezierPositionControlPoint[7] += samplePoint[aux2[i]].position * aux[i];
+//        bezierPositionControlPoint[8] += samplePoint[aux2[i]].position * aux[3 - i];
+//
+//        bezierNormalControlPoint[7] += samplePoint[aux2[i]].normal * aux[i];
+//        bezierNormalControlPoint[8] += samplePoint[aux2[i]].normal * aux[3 - i];
 //    }
 
-    // 计算Bezier曲面片控制顶点
+
     int tempindex = -1;
-    int aux1[9] = {0,1,2,3,5,6,7,8, 9};
-    for (int i = 0; i < 9; ++i) {
+    const int aux1[6] = {1,2,3,5,7,8};
+    for (int i = 0; i < 6; ++i) {
         bezierPositionControlPoint[aux1[i]] = vec3(0);
         bezierNormalControlPoint[aux1[i]] = vec3(0);
         for (int j = 0; j < 9; ++j) {
@@ -564,9 +582,9 @@ vec4 getPosition(vec3 parameter) {
 }
 
 ?!iftime
-vec3 sample_helper(uvec3 knot_left_index, float[3] un, float[3] vn, float[3] wn){
+vec3 sample_helper(const uvec3 knot_left_index, const float[3] un, const float[3] vn, const float[3] wn){
 ?!else
-vec3 sample_helper(uvec3 knot_left_index, float[4] un, float[4] vn, float[4] wn){
+vec3 sample_helper(const uvec3 knot_left_index, const float[4] un, const float[4] vn, const float[4] wn){
 ?!end
     uint controlPointOffset = (knot_left_index.x * IntervalNumberVW
                              + knot_left_index.y * IntervalNumberW
@@ -619,33 +637,33 @@ vec3 sample_helper(uvec3 knot_left_index, float[4] un, float[4] vn, float[4] wn)
 }
 
 vec3 sampleFastNormal(in SamplePoint samplePoint) {
-    float u = samplePoint.position.x;
-    float v = samplePoint.position.y;
-    float w = samplePoint.position.z;
+    const float u = samplePoint.position.x;
+    const float v = samplePoint.position.y;
+    const float w = samplePoint.position.z;
 
     ?!iftime
-    float un[3] = {1, u, u * u};
-    float vn[3] = {1, v, v * v};
-    float wn[3] = {1, w, w * w};
+    const float un[3] = {1, u, u * u};
+    const float vn[3] = {1, v, v * v};
+    const float wn[3] = {1, w, w * w};
 
-    float un_[3] = {0, 1, 2 * u};
-    float vn_[3] = {0, 1, 2 * v};
-    float wn_[3] = {0, 1, 2 * w};
+    const float un_[3] = {0, 1, 2 * u};
+    const float vn_[3] = {0, 1, 2 * v};
+    const float wn_[3] = {0, 1, 2 * w};
     ?!else
-    float un[4] = {1, u, u * u, u * u * u};
-    float vn[4] = {1, v, v * v, v * v * v};
-    float wn[4] = {1, w, w * w, w * w * w};
+    const float un[4] = {1, u, u * u, u * u * u};
+    const float vn[4] = {1, v, v * v, v * v * v};
+    const float wn[4] = {1, w, w * w, w * w * w};
 
-    float un_[4] = {0, 1, 2 * u, 3 * u * u};
-    float vn_[4] = {0, 1, 2 * v, 3 * v * v};
-    float wn_[4] = {0, 1, 2 * w, 3 * w * w};
+    const float un_[4] = {0, 1, 2 * u, 3 * u * u};
+    const float vn_[4] = {0, 1, 2 * v, 3 * v * v};
+    const float wn_[4] = {0, 1, 2 * w, 3 * w * w};
     ?!end
 
-    vec3 fu = sample_helper(samplePoint.knot_left_index, un_, vn, wn);
-    vec3 fv = sample_helper(samplePoint.knot_left_index, un, vn_, wn);
-    vec3 fw = sample_helper(samplePoint.knot_left_index, un, vn, wn_);
+    const vec3 fu = sample_helper(samplePoint.knot_left_index, un_, vn, wn);
+    const vec3 fv = sample_helper(samplePoint.knot_left_index, un, vn_, wn);
+    const vec3 fw = sample_helper(samplePoint.knot_left_index, un, vn, wn_);
 
-    vec3 n = samplePoint.normal;
+    const vec3 n = samplePoint.normal;
 
     vec3 result = vec3(0);
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
@@ -669,36 +687,35 @@ vec3 sampleFastNormal(in SamplePoint samplePoint) {
 }
 
 void sampleFast(inout SamplePoint samplePoint) {
-    float u = samplePoint.position.x;
-    float v = samplePoint.position.y;
-    float w = samplePoint.position.z;
+    const float u = samplePoint.position.x;
+    const float v = samplePoint.position.y;
+    const float w = samplePoint.position.z;
 
     ?!iftime
+    const float un[3] = {1, u, u * u};
+    const float vn[3] = {1, v, v * v};
+    const float wn[3] = {1, w, w * w};
 
-    float un[3] = {1, u, u * u};
-    float vn[3] = {1, v, v * v};
-    float wn[3] = {1, w, w * w};
-
-    float un_[3] = {0, 1, 2 * u};
-    float vn_[3] = {0, 1, 2 * v};
-    float wn_[3] = {0, 1, 2 * w};
+    const float un_[3] = {0, 1, 2 * u};
+    const float vn_[3] = {0, 1, 2 * v};
+    const float wn_[3] = {0, 1, 2 * w};
     ?!else
-    float un[4] = {1, u, u * u, u * u * u};
-    float vn[4] = {1, v, v * v, v * v * v};
-    float wn[4] = {1, w, w * w, w * w * w};
+    const float un[4] = {1, u, u * u, u * u * u};
+    const float vn[4] = {1, v, v * v, v * v * v};
+    const float wn[4] = {1, w, w * w, w * w * w};
 
-    float un_[4] = {0, 1, 2 * u, 3 * u * u};
-    float vn_[4] = {0, 1, 2 * v, 3 * v * v};
-    float wn_[4] = {0, 1, 2 * w, 3 * w * w};
+    const float un_[4] = {0, 1, 2 * u, 3 * u * u};
+    const float vn_[4] = {0, 1, 2 * v, 3 * v * v};
+    const float wn_[4] = {0, 1, 2 * w, 3 * w * w};
     ?!end
 
     samplePoint.position = sample_helper(samplePoint.knot_left_index, un, vn, wn);
-    vec3 fu = sample_helper(samplePoint.knot_left_index, un_, vn, wn);
-    vec3 fv = sample_helper(samplePoint.knot_left_index, un, vn_, wn);
-    vec3 fw = sample_helper(samplePoint.knot_left_index, un, vn, wn_);
+    const vec3 fu = sample_helper(samplePoint.knot_left_index, un_, vn, wn);
+    const vec3 fv = sample_helper(samplePoint.knot_left_index, un, vn_, wn);
+    const vec3 fw = sample_helper(samplePoint.knot_left_index, un, vn, wn_);
 
 
-    vec3 n = samplePoint.normal;
+    const vec3 n = samplePoint.normal;
 
     vec3 result;
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
