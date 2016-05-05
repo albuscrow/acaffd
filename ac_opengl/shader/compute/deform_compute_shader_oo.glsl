@@ -18,15 +18,15 @@ struct SplitedTriangle {
     vec4 pn_normal[3];
     vec4 original_position[3];
     vec4 adjacency_pn_normal_parameter[6];
-    vec4 parameter_in_original2_texcoord2[3];
     ivec4 adjacency_triangle_index3_original_triangle_index1;
     ?!iftime
     ?!else
+    vec4 parameter_in_original2_texcoord2[3];
     vec4 original_normal[3];
     vec2 bezier_uv[3];
     uint bezier_patch_id;
-    ?!end
     float triangle_quality;
+    ?!end
 };
 
 //input
@@ -60,9 +60,6 @@ layout(std430, binding=7) buffer TesselatedNormalBuffer{
     vec4[] tessellatedNormal;
 };
 
-layout(std430, binding=23) buffer TesselatedTexCoordBuffer{
-    vec2[] tessellatedTexCoord;
-};
 
 //output
 layout(std430, binding=8) buffer TesselatedIndexBuffer{
@@ -71,6 +68,9 @@ layout(std430, binding=8) buffer TesselatedIndexBuffer{
 //output
 ?!iftime
 ?!else
+layout(std430, binding=23) buffer TesselatedTexCoordBuffer{
+    vec2[] tessellatedTexCoord;
+};
 //output
 layout(std430, binding=10) buffer ParameterInOriginalBuffer{
     vec4[] parameterInOriginal3_triangle_quality1;
@@ -235,9 +235,9 @@ void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 norma
 vec3 getPositionInOriginal(vec3 parameter);
 vec3 getNormalInOriginal(vec3 parameter);
 vec2 getUV(vec3 parameter);
+vec2 getTexCoord(vec3 parameter);
 ?!end
 vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
-vec2 getTexCoord(vec3 parameter);
 vec4 getNormal(vec3 parameter);
 vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter);
 vec2 getTessellatedSplitParameter(vec2[3] split_parameter, vec4 tessellatedParameter);
@@ -446,11 +446,11 @@ void main() {
         ++ point_offset;
         tessellatedVertex[point_offset] = getPosition(tessellatedParameter[i].xyz);
         tessellatedNormal[point_offset] = getNormal(tessellatedParameter[i].xyz);
-        tessellatedTexCoord[point_offset] = getTexCoord(tessellatedParameter[i].xyz);
         tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(tessellatedParameter[i].xyz);
 
         ?!iftime
         ?!else
+        tessellatedTexCoord[point_offset] = getTexCoord(tessellatedParameter[i].xyz);
         parameter_in_split2_is_sharp_info_2[point_offset] = tessellatedParameter[i];
         parameter_in_split2_is_sharp_info_2[point_offset].zw =
             getTessellatedSplitParameter(temp_sharp_parameter, tessellatedParameter[i]);
@@ -745,13 +745,6 @@ SamplePoint getSamplePoint(vec3 position[3], vec3 normal[3], vec3 parameter) {
     return result;
 }
 
-vec2 getTexCoord(vec3 parameter) {
-    vec2 res = vec2(0);
-    for (uint i = 0; i < 3; ++i) {
-        res += (currentTriangle.parameter_in_original2_texcoord2[i].zw * parameter[i]);
-    }
-    return res;
-}
 
 SamplePoint getSamplePointBeforeSample(vec3 parameter) {
     SamplePoint result;
@@ -811,6 +804,15 @@ vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint triangle_index) {
 
 ?!iftime
 ?!else
+
+vec2 getTexCoord(vec3 parameter) {
+    vec2 res = vec2(0);
+    for (uint i = 0; i < 3; ++i) {
+        res += (currentTriangle.parameter_in_original2_texcoord2[i].zw * parameter[i]);
+    }
+    return res;
+}
+
 float c(int n, int r){
     return factorial(n) / factorial(r) / factorial(n - r);
 }

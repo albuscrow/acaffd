@@ -151,7 +151,6 @@ class DeformAndDrawController:
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._tex_coord_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 23, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._model_vao = -1  # type: int
         self._original_model_vao = -1  # type: int
@@ -159,6 +158,7 @@ class DeformAndDrawController:
         self._parameter_in_BSpline_body_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 21, None, GL_DYNAMIC_DRAW)  # type: ACVBO
 
         if not conf.IS_FAST_MODE:
+            self._tex_coord_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 23, None, GL_DYNAMIC_DRAW)  # type: ACVBO
             self._parameter_in_splited_triangle_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 10, None,
                                                             GL_DYNAMIC_DRAW)  # type: ACVBO
             self._parameter_in_original_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 11, None, GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -204,11 +204,11 @@ class DeformAndDrawController:
         self._vertex_vbo.as_array_buffer(0, 4, GL_FLOAT)
         # set normal attribute
         self._normal_vbo.as_array_buffer(1, 4, GL_FLOAT)
-        self._tex_coord_vbo.as_array_buffer(6, 2, GL_FLOAT)
         # specific index buffer
         self._index_vbo.as_element_array_buffer()
 
         if not conf.IS_FAST_MODE:
+            self._tex_coord_vbo.as_array_buffer(6, 2, GL_FLOAT)
             # set tessellate parameter attribute
             self._parameter_in_splited_triangle_vbo.as_array_buffer(2, 4, GL_FLOAT)
             # set split parameter attribute
@@ -275,9 +275,6 @@ class DeformAndDrawController:
             self._normal_vbo.capacity = self.splited_triangle_number \
                                         * self.tessellated_point_number_pre_splited_triangle * NORMAL_SIZE
 
-        if self._tex_coord_vbo is not None:
-            self._tex_coord_vbo.capacity = self.splited_triangle_number \
-                                           * self.tessellated_point_number_pre_splited_triangle * TEX_COORD_SIZE
 
         if self._index_vbo is not None:
             self._index_vbo.capacity = self.splited_triangle_number \
@@ -288,6 +285,9 @@ class DeformAndDrawController:
                                                            * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
 
         if not conf.IS_FAST_MODE:
+            if self._tex_coord_vbo is not None:
+                self._tex_coord_vbo.capacity = self.splited_triangle_number \
+                                               * self.tessellated_point_number_pre_splited_triangle * TEX_COORD_SIZE
             if self._parameter_in_splited_triangle_vbo is not None:
                 self._parameter_in_splited_triangle_vbo.capacity = self.splited_triangle_number \
                                                                    * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
@@ -318,10 +318,10 @@ class DeformAndDrawController:
     def gl_sync_buffer(self):
         self._vertex_vbo.gl_sync()
         self._normal_vbo.gl_sync()
-        self._tex_coord_vbo.gl_sync()
         self._index_vbo.gl_sync()
         self._parameter_in_BSpline_body_vbo.gl_sync()
         if not conf.IS_FAST_MODE:
+            self._tex_coord_vbo.gl_sync()
             self._parameter_in_splited_triangle_vbo.gl_sync()
             self._parameter_in_original_vbo.gl_sync()
             self._real_normal_vbo.gl_sync()

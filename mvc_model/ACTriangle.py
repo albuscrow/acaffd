@@ -226,21 +226,16 @@ class ACTriangle:
         DATA_TYPE = [('pn_position', '4f4', 3),
                      ('pn_normal', '4f4', 3),
                      ('original_position', '4f4', 3),
-                     ('original_normal', '4f4', 3),
                      ('adjacency_pn_normal_parameter', '4f4', 6),
-                     ('parameter_in_original2_texcoord2', '4f4', 3),
-                     ('adjacency_triangle_index3_original_triangle_index1', '4i4'),
-                     # ('bezier_uv', '2f4', 3),
-                     # ('bezier_patch_id', 'u4'),
-                     ('triangle_quality_and_padding', '4f4')]
+                     ('adjacency_triangle_index3_original_triangle_index1', '4i4')]
     else:
         DATA_TYPE = [('pn_position', '4f4', 3),
                      ('pn_normal', '4f4', 3),
                      ('original_position', '4f4', 3),
-                     ('original_normal', '4f4', 3),
                      ('adjacency_pn_normal_parameter', '4f4', 6),
-                     ('parameter_in_original2_texcoord2', '4f4', 3),
                      ('adjacency_triangle_index3_original_triangle_index1', '4i4'),
+                     ('parameter_in_original2_texcoord2', '4f4', 3),
+                     ('original_normal', '4f4', 3),
                      ('bezier_uv', '2f4', 3),
                      ('bezier_patch_id', 'u4'),
                      ('triangle_quality_and_padding', 'f4')]
@@ -304,21 +299,16 @@ class ACTriangle:
             data = [pn_position,
                     pn_normal,
                     original_position,
-                    self.normalv4,
                     pn_normal_parameter_adjacent,
-                    np.hstack((self.parameter[:, :2], self._tex_coord)),
-                    adjacency_triangle_index3_original_triangle_index1,
-                    # self.bezier_uv,
-                    # self.bezier_id,
-                    (triangle_quality, 0, 0, 0)]
+                    adjacency_triangle_index3_original_triangle_index1]
         else:
             data = [pn_position,
                     pn_normal,
                     original_position,
-                    self.normalv4,
                     pn_normal_parameter_adjacent,
-                    np.hstack((self.parameter[:, :2], self._tex_coord)),
                     adjacency_triangle_index3_original_triangle_index1,
+                    np.hstack((self.parameter[:, :2], self._tex_coord)),
+                    self.normalv4,
                     self.bezier_uv,
                     self.bezier_id,
                     triangle_quality]
