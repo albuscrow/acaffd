@@ -47,12 +47,12 @@ struct SplitedTriangle {
     vec4 pn_position[3];
     vec4 pn_normal[3];
     vec4 original_position[3];
-    vec4 original_normal[3];
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original2_texcoord2[3];
     ivec4 adjacency_triangle_index3_original_triangle_index1;
     ?!iftime
     ?!else
+    vec4 original_normal[3];
     vec2 bezier_uv[3];
     uint bezier_patch_id;
     ?!end
@@ -221,10 +221,10 @@ void main() {
             st.parameter_in_original2_texcoord2[i].zw = getTecCoordOrg(parameter_in_original[i]);
             st.pn_position[i] = vec4(getPNPosition(parameter_in_original[i]), 1);
             st.pn_normal[i] = vec4(getPNNormal(parameter_in_original[i]), 0);
-            st.original_normal[i] = vec4(getNormalOrg(parameter_in_original[i]), 0);
             st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
             ?!iftime
             ?!else
+            st.original_normal[i] = vec4(getNormalOrg(parameter_in_original[i]), 0);
             if (isBezier > 0) {
                 st.bezier_uv[i] = getUV(parameter_in_original[i]);
             }

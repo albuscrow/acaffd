@@ -17,12 +17,12 @@ struct SplitedTriangle {
     vec4 pn_position[3];
     vec4 pn_normal[3];
     vec4 original_position[3];
-    vec4 original_normal[3];
     vec4 adjacency_pn_normal_parameter[6];
     vec4 parameter_in_original2_texcoord2[3];
     ivec4 adjacency_triangle_index3_original_triangle_index1;
     ?!iftime
     ?!else
+    vec4 original_normal[3];
     vec2 bezier_uv[3];
     uint bezier_patch_id;
     ?!end
@@ -137,39 +137,17 @@ const float ZERO = 0.000001;
 //0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0
 //};
 
-const float Mr[81] = {
-       1.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.0000000,        0.0000000,        0.0000000,        0.0000000,
-      -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
-      -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
-       0.3333333,       -1.5000000,         0.0000000,         3.0000000,         0.0000000,        -0.8333333,        0.0000000,        0.0000000,        0.0000000,
-       0.3333333,        0.0000000,        -1.5000000,         0.0000000,         3.0000000,         0.0000000,        0.0000000,        0.0000000,       -0.8333333,
-       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         1.0000000,        0.0000000,        0.0000000,        0.0000000,
-       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,        -0.8333333,        3.0000000,       -1.5000000,        0.3333333,
-       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
-       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.0000000,        0.0000000,        0.0000000,        1.0000000,
-};
-
-const float Mr_4[19] = {
-0.2784553,
--0.9969512,
--0.9969512,
--0.9969512,
--0.9969512,
-0.2784553,
--0.9969512,
--0.9969512,
-0.2784553,
-
-0.4390244,
-0.6585366,
-0.6585366,
-0.6585366,
-0.8780488,
-0.6585366,
-0.4390244,
-0.6585366,
-0.6585366,
-0.4390244,
+const float Mr[190] = {
+  1.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
+ -0.8333333,  3.0000000,  0.0000000, -1.5000000,  0.0000000,  0.3333333,  0.0000000,  0.0000000,  0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
+ -0.8333333,  0.0000000,  3.0000000,  0.0000000, -1.5000000,  0.0000000,  0.0000000,  0.0000000,  0.3333333, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
+  0.3333333, -1.5000000,  0.0000000,  3.0000000,  0.0000000, -0.8333333,  0.0000000,  0.0000000,  0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
+  0.2784553, -0.9969512, -0.9969512, -0.9969512, -0.9969512,  0.2784553, -0.9969512, -0.9969512,  0.2784553, 0.4390244, 0.6585366, 0.6585366, 0.6585366, 0.8780488, 0.6585366, 0.4390244, 0.6585366, 0.6585366, 0.4390244,
+  0.3333333,  0.0000000, -1.5000000,  0.0000000,  3.0000000,  0.0000000,  0.0000000,  0.0000000, -0.8333333, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
+  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  1.0000000,  0.0000000,  0.0000000,  0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
+  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000, -0.8333333,  3.0000000, -1.5000000,  0.3333333, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
+  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.3333333, -1.5000000,  3.0000000, -0.8333333, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000,
+  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  0.0000000,  1.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000
 };
 
 const float aux_control_parameter[10] = {
@@ -263,7 +241,10 @@ uint IntervalNumberW;
 uint OrderProduct;
 
 SplitedTriangle currentTriangle;
+?!iftime
+?!else
 vec3 normalizedOriginalNormal[3];
+?!end
 const int isBezier = -1;
 void main() {
     uint triangleIndex = gl_GlobalInvocationID.x;
@@ -282,9 +263,12 @@ void main() {
     IntervalNumberW = BSplineBodyIntervalNumber[2];
 
     currentTriangle = input_triangles[triangleIndex];
+    ?!iftime
+    ?!else
     for (int i = 0; i < 3; ++i) {
         normalizedOriginalNormal[i] = normalize(currentTriangle.original_normal[i].xyz);
     }
+    ?!end
     // 计算采样点
     SamplePoint samplePoint[19];
     for (int i = 0; i < 19; ++i) {
@@ -309,19 +293,13 @@ void main() {
 
     // 计算Bezier曲面片控制顶点
     int tempindex = -1;
-    int aux1[9] = {0,1,2,3,5,6,7,8, 9};
-    for (int i = 0; i < 9; ++i) {
-        bezierPositionControlPoint[aux1[i]] = vec3(0);
-        bezierNormalControlPoint[aux1[i]] = vec3(0);
-        for (int j = 0; j < 9; ++j) {
-            bezierPositionControlPoint[aux1[i]] += samplePoint[j].position * Mr[++tempindex];
-            bezierNormalControlPoint[aux1[i]] += samplePoint[j].normal * Mr[tempindex];
+    for (int i = 0; i < 10; ++i) {
+        bezierPositionControlPoint[i] = vec3(0);
+        bezierNormalControlPoint[i] = vec3(0);
+        for (int j = 0; j < 19; ++j) {
+            bezierPositionControlPoint[i] += samplePoint[j].position * Mr[++tempindex];
+            bezierNormalControlPoint[i] += samplePoint[j].normal * Mr[tempindex];
         }
-    }
-    bezierNormalControlPoint[4] = vec3(0);
-    for (int j = 0; j < 19; ++j) {
-        bezierPositionControlPoint[4] += samplePoint[j].position * Mr_4[j];
-        bezierNormalControlPoint[4] += samplePoint[j].normal * Mr_4[j];
     }
 
     ?!iftime
@@ -533,9 +511,6 @@ vec4 getPosition(vec3 parameter) {
     return vec4(result, 1);
 }
 
-
-
-
 ?!iftime
 vec3 sample_helper(uvec3 knot_left_index, float[3] un, float[3] vn, float[3] wn){
 ?!else
@@ -550,8 +525,7 @@ vec3 sample_helper(uvec3 knot_left_index, float[4] un, float[4] vn, float[4] wn)
         for (int j = 0; j < 3; ++j){
             tempcp2[i][j] = vec3(0.0f);
             for (int k = 0; k < 3; ++k) {
-                vec4 cp = newControlPoints[++controlPointOffset];
-                tempcp2[i][j] += cp.xyz * wn[k];
+                tempcp2[i][j] += newControlPoints[++controlPointOffset].xyz * wn[k];
             }
         }
     }
@@ -563,10 +537,9 @@ vec3 sample_helper(uvec3 knot_left_index, float[4] un, float[4] vn, float[4] wn)
         }
     }
 
-    vec3 result = vec3(0);
-    for (int i = 0; i < 3; ++i) {
-        result += tempcp1[i] * un[i];
-    }
+    vec3 result = tempcp1[0] * un[0];
+    result += tempcp1[1] * un[1];
+    result += tempcp1[2] * un[2];
     ?!else
     vec3 tempcp2[4][4];
     for (int i = 0; i < BSplineBodyOrder[0]; ++i){
