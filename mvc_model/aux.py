@@ -170,7 +170,6 @@ class BSplineBody:
     def R(self, parameter, ijk):
         bs = [self.B(knots, order, i, para) for knots, order, i, para in
               zip(self._knots, self._order, ijk, parameter)]
-        print(bs)
         return reduce(lambda p, x: p * x, bs, 1)
 
     @staticmethod
