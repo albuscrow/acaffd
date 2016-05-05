@@ -122,8 +122,8 @@ layout(std430, binding=16) buffer ControlPointIndex{
 //};
 
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
-const vec3 ZERO3 = vec3(0.000001);
-const float ZERO = 0.000001;
+vec3 ZERO3 = vec3(0.000001);
+float ZERO = 0.000001;
 //const float Mr[54] = {
 //      -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
 //      -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
@@ -133,7 +133,7 @@ const float ZERO = 0.000001;
 //       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
 //};
 
-const float Mr[54] = {
+float Mr[54] = {
 //       1.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.0000000,        0.0000000,        0.0000000,        0.0000000,
       -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
       -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
@@ -292,7 +292,7 @@ void main() {
         samplePoint[i] = getSamplePointBeforeSample(sampleParameter[i]);
     }
 
-    const uint vertexIndexInSamplePoint[3] = {0,5,8};
+    uint vertexIndexInSamplePoint[3] = {0,5,8};
     SamplePoint samplePointForNormal[3];
     for (int i = 0; i < 3; ++i) {
         samplePointForNormal[i] = samplePoint[vertexIndexInSamplePoint[i]];
