@@ -124,13 +124,25 @@ layout(std430, binding=16) buffer ControlPointIndex{
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 const vec3 ZERO3 = vec3(0.000001);
 const float ZERO = 0.000001;
+//const float Mr[54] = {
+//      -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
+//      -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
+//       0.3333333,       -1.5000000,         0.0000000,         3.0000000,         0.0000000,        -0.8333333,        0.0000000,        0.0000000,        0.0000000,
+//       0.3333333,        0.0000000,        -1.5000000,         0.0000000,         3.0000000,         0.0000000,        0.0000000,        0.0000000,       -0.8333333,
+//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,        -0.8333333,        3.0000000,       -1.5000000,        0.3333333,
+//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
+//};
+
 const float Mr[54] = {
+//       1.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.0000000,        0.0000000,        0.0000000,        0.0000000,
       -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
       -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
        0.3333333,       -1.5000000,         0.0000000,         3.0000000,         0.0000000,        -0.8333333,        0.0000000,        0.0000000,        0.0000000,
        0.3333333,        0.0000000,        -1.5000000,         0.0000000,         3.0000000,         0.0000000,        0.0000000,        0.0000000,       -0.8333333,
+//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         1.0000000,        0.0000000,        0.0000000,        0.0000000,
        0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,        -0.8333333,        3.0000000,       -1.5000000,        0.3333333,
        0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
+//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.0000000,        0.0000000,        0.0000000,        1.0000000,
 };
 const float Mr_4[19] = {
 0.2784553,
@@ -295,69 +307,38 @@ void main() {
     for (int i = 0; i < 3; ++i) {
         currentTriangle.pn_position[i].xyz = samplePoint[vertexIndexInSamplePoint[i]].position;
     }
+//
+//    // 计算Bezier曲面片控制顶点
+//    bezierPositionControlPoint[0] = samplePoint[0].position;
+//    bezierNormalControlPoint[0] = samplePoint[0].normal;
+//
+//    bezierPositionControlPoint[6] = samplePoint[5].position;
+//    bezierNormalControlPoint[6] = samplePoint[5].normal;
+//
+//    bezierPositionControlPoint[9] = samplePoint[8].position;
+//    bezierNormalControlPoint[9] = samplePoint[8].normal;
+//
+//    int tempindex = -1;
+//    const int aux1[6] = {1,2,3,5,7,8};
+//    for (int i = 0; i < 6; ++i) {
+//        bezierPositionControlPoint[aux1[i]] = vec3(0);
+//        bezierNormalControlPoint[aux1[i]] = vec3(0);
+//        for (int j = 0; j < 9; ++j) {
+//            bezierPositionControlPoint[aux1[i]] += samplePoint[j].position * Mr[++tempindex];
+//            bezierNormalControlPoint[aux1[i]] += samplePoint[j].normal * Mr[tempindex];
+//        }
+//    }
 
     // 计算Bezier曲面片控制顶点
-
-//const float Mr[54] = {
-//      -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
-//      -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
-//       0.3333333,       -1.5000000,         0.0000000,         3.0000000,         0.0000000,        -0.8333333,        0.0000000,        0.0000000,        0.0000000,
-//       0.3333333,        0.0000000,        -1.5000000,         0.0000000,         3.0000000,         0.0000000,        0.0000000,        0.0000000,       -0.8333333,
-//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,        -0.8333333,        3.0000000,       -1.5000000,        0.3333333,
-//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
-//};
     bezierPositionControlPoint[0] = samplePoint[0].position;
     bezierNormalControlPoint[0] = samplePoint[0].normal;
-
     bezierPositionControlPoint[6] = samplePoint[5].position;
     bezierNormalControlPoint[6] = samplePoint[5].normal;
-
     bezierPositionControlPoint[9] = samplePoint[8].position;
     bezierNormalControlPoint[9] = samplePoint[8].normal;
 
-//    vec4 aux = vec4(-0.8333333, 3, -1.5, 1/3);
-//    ivec4 aux2 = ivec4(0, 1, 3, 5);
-//    bezierPositionControlPoint[1] = vec3(0);
-//    bezierPositionControlPoint[3] = vec3(0);
-//    bezierNormalControlPoint[1] = vec3(0);
-//    bezierNormalControlPoint[3] = vec3(0);
-//    for (int i = 0; i < 4; ++i) {
-//        bezierPositionControlPoint[1] += samplePoint[aux2[i]].position * aux[i];
-//        bezierPositionControlPoint[3] += samplePoint[aux2[i]].position * aux[3 - i];
-//
-//        bezierNormalControlPoint[1] += samplePoint[aux2[i]].normal * aux[i];
-//        bezierNormalControlPoint[3] += samplePoint[aux2[i]].normal * aux[3 - i];
-//    }
-//
-//    aux2 = ivec4(0, 2, 4, 8);
-//    bezierPositionControlPoint[2] = vec3(0);
-//    bezierPositionControlPoint[5] = vec3(0);
-//    bezierNormalControlPoint[2] = vec3(0);
-//    bezierNormalControlPoint[5] = vec3(0);
-//    for (int i = 0; i < 4; ++i) {
-//        bezierPositionControlPoint[2] += samplePoint[aux2[i]].position * aux[i];
-//        bezierPositionControlPoint[5] += samplePoint[aux2[i]].position * aux[3 - i];
-//
-//        bezierNormalControlPoint[2] += samplePoint[aux2[i]].normal * aux[i];
-//        bezierNormalControlPoint[5] += samplePoint[aux2[i]].normal * aux[3 - i];
-//    }
-//
-//    aux2 = ivec4(5, 6, 7, 8);
-//    bezierPositionControlPoint[7] = vec3(0);
-//    bezierPositionControlPoint[8] = vec3(0);
-//    bezierNormalControlPoint[7] = vec3(0);
-//    bezierNormalControlPoint[8] = vec3(0);
-//    for (int i = 0; i < 4; ++i) {
-//        bezierPositionControlPoint[7] += samplePoint[aux2[i]].position * aux[i];
-//        bezierPositionControlPoint[8] += samplePoint[aux2[i]].position * aux[3 - i];
-//
-//        bezierNormalControlPoint[7] += samplePoint[aux2[i]].normal * aux[i];
-//        bezierNormalControlPoint[8] += samplePoint[aux2[i]].normal * aux[3 - i];
-//    }
-
-
     int tempindex = -1;
-    const int aux1[6] = {1,2,3,5,7,8};
+    int aux1[6] = {1,2,3,5,7,8};
     for (int i = 0; i < 6; ++i) {
         bezierPositionControlPoint[aux1[i]] = vec3(0);
         bezierNormalControlPoint[aux1[i]] = vec3(0);
