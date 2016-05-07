@@ -5,6 +5,7 @@ layout(std140, binding=0) uniform BSplineBodyInfo{
     uniform vec3 BSplineBodyOrder;
     uniform vec3 BSplineBodyControlPointNum;
     uniform vec3 BSplineBodyLength;
+    uniform float modifyRange[];
 };
 
 struct SamplePoint {
@@ -60,9 +61,10 @@ layout(std430, binding=7) buffer TesselatedNormalBuffer{
 layout(std430, binding=8) buffer TesselatedIndexBuffer{
     uint[] tessellatedIndex;
 };
-//output
+
 //?!iftime
 //?!else
+//output
 layout(std430, binding=23) buffer TesselatedTexCoordBuffer{
     vec2[] tessellatedTexCoord;
 };
@@ -115,7 +117,6 @@ layout(std430, binding=16) buffer ControlPointIndex{
 
 //?!end
 
-
 //debug
 //layout(std430, binding=14) buffer OutputDebugBuffer{
 //    vec4[] myOutputBuffer;
@@ -124,26 +125,16 @@ layout(std430, binding=16) buffer ControlPointIndex{
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 vec3 ZERO3 = vec3(0.000001);
 float ZERO = 0.000001;
-//const float Mr[54] = {
-//      -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
-//      -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
-//       0.3333333,       -1.5000000,         0.0000000,         3.0000000,         0.0000000,        -0.8333333,        0.0000000,        0.0000000,        0.0000000,
-//       0.3333333,        0.0000000,        -1.5000000,         0.0000000,         3.0000000,         0.0000000,        0.0000000,        0.0000000,       -0.8333333,
-//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,        -0.8333333,        3.0000000,       -1.5000000,        0.3333333,
-//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
-//};
 
 float Mr[54] = {
-//       1.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.0000000,        0.0000000,        0.0000000,        0.0000000,
       -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
       -0.8333333,        0.0000000,         3.0000000,         0.0000000,        -1.5000000,         0.0000000,        0.0000000,        0.0000000,        0.3333333,
        0.3333333,       -1.5000000,         0.0000000,         3.0000000,         0.0000000,        -0.8333333,        0.0000000,        0.0000000,        0.0000000,
        0.3333333,        0.0000000,        -1.5000000,         0.0000000,         3.0000000,         0.0000000,        0.0000000,        0.0000000,       -0.8333333,
-//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         1.0000000,        0.0000000,        0.0000000,        0.0000000,
        0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,        -0.8333333,        3.0000000,       -1.5000000,        0.3333333,
        0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
-//       0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.0000000,        0.0000000,        0.0000000,        1.0000000,
 };
+
 const float Mr_4[19] = {
 0.2784553,
 -0.9969512,
@@ -339,10 +330,6 @@ void main() {
     for (int i = 0; i < 3; ++i) {
         temp_sharp_parameter[i] = vec2(0.333, 0.333);
     }
-    //?!end
-
-    //?!iftime
-    //?!else
     if (adjust_control_point > 0) {
     //?!end
         //调整控制顶点
@@ -365,17 +352,6 @@ void main() {
             } else {
                 bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot(controlPoint - currentPosition, currentNormal) * currentNormal;
             }
-//            if (adjacency_triangle_id >= 0) {
-//                samplePointForNormal[i / 2].normal =
-//                    getNormalInOriginalPNTriangle(adjacency_normal_parameter, adjacency_triangle_id);
-//                vec3 adj_normal = sampleFastNormal(samplePointForNormal[i / 2]);
-//                if (!all(lessThan(abs(adj_normal - currentNormal), ZERO3))) {
-//                } else {
-//                    bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
-//                }
-//            } else {
-//                bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot((controlPoint - currentPosition), currentNormal) * currentNormal;
-//            }
             E += bezierPositionControlPoint[move_control_point[i]];
         }
         //?!iftime
@@ -386,10 +362,6 @@ void main() {
         E /= 6;
         vec3 V = (bezierPositionControlPoint[0] + bezierPositionControlPoint[6] + bezierPositionControlPoint[9]) / 3;
         bezierPositionControlPoint[4] = E + (E - V) / 2;
-        //?!end
-
-    //?!iftime
-    //?!else
     }
     //?!end
 
@@ -397,9 +369,6 @@ void main() {
     uint point_index[30];
     //?!else
     uint point_index[210];
-    //?!end
-    //?!iftime
-    //?!else
     for (int i = 0; i < 3; ++i) {
         positionSplitedTriangle[triangleIndex * 3 + i] = currentTriangle.pn_position[i];
         normalSplitedTriangle[triangleIndex * 3 + i] =  currentTriangle.pn_normal[i];
@@ -477,13 +446,6 @@ void main() {
             tessellatedIndex[++index_offset] = point_index[tessellateIndex[i][j]];
         }
     }
-
-//    uint index_offset = triangleIndex * tessellateIndexLength - 1;
-//    for (int i = 0; i < tessellateIndexLength; ++i) {
-//        for (int j = 0; j < 3; ++j) {
-//            tessellatedIndex[++index_offset] = point_index[tessellateIndex[i][j]];
-//        }
-//    }
 }
 
 const int factorial_temp[4] = {1,1,2,6};

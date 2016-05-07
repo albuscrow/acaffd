@@ -235,10 +235,6 @@ void main() {
                 current_adjacency_triangle_index = adjacency_triangle_index[currentEdge];
             }
 
-            //?!iftime
-            //?!else
-            st.adjacency_triangle_index3_original_triangle_index1[j] = current_adjacency_triangle_index;
-            //?!end
             if (current_adjacency_triangle_index != -1) {
                 for (int k = 0; k < 2; ++k) {
                     uint temp = adjacency_normal_index_aux[j * 2 + k];
@@ -348,7 +344,6 @@ vec3 getNormalOrg(vec3 parameter) {
 vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
     vec3 result = vec3(0);
     uint ctrlPointIndex = adjacency_triangle_index_ * 6;
-    //todo
     for (int i = 2; i >=0; --i) {
         for (int j = 2 - i; j >= 0; --j) {
             int k = 2 - i - j;

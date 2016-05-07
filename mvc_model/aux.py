@@ -107,7 +107,8 @@ class BSplineBody:
         return np.array(
             [*self._order, 0,
              *self._control_point_number, 0,
-             *self._size, 0], dtype='float32')
+             *self._size, 0,
+             *self.modify_range], dtype='float32')
 
     def get_control_point_for_sample(self):
         # uvw三个方向的区间数
@@ -185,7 +186,7 @@ class BSplineBody:
                 for res_index, index, order, cage_size in zip(range(3), ijk, self._order, self.get_cage_size()):
                     for l in range(max(0, index - order + 1), min(cage_size, index + 1)):
                         res[res_index][l] = 1
-        return res
+        return res[0] + res[1] + res[2]
 
     @staticmethod
     def B(knots, order, i, t):

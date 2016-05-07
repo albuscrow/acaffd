@@ -83,7 +83,6 @@ class AuxController:
         self._b_spline_body_info_ubo.gl_sync()
 
     def gl_sync_buffer_for_deformation(self):
-        # print(self._b_spline_body.modify_range)
         self._control_point_for_sample_ubo.gl_sync()
         self._b_spline_body_info_ubo.gl_sync()
 
