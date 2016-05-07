@@ -391,7 +391,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/cube.obj"
     # file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/test2.obj"
-    file_path = "res/3d_model/bishop.obj"
+    # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
     # file_path = "res/3d_model/star.obj"
     # file_path = "res/3d_model/legoDog.obj"
@@ -405,6 +405,6 @@ def get_test_file_name():
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
-    # file_path = "res/3d_model/snail.obj"
+    file_path = "res/3d_model/snail.obj"
     # file_path = "res/3d_model/t.bpt"
     return file_path

@@ -240,8 +240,8 @@ ApplicationWindow {
                             controller.set_control_point_visibility(checked)
                         }
                     }
-                    ?!iftime
-                    ?!else
+                    //?!iftime
+                    //?!else
                     CheckBox {
                         text: qsTr("显示切割边界")
                         checked: false
@@ -287,10 +287,6 @@ ApplicationWindow {
                             controller.set_show_normal(checked)
                         }
                     }
-                    ?!end
-
-                    ?!iftime
-                    ?!else
                     CheckBox {
                         text: qsTr("调整控制定点")
                         checked: true
@@ -325,7 +321,7 @@ ApplicationWindow {
                             controller.begin_test_split_factor()
                         }
                     }
-                    ?!end
+                    //?!end
 
                     ExclusiveGroup { id: group }
                     RadioButton {

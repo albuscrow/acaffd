@@ -60,11 +60,12 @@ class PreviousComputeControllerGPU:
         self._splited_triangle_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 0, None, GL_DYNAMIC_DRAW)
         self._adjacency_info_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 3, None, GL_DYNAMIC_DRAW)
         self._share_adjacency_pn_triangle_normal_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 4, None, GL_DYNAMIC_DRAW)
-        if not conf.IS_FAST_MODE:
-            self._share_adjacency_pn_triangle_position_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 19, None, GL_DYNAMIC_DRAW)
+        self._share_adjacency_pn_triangle_position_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 19, None, GL_DYNAMIC_DRAW)
         self._splited_triangle_ssbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 5, None, GL_DYNAMIC_DRAW)
 
         # init shader
+        self._program_gen_pn_triangle = ProgramWrap().add_shader(
+            ShaderWrap(GL_COMPUTE_SHADER, add_prefix('previous_compute_shader_pn_oo.glsl')))
         self._program = ProgramWrap().add_shader(
             PreviousComputeShader(GL_COMPUTE_SHADER, add_prefix('previous_compute_shader_oo.glsl'),
                                   self))  # type: ProgramWrap
@@ -75,6 +76,7 @@ class PreviousComputeControllerGPU:
         self._need_recompute = True  # type: bool
 
     def gl_init(self):
+        self._program_gen_pn_triangle.link()
         self._program.link()
         self.gl_set_split_factor()
         # async update vbo
@@ -114,12 +116,10 @@ class PreviousComputeControllerGPU:
     def gl_async_update_buffer_about_output(self):
         self._share_adjacency_pn_triangle_normal_ssbo.capacity = self._model._original_triangle_number \
                                                                  * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
-        if not conf.IS_FAST_MODE:
-            if self._model.from_bezier:
-                self._share_adjacency_pn_triangle_position_ssbo.async_update(self._model.bezier_control_points)
-            else:
-                self._share_adjacency_pn_triangle_position_ssbo.capacity = self._model._original_triangle_number \
-                                                                           * PER_TRIANGLE_PN_POSITION_TRIANGLE_SIZE
+
+        self._share_adjacency_pn_triangle_position_ssbo.capacity = self._model._original_triangle_number \
+                                                                   * PER_TRIANGLE_PN_POSITION_TRIANGLE_SIZE
+
         # 用于储存原始三角面片的PN-triangle
         self._splited_triangle_ssbo.capacity = self._model._original_triangle_number \
                                                * MAX_SPLITED_TRIANGLE_PRE_ORIGINAL_TRIANGLE \
@@ -134,8 +134,7 @@ class PreviousComputeControllerGPU:
         self._original_index_ssbo.gl_sync()
         self._adjacency_info_ssbo.gl_sync()
         self._share_adjacency_pn_triangle_normal_ssbo.gl_sync()
-        if not conf.IS_FAST_MODE:
-            self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
+        self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
         self._splited_triangle_ssbo.gl_sync()
 
     def gl_compute(self) -> int:
@@ -145,6 +144,10 @@ class PreviousComputeControllerGPU:
         if self._need_update_split_factor:
             self.gl_set_split_factor()
             self._need_update_split_factor = False
+        self._program_gen_pn_triangle.use()
+        glDispatchCompute(*self.group_size)
+        glFinish()
+
         self._program.use()
         self.gl_init_split_counter()
         glDispatchCompute(*self.group_size)

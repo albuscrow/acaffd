@@ -241,7 +241,6 @@ ApplicationWindow {
                         }
                     }
 
-
                     ExclusiveGroup { id: group }
                     RadioButton {
                         text: "ac"

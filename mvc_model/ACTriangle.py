@@ -226,8 +226,7 @@ class ACTriangle:
         DATA_TYPE = [('pn_position', '4f4', 3),
                      ('pn_normal', '4f4', 3),
                      ('original_position', '4f4', 3),
-                     ('adjacency_pn_normal_parameter', '4f4', 6),
-                     ('adjacency_triangle_index3_original_triangle_index1', '4i4')]
+                     ('adjacency_pn_normal', '4f4', 6)]
     else:
         DATA_TYPE = [('pn_position', '4f4', 3),
                      ('pn_normal', '4f4', 3),
@@ -263,7 +262,7 @@ class ACTriangle:
         # v4
         pn_normal = [self.get_normal_in_pn_triangle(x) for x in self._parameter]
 
-        pn_normal_parameter_adjacent = np.zeros((6, 4), dtype='f4')
+        pn_normal_adjacent = np.zeros((6, 4), dtype='f4')
         adjacency_triangle_index3_original_triangle_index1 = np.zeros((4,), dtype='i4')
         aux2 = [5, 0, 1, 2, 3, 4]
         occupy_edge_info = [ACTriangle.occupy_edge(p) for p in self.parameter]
@@ -281,7 +280,17 @@ class ACTriangle:
                     adjacent_normal_parameter_index = aux2[index]
                     adjacent_parameter = self.transform_parameter(self._parameter[adjacent_normal_parameter_index // 2],
                                                                   current_edge)
-                    pn_normal_parameter_adjacent[adjacent_normal_parameter_index] = np.append(adjacent_parameter, 0)
+                    adjacent_normal = self.neighbor[current_edge][0].get_normal_in_pn_triangle(adjacent_parameter)
+                    if equal_vec(adjacent_normal, pn_normal[aux2[index] // 2]):
+                        pn_normal_adjacent[adjacent_normal_parameter_index] = np.array([0, 0, 1, -1], dtype='f4')
+                    else:
+                        print("error")
+                        pn_normal_adjacent[adjacent_normal_parameter_index] = adjacent_normal
+            else:
+                for j in range(2):
+                    index = i * 2 + j
+                    adjacent_normal_parameter_index = aux2[index]
+                    pn_normal_adjacent[adjacent_normal_parameter_index] = np.array([0, 0, 1, -1], dtype='f4')
 
         adjacency_triangle_index3_original_triangle_index1[3] = self.id
         t = [self.positionv3[i - 1] - self.positionv3[i] for i in [1, 2, 0]]
@@ -299,13 +308,12 @@ class ACTriangle:
             data = [pn_position,
                     pn_normal,
                     original_position,
-                    pn_normal_parameter_adjacent,
-                    adjacency_triangle_index3_original_triangle_index1]
+                    pn_normal_adjacent]
         else:
             data = [pn_position,
                     pn_normal,
                     original_position,
-                    pn_normal_parameter_adjacent,
+                    pn_normal_adjacent,
                     adjacency_triangle_index3_original_triangle_index1,
                     np.hstack((self.parameter[:, :2], self._tex_coord)),
                     self.normalv4,

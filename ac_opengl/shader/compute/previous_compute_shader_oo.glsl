@@ -35,28 +35,26 @@ layout(std430, binding=4) buffer PNTriangleNShareBuffer{
 };
 
 //output
-?!iftime
-?!else
 layout(std430, binding=19) buffer PNTrianglePShareBuffer{
     vec4[] PNTriangleP_shared;
 };
-?!end
+
 
 
 struct SplitedTriangle {
     vec4 pn_position[3];
     vec4 pn_normal[3];
     vec4 original_position[3];
-    vec4 adjacency_pn_normal_parameter[6];
+    vec4 adjacency_pn_normal[6];
+    //?!iftime
+    //?!else
     ivec4 adjacency_triangle_index3_original_triangle_index1;
-    ?!iftime
-    ?!else
     vec4 parameter_in_original2_texcoord2[3];
     vec4 original_normal[3];
     vec2 bezier_uv[3];
     uint bezier_patch_id;
     float triangle_quality;
-    ?!end
+    //?!end
 };
 
 
@@ -97,9 +95,9 @@ vec3 normal[3];
 // switch
 uvec3 parameterSwitch;
 
-const vec3 ZERO3 = vec3(0.000001);
 const float ZERO = 0.000001;
-const vec4 ZERO4 = vec4(0.000001);
+const vec3 ZERO3 = vec3(ZERO);
+const vec4 ZERO4 = vec4(ZERO);
 
 //以下几个参数都是要经过预编译来初始化的
 layout(std430, binding=9) buffer SplitedData{
@@ -188,19 +186,12 @@ void main() {
         normal[i] = vec3(originalNormal[original_index[i]]);
     }
 
-    // 生成pn-triangle
-    genPNTriangle();
     for (int i = 0; i < 6; ++i) {
-        PNTriangleN_shared[triangleIndex * 6  + i].xyz = PNTriangleN[i];
+        PNTriangleN[i] = PNTriangleN_shared[triangleIndex * 6  + i].xyz;
     }
-    ?!iftime
-    ?!else
-    if (isBezier < 0) {
-        for (int i = 0; i < 10; ++i) {
-            PNTriangleP_shared[triangleIndex * 10  + i].xyz = PNTriangleP[i];
-        }
+    for (int i = 0; i < 10; ++i) {
+        PNTriangleP[i] = PNTriangleP_shared[triangleIndex * 10  + i].xyz;
     }
-    ?!end
 
     // 获取pattern
     uint splitIndexOffset;
@@ -220,16 +211,16 @@ void main() {
             st.pn_position[i] = vec4(getPNPosition(parameter_in_original[i]), 1);
             st.pn_normal[i] = vec4(getPNNormal(parameter_in_original[i]), 0);
             st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
-            ?!iftime
-            ?!else
+            edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
+            //?!iftime
+            //?!else
             st.parameter_in_original2_texcoord2[i].xy = parameter_in_original[i].xy;
             st.parameter_in_original2_texcoord2[i].zw = getTecCoordOrg(parameter_in_original[i]);
             st.original_normal[i] = vec4(getNormalOrg(parameter_in_original[i]), 0);
             if (isBezier > 0) {
                 st.bezier_uv[i] = getUV(parameter_in_original[i]);
             }
-            ?!end
-            edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
+            //?!end
         }
 
         int adjacency_triangle_index_edge[3];
@@ -244,11 +235,25 @@ void main() {
                 current_adjacency_triangle_index = adjacency_triangle_index[currentEdge];
             }
 
+            //?!iftime
+            //?!else
             st.adjacency_triangle_index3_original_triangle_index1[j] = current_adjacency_triangle_index;
+            //?!end
             if (current_adjacency_triangle_index != -1) {
                 for (int k = 0; k < 2; ++k) {
                     uint temp = adjacency_normal_index_aux[j * 2 + k];
-                    st.adjacency_pn_normal_parameter[temp] = vec4(translate_parameter(parameter_in_original[temp / 2], currentEdge), 0);
+                    vec3 normal_parameter = translate_parameter(parameter_in_original[temp / 2], currentEdge);
+                    vec4 adjacency_pn_normal = getAdjacencyNormalPN(normal_parameter, current_adjacency_triangle_index);
+                    if (all(lessThan(adjacency_pn_normal.xyz - st.pn_normal[temp / 2].xyz, ZERO3))) {
+                        st.adjacency_pn_normal[temp] = vec4(0, 0, 1, -1);
+                    } else {
+                        st.adjacency_pn_normal[temp] = adjacency_pn_normal;
+                    }
+                }
+            } else {
+                for (int k = 0; k < 2; ++k) {
+                    uint temp = adjacency_normal_index_aux[j * 2 + k];
+                    st.adjacency_pn_normal[temp] = vec4(0, 0, 1, -1);
                 }
             }
         }
@@ -261,17 +266,18 @@ void main() {
         for (int i = 0; i < 3; ++i) {
             l[i] = sqrt(t[i].x * t[i].x + t[i].y * t[i].y + t[i].z * t[i].z);
         }
-//        float perimeter = l[0] + l[1] + l[2];
-//        float double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2;
-//        float radius = double_area / perimeter;
-//        st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
+
+        //?!iftime
+        //?!else
+        float perimeter = l[0] + l[1] + l[2];
+        float double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2;
+        float radius = double_area / perimeter;
+        st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4;
         st.adjacency_triangle_index3_original_triangle_index1[3] = int(triangleIndex);
-        ?!iftime
-        ?!else
         if (isBezier > 0) {
             st.bezier_patch_id = uint(originalVertex[original_index[0]].w);
         }
-        ?!end
+        //?!end
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }
@@ -433,93 +439,6 @@ void getSplitePattern(out uint indexOffset, out uint triangleNumber) {
     uint offset = get_offset(i_i, j_i, k_i);
     indexOffset = offset_number[offset * 2];
     triangleNumber = offset_number[offset * 2 + 1];
-}
-
-vec3 getAdjacencyNormal(uint adjacency_index, bool isFirst, vec3 normal) {
-    int triangleIndex = adjacency_triangle_index[adjacency_index];
-    if (triangleIndex == -1) {
-        return normal;
-    }
-    int pointIndex = adjacency_triangle_edge[adjacency_index];
-    if (isFirst) {
-        if (pointIndex == 0) {
-            pointIndex = 3;
-        }
-        pointIndex -= 1;
-    }
-    return vec3(originalNormal[
-                               originalIndex[
-                                             triangleIndex * 3
-                                             + pointIndex
-                                            ]
-                              ]);
-}
-
-vec3 genPNControlPoint(vec3 p_s, vec3 p_e, vec3 n, vec3 n_adj) {
-    if (all(lessThan(abs(n - n_adj), ZERO3))) {
-        return (2 * p_s + p_e - dot((p_e - p_s), n) * n) / 3;
-    } else {
-        vec3 T = cross(n, n_adj);
-        return p_s + dot((p_e - p_s), T) / 3 * T;
-    }
-}
-
-//vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
-//    vec3 n = normalize(n_s + n_e);
-//    vec3 v = normalize(p_e - p_s);
-//    return normalize(n - 2 * v * dot(n, v));
-//}
-
-vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
-    vec3 n = n_s + n_e;
-    vec3 v = p_e - p_s;
-    if (all(lessThan(abs(v), ZERO3))) {
-        return normalize(n);
-    } else {
-        return normalize(n - 2 * dot(v, n) / dot(v,v) * v);
-    }
-}
-
-void genPNTriangle(){
-    // 三个顶点对应的控制顶点
-    PNTriangleP[0] = point[0];
-    PNTriangleP[6] = point[1];
-    PNTriangleP[9] = point[2];
-
-    //邻接三角形的六个法向nij,i表示近顶点编号,j远顶点编号
-    vec3 n02, n01, n10, n12, n21, n20;
-    n02 = getAdjacencyNormal(0, true, normal[0]);
-    n01 = getAdjacencyNormal(1, false, normal[0]);
-    n10 = getAdjacencyNormal(1, true, normal[1]);
-    n12 = getAdjacencyNormal(2, false, normal[1]);
-    n21 = getAdjacencyNormal(2, true, normal[2]);
-    n20 = getAdjacencyNormal(0, false, normal[2]);
-
-
-    //two control point near p0
-    PNTriangleP[2] = genPNControlPoint(point[0], point[2], normal[0], n02);
-    PNTriangleP[1] = genPNControlPoint(point[0], point[1], normal[0], n01);
-    //two control point near p1
-    PNTriangleP[3] = genPNControlPoint(point[1], point[0], normal[1], n10);
-    PNTriangleP[7] = genPNControlPoint(point[1], point[2], normal[1], n12);
-    //two control point near p2
-    PNTriangleP[8] = genPNControlPoint(point[2], point[1], normal[2], n21);
-    PNTriangleP[5] = genPNControlPoint(point[2], point[0], normal[2], n20);
-
-    vec3 E = (PNTriangleP[1] + PNTriangleP[2] + PNTriangleP[3]
-    + PNTriangleP[5] + PNTriangleP[7] + PNTriangleP[8]) / 6;
-    vec3 V = (point[0] + point[1] + point[2]) / 3;
-
-    PNTriangleP[4] = E + (E - V) / 2;
-
-    // 生成法向PN-triangle
-    PNTriangleN[0] = normal[0];
-    PNTriangleN[3] = normal[1];
-    PNTriangleN[5] = normal[2];
-
-    PNTriangleN[1] = genPNControlNormal(point[0], point[1], normal[0], normal[1]);
-    PNTriangleN[4] = genPNControlNormal(point[1], point[2], normal[1], normal[2]);
-    PNTriangleN[2] = genPNControlNormal(point[2], point[0], normal[2], normal[0]);
 }
 
 vec3 translate_parameter(vec3 parameter, uint edgeNo) {

@@ -152,6 +152,7 @@ class DeformAndDrawController:
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._bezier_control_point_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 25, None, GL_DYNAMIC_DRAW)
         self._model_vao = -1  # type: int
         self._original_model_vao = -1  # type: int
 
@@ -227,7 +228,6 @@ class DeformAndDrawController:
             self._previous_controller.original_index_ssbo.as_element_array_buffer()
             glBindVertexArray(0)
 
-        if not conf.IS_FAST_MODE:
             self._control_point_vao = glGenVertexArrays(1)
             glBindVertexArray(self._control_point_vao)
             self._control_point_vbo.as_array_buffer(0, 4, GL_FLOAT)
@@ -275,7 +275,6 @@ class DeformAndDrawController:
             self._normal_vbo.capacity = self.splited_triangle_number \
                                         * self.tessellated_point_number_pre_splited_triangle * NORMAL_SIZE
 
-
         if self._index_vbo is not None:
             self._index_vbo.capacity = self.splited_triangle_number \
                                        * self.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
@@ -313,7 +312,8 @@ class DeformAndDrawController:
             if self._show_normal_normal_vbo is not None:
                 self._show_normal_normal_vbo.capacity = self.splited_triangle_number * SHOW_NORMAL_POINT_NUMBER_PER_TRIANGLE * NORMAL_SIZE
 
-
+            if self.model.from_bezier and self._bezier_control_point_buffer is not None:
+                self._bezier_control_point_buffer.async_update(self.model.bezier_control_points)
 
     def gl_sync_buffer(self):
         self._vertex_vbo.gl_sync()
@@ -329,7 +329,7 @@ class DeformAndDrawController:
             self._control_point_vbo.gl_sync()
             self._control_point_index_vbo.gl_sync()
             self._show_normal_position_vbo.gl_sync()
-            self._show_normal_normal_vbo.gl_sync()
+            self._bezier_control_point_buffer.gl_sync()
 
     def gl_deform(self, operator):
         if not self.need_deform:
