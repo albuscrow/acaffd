@@ -1,10 +1,10 @@
+from functools import reduce
 from itertools import product
 
 import numpy as np
-from functools import reduce
 
-from Constant import ZERO
 from pre_computer_data.aux_matrix.sample_aux_matrix import get_aux_matrix_offset
+from util.util import equal_zero_vec, ZERO
 
 
 class BSplineBody:
@@ -165,7 +165,11 @@ class BSplineBody:
         if aux != 0:
             for i, j, k in product(*[range(x) for x in self._control_point_number]):
                 k_aux = displacement * Rs[i, j, k] / aux
-                self._ctrlPoints[i, j, k] += k_aux
+                if not equal_zero_vec(k_aux):
+                    self._ctrlPoints[i, j, k] += k_aux
+                    self._is_hit[i * 25 + j * 5 + k] = True
+
+
 
     def R(self, parameter, ijk):
         bs = [self.B(knots, order, i, para) for knots, order, i, para in
@@ -259,8 +263,6 @@ def aux_multiply(value, v, result):
     result[1] += value * v[1]
     result[2] += value * v[2]
 
-
-from matplotlib.pylab import plot, show
 
 if __name__ == '__main__':
     b = BSplineBody(0.5, 0.6, 0.7)

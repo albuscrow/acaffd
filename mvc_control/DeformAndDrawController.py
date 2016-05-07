@@ -152,7 +152,8 @@ class DeformAndDrawController:
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._bezier_control_point_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 25, None, GL_DYNAMIC_DRAW)
+        if self.model.from_bezier:
+            self._bezier_control_point_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 25, None, GL_DYNAMIC_DRAW)
         self._model_vao = -1  # type: int
         self._original_model_vao = -1  # type: int
 
@@ -329,7 +330,8 @@ class DeformAndDrawController:
             self._control_point_vbo.gl_sync()
             self._control_point_index_vbo.gl_sync()
             self._show_normal_position_vbo.gl_sync()
-            self._bezier_control_point_buffer.gl_sync()
+            if self.model.from_bezier:
+                self._bezier_control_point_buffer.gl_sync()
 
     def gl_deform(self, operator):
         if not self.need_deform:

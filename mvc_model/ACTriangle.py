@@ -6,9 +6,8 @@ from numbers import Number
 
 from numpy.linalg import LinAlgError
 
-from Constant import ZERO
 from mvc_model.aux import BSplineBody
-from util.util import normalize, equal_vec
+from util.util import normalize, equal_vec, ZERO
 from math import pow, factorial, sqrt
 import config as conf
 

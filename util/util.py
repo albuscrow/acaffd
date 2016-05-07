@@ -27,6 +27,10 @@ def equal_vec(v1, v2):
     return all(abs(v1 - v2) < ZERO)
 
 
+def equal_zero_vec(v1):
+    return all(abs(v1) < ZERO)
+
+
 def filter_for_speed(src: str = None, file_name: str = None) -> str:
     if src:
         status = conf.NORMAL
