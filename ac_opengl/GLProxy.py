@@ -47,26 +47,28 @@ class GLProxy:
             self.previous_compute_controller.b_spline_body = self._aux_controller.b_spline_body
 
     def draw(self, model_view_matrix, perspective_matrix):
-        number, need_deform = self.previous_compute_controller.gl_compute()
+        number, need_deform = self.previous_compute_controller.gl_compute(self._aux_controller.gl_sync_buffer_for_previous_computer)
         glFinish()
         self._deform_and_renderer_controller.set_number_and_need_deform(number, need_deform)
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
                                                          self._aux_controller.gl_sync_buffer_for_deformation)
+        # for i in self._debug_buffer.get_value(ctypes.c_float, (10, 4)):
+        #     print(i)
         self._aux_controller.gl_draw(model_view_matrix, perspective_matrix)
 
     def gl_init_global(self):
         glClearColor(1, 1, 1, 1)
         self._aux_controller.gl_init()
 
-        self._debug_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 14, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._debug_buffer.capacity = 2048
+        self._debug_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 14, None, GL_DYNAMIC_READ)  # type: ACVBO
+        self._debug_buffer.capacity = 4096
         self._debug_buffer.gl_sync()
 
         # init previous compute shader
         self._previous_compute_controller_AC.gl_init()
         self._previous_compute_controller_CYM.gl_init()
 
-        self.previous_compute_controller.gl_compute()
+        self.previous_compute_controller.gl_compute(self._aux_controller.gl_sync_buffer_for_previous_computer)
         glFinish()
 
         # alloc memory in gpu for tessellated vertex
@@ -74,6 +76,7 @@ class GLProxy:
             self._model.has_texture,
             self.previous_compute_controller,
             self._model,
+            self._aux_controller,
             self._controller)
         self._deform_and_renderer_controller.gl_init()
 

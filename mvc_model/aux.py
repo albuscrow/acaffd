@@ -29,6 +29,7 @@ class BSplineBody:
         self._step = None  # type: list
 
         self._size = [lx, ly, lz]
+        self._modify_range_flag = True
 
         self.init_data()
 
@@ -146,14 +147,17 @@ class BSplineBody:
         return [x - y + 1 for x, y in zip(self._control_point_number, self._order)]
 
     def change_control_point_number(self, u, v, w):
+        self._modify_range_flag = True
         self._control_point_number = [u, v, w]
         self.init_data()
 
     def change_control_point_order(self, order):
+        self._modify_range_flag = True
         self._order = [order] * 3
         self.init_data()
 
     def move_dffd(self, parameter, displacement):
+        self.reset_hit_record()
         parameter = [min(max(x, -l / 2), l / 2) for x, l in zip(parameter, self._size)]
         self._ctrlPoints = self._control_points_backup.copy()
         displacement = np.asarray(displacement, dtype=np.float32)
@@ -167,14 +171,29 @@ class BSplineBody:
                 k_aux = displacement * Rs[i, j, k] / aux
                 if not equal_zero_vec(k_aux):
                     self._ctrlPoints[i, j, k] += k_aux
-                    self._is_hit[i * 25 + j * 5 + k] = True
-
-
+                    self._is_hit[i * self._control_point_number[1] * self._control_point_number[2]
+                                 + j * self._control_point_number[2] + k] = True
 
     def R(self, parameter, ijk):
         bs = [self.B(knots, order, i, para) for knots, order, i, para in
               zip(self._knots, self._order, ijk, parameter)]
         return reduce(lambda p, x: p * x, bs, 1)
+
+    @property
+    def modify_range(self):
+        cage_size = self.get_cage_size()
+        if self._modify_range_flag:
+            res = np.ones(cage_size, dtype='i4')
+            self._modify_range_flag = False
+        else:
+            res = -np.ones(cage_size, dtype='i4')
+            temp_is_hit = np.array(self._is_hit).reshape(tuple(self._control_point_number))
+            for ijk in product(*[range(x) for x in self._control_point_number]):
+                if temp_is_hit[ijk]:
+                    for ijkR in product(*[range(max(0, index - order + 1), min(cs, index + 1)) for index, order, cs in
+                                          zip(ijk, self._order, cage_size)]):
+                        res[ijkR] = 1
+        return res
 
     @staticmethod
     def B(knots, order, i, t):

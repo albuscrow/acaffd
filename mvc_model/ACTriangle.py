@@ -283,7 +283,6 @@ class ACTriangle:
                     if equal_vec(adjacent_normal, pn_normal[aux2[index] // 2]):
                         pn_normal_adjacent[adjacent_normal_parameter_index] = np.array([0, 0, 1, -1], dtype='f4')
                     else:
-                        print("error")
                         pn_normal_adjacent[adjacent_normal_parameter_index] = adjacent_normal
             else:
                 for j in range(2):

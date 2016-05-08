@@ -283,3 +283,6 @@ class AuxController:
 
     def get_bspline_body_size(self):
         return self._b_spline_body.step
+
+    def get_modify_range(self):
+        return self._b_spline_body.modify_range
