@@ -5,6 +5,7 @@ from math import sqrt, acos, pi
 from PIL import Image
 
 from Constant import *
+from mvc_control.AuxController import AuxController
 from mvc_control.PreviousComputeControllerGPU import PreviousComputeControllerGPU
 from mvc_model.GLObject import ACVBO
 from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
@@ -68,6 +69,11 @@ class DeformComputeProgram(ProgramWrap):
         if not conf.IS_FAST_MODE:
             glProgramUniform1i(self._gl_program_name, 1, 1 if self._controller.use_pn_normal_for_renderer else -1)
 
+    def update_uniform_about_modify_range(self):
+        modify_range = self._controller.get_modify_range().reshape((-1,))
+        for i in range(len(modify_range)):
+            glProgramUniform1i(self._gl_program_name, 7 + i, modify_range[i])
+
 
 class ModelRendererShader(ProgramWrap):
     def __init__(self, controller):
@@ -104,7 +110,8 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-    def __init__(self, has_texture, previous_controller, model, controller=None):
+    def __init__(self, has_texture, previous_controller, model, aux_controller: AuxController, controller=None):
+        self._aux_controller = aux_controller  # type: AuxController
         self.model = model
         self._previous_controller = previous_controller  # type: PreviousComputeControllerGPU
         self._controller = controller
@@ -330,6 +337,7 @@ class DeformAndDrawController:
             self._control_point_vbo.gl_sync()
             self._control_point_index_vbo.gl_sync()
             self._show_normal_position_vbo.gl_sync()
+            self._show_normal_normal_vbo.gl_sync()
             if self.model.from_bezier:
                 self._bezier_control_point_buffer.gl_sync()
 
@@ -350,6 +358,8 @@ class DeformAndDrawController:
         if self._need_update_use_pn_normal_for_renderer:
             self._deform_program.update_uniform_about_use_pn_triangle()
             self._need_update_use_pn_normal_for_renderer = False
+
+        self._deform_program.update_uniform_about_modify_range()
 
         glFinish()
         start_time = time.time()
@@ -421,19 +431,12 @@ class DeformAndDrawController:
                 glUseProgram(0)
 
             if self._show_normal:
-                print("mark1")
                 glBindVertexArray(self._show_normal_vao)
                 self._renderer_normal_program.use()
                 glUniformMatrix4fv(0, 1, GL_FALSE, wvp_matrix)
                 glUniformMatrix4fv(1, 1, GL_FALSE, model_view_matrix)
                 number = int(self.splited_triangle_number * 3)
-                print("mark2")
-                print(gluErrorString(glGetError()))
-                print("number", number)
-                print("program", self._renderer_normal_program._gl_program_name)
                 glDrawArrays(GL_TRIANGLES, 0, number)
-                print(gluErrorString(glGetError()))
-                print("mark3")
                 glFinish()
                 glUseProgram(0)
                 glBindVertexArray(0)
@@ -655,3 +658,6 @@ class DeformAndDrawController:
         self._use_pn_normal_for_renderer = use
         self._need_update_use_pn_normal_for_renderer = True
         self._need_deform = True
+
+    def get_modify_range(self):
+        return self._aux_controller.get_modify_range()

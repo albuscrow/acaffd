@@ -29,6 +29,7 @@ class BSplineBody:
         self._step = None  # type: list
 
         self._size = [lx, ly, lz]
+        self._modify_range_flag = True
 
         self.init_data()
 
@@ -107,8 +108,7 @@ class BSplineBody:
         return np.array(
             [*self._order, 0,
              *self._control_point_number, 0,
-             *self._size, 0,
-             *self.modify_range], dtype='float32')
+             *self._size, 0], dtype='float32')
 
     def get_control_point_for_sample(self):
         # uvw三个方向的区间数
@@ -147,10 +147,12 @@ class BSplineBody:
         return [x - y + 1 for x, y in zip(self._control_point_number, self._order)]
 
     def change_control_point_number(self, u, v, w):
+        self._modify_range_flag = True
         self._control_point_number = [u, v, w]
         self.init_data()
 
     def change_control_point_order(self, order):
+        self._modify_range_flag = True
         self._order = [order] * 3
         self.init_data()
 
@@ -179,14 +181,19 @@ class BSplineBody:
 
     @property
     def modify_range(self):
-        temp_is_hit = np.array(self._is_hit).reshape(tuple(self._control_point_number))
-        res = [[0] * x for x in self.get_cage_size()]
-        for ijk in product(*[range(x) for x in self._control_point_number]):
-            if temp_is_hit[ijk]:
-                for res_index, index, order, cage_size in zip(range(3), ijk, self._order, self.get_cage_size()):
-                    for l in range(max(0, index - order + 1), min(cage_size, index + 1)):
-                        res[res_index][l] = 1
-        return res[0] + res[1] + res[2]
+        cage_size = self.get_cage_size()
+        if self._modify_range_flag:
+            res = np.ones(cage_size, dtype='i4')
+            self._modify_range_flag = False
+        else:
+            res = -np.ones(cage_size, dtype='i4')
+            temp_is_hit = np.array(self._is_hit).reshape(tuple(self._control_point_number))
+            for ijk in product(*[range(x) for x in self._control_point_number]):
+                if temp_is_hit[ijk]:
+                    for ijkR in product(*[range(max(0, index - order + 1), min(cs, index + 1)) for index, order, cs in
+                                          zip(ijk, self._order, cage_size)]):
+                        res[ijkR] = 1
+        return res
 
     @staticmethod
     def B(knots, order, i, t):

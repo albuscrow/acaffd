@@ -46,6 +46,7 @@ struct SplitedTriangle {
     vec4 pn_normal[3];
     vec4 original_position[3];
     vec4 adjacency_pn_normal[6];
+    uvec4 range;
     //?!iftime
     //?!else
     ivec4 adjacency_triangle_index3_original_triangle_index1;
@@ -70,6 +71,13 @@ layout(std430, binding=14) buffer OutputDebugBuffer{
 
 //三角形计数器，因为是多个线程一起产生三角形的，并且存在同一个数组。所以需要这个计数器来同步
 layout(binding = 0) uniform atomic_uint triangle_counter;
+
+//input
+layout(std140, binding=0) uniform BSplineBodyInfo{
+    uniform vec3 BSplineBodyOrder;
+    uniform vec3 BSplineBodyControlPointNum;
+    uniform vec3 BSplineBodyLength;
+};
 
 //表示group size,这个问题中group size与具体问题无关，先取512,后面再调优
 layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
@@ -162,6 +170,8 @@ vec3 translate_parameter(vec3 parameter, uint edgeNo);
 
 uint triangleIndex;
 const int isBezier = -1;
+
+
 void main() {
     triangleIndex = gl_GlobalInvocationID.x;
     if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
@@ -169,6 +179,18 @@ void main() {
     }
 
     // 初始化全局变量
+    float BSplineBodyMinParameter[3];
+    float BSplineBodyStep[3];
+    uint BSplineBodyIntervalNumber[3];
+    for (int i = 0; i < 3; ++i) {
+        BSplineBodyIntervalNumber[i] = uint(BSplineBodyControlPointNum[i] - BSplineBodyOrder[i] + 1);
+        BSplineBodyMinParameter[i] = -BSplineBodyLength[i] / 2;
+        BSplineBodyStep[i] = BSplineBodyLength[i] / BSplineBodyIntervalNumber[i];
+    }
+    uvec3 rangeOffset = uvec3(BSplineBodyIntervalNumber[1] * BSplineBodyIntervalNumber[2],
+                              BSplineBodyIntervalNumber[2],
+                              1);
+
     for (int i = 0; i < 3; ++i) {
         if (adjacencyBuffer[triangleIndex * 3 + i] == -1) {
             adjacency_triangle_index[i] = -1;
@@ -206,19 +228,25 @@ void main() {
         SplitedTriangle st;
         uint edgeInfo[3];
         vec3 parameter_in_original[3];
-        for (int i = 0; i < 3; ++i) {
-            parameter_in_original[i] = changeParameter(splitParameter[index[i]]).xyz;
-            st.pn_position[i] = vec4(getPNPosition(parameter_in_original[i]), 1);
-            st.pn_normal[i] = vec4(getPNNormal(parameter_in_original[i]), 0);
-            st.original_position[i] = vec4(getPositionOrg(parameter_in_original[i]), 1);
-            edgeInfo[i] = getEdgeInfo(parameter_in_original[i]);
+        for (int j = 0; j < 3; ++j) {
+            parameter_in_original[j] = changeParameter(splitParameter[index[j]]).xyz;
+            st.pn_position[j] = vec4(getPNPosition(parameter_in_original[j]), 1);
+            st.range[j] = 0;
+            for (int k = 0; k < 3; ++k) {
+                float temp = (st.pn_position[j][k] - BSplineBodyMinParameter[k]) / BSplineBodyStep[k];
+                st.range[j] += (uint(min(floor(temp), BSplineBodyIntervalNumber[k] - 1)) * rangeOffset[k]);
+            }
+
+            st.pn_normal[j] = vec4(getPNNormal(parameter_in_original[j]), 0);
+            st.original_position[j] = vec4(getPositionOrg(parameter_in_original[j]), 1);
+            edgeInfo[j] = getEdgeInfo(parameter_in_original[j]);
             //?!iftime
             //?!else
-            st.parameter_in_original2_texcoord2[i].xy = parameter_in_original[i].xy;
-            st.parameter_in_original2_texcoord2[i].zw = getTecCoordOrg(parameter_in_original[i]);
-            st.original_normal[i] = vec4(getNormalOrg(parameter_in_original[i]), 0);
+            st.parameter_in_original2_texcoord2[j].xy = parameter_in_original[j].xy;
+            st.parameter_in_original2_texcoord2[j].zw = getTecCoordOrg(parameter_in_original[j]);
+            st.original_normal[j] = vec4(getNormalOrg(parameter_in_original[j]), 0);
             if (isBezier > 0) {
-                st.bezier_uv[i] = getUV(parameter_in_original[i]);
+                st.bezier_uv[j] = getUV(parameter_in_original[j]);
             }
             //?!end
         }
@@ -240,7 +268,7 @@ void main() {
                     uint temp = adjacency_normal_index_aux[j * 2 + k];
                     vec3 normal_parameter = translate_parameter(parameter_in_original[temp / 2], currentEdge);
                     vec4 adjacency_pn_normal = getAdjacencyNormalPN(normal_parameter, current_adjacency_triangle_index);
-                    if (all(lessThan(adjacency_pn_normal.xyz - st.pn_normal[temp / 2].xyz, ZERO3))) {
+                    if (all(lessThan(abs(adjacency_pn_normal.xyz - st.pn_normal[temp / 2].xyz), ZERO3))) {
                         st.adjacency_pn_normal[temp] = vec4(0, 0, 1, -1);
                     } else {
                         st.adjacency_pn_normal[temp] = adjacency_pn_normal;
@@ -254,6 +282,8 @@ void main() {
             }
         }
 
+        //?!iftime
+        //?!else
         vec3 t[3];
         for (int i = 0; i < 3; ++i) {
             t[i] = (st.pn_position[i] - st.pn_position[int(mod((i + 1), 3))]).xyz;
@@ -263,8 +293,6 @@ void main() {
             l[i] = sqrt(t[i].x * t[i].x + t[i].y * t[i].y + t[i].z * t[i].z);
         }
 
-        //?!iftime
-        //?!else
         float perimeter = l[0] + l[1] + l[2];
         float double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2;
         float radius = double_area / perimeter;

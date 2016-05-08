@@ -5,7 +5,6 @@ layout(std140, binding=0) uniform BSplineBodyInfo{
     uniform vec3 BSplineBodyOrder;
     uniform vec3 BSplineBodyControlPointNum;
     uniform vec3 BSplineBodyLength;
-    uniform float modifyRange[];
 };
 
 struct SamplePoint {
@@ -19,6 +18,7 @@ struct SplitedTriangle {
     vec4 pn_normal[3];
     vec4 original_position[3];
     vec4 adjacency_pn_normal[6];
+    uvec4 range;
     //?!iftime
     //?!else
     ivec4 adjacency_triangle_index3_original_triangle_index1;
@@ -56,7 +56,6 @@ layout(std430, binding=7) buffer TesselatedNormalBuffer{
     vec4[] tessellatedNormal;
 };
 
-
 //output
 layout(std430, binding=8) buffer TesselatedIndexBuffer{
     uint[] tessellatedIndex;
@@ -86,6 +85,7 @@ layout(std430, binding=17) buffer PositionSplitedTriangle{
 layout(std430, binding=18) buffer NormalSplitedTriangle{
     vec4[] normalSplitedTriangle;
 };
+
 layout(std430, binding=12) buffer RealPosition{
     vec4[] realPosition;
 };
@@ -118,9 +118,9 @@ layout(std430, binding=16) buffer ControlPointIndex{
 //?!end
 
 //debug
-//layout(std430, binding=14) buffer OutputDebugBuffer{
-//    vec4[] myOutputBuffer;
-//};
+layout(std430, binding=14) buffer OutputDebugBuffer{
+    vec4 myOutputBuffer[9];
+};
 
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 vec3 ZERO3 = vec3(0.000001);
@@ -208,6 +208,8 @@ layout(location=6) uniform int adjust_control_point;
 layout(location=1) uniform int use_pn_normal;
 //?!end
 
+layout(location=7) uniform int modifyRange[125];
+
 layout(std140, binding=2) uniform TessellatedParameter{
     uniform vec4[66] tessellatedParameter;
 };
@@ -259,7 +261,10 @@ void main() {
     if (triangleIndex >= triangleNumber) {
         return;
     }
-
+//    for (int i = 0; i < 9; ++i) {
+//        myOutputBuffer[i] = vec4(modifyRange[i]);
+//    }
+    //判断三角形是否在变形范围
     OrderProduct = 1;
     for (int i = 0; i < 3; ++i) {
         OrderProduct *= uint(BSplineBodyOrder[i]);
@@ -271,6 +276,17 @@ void main() {
     IntervalNumberW = BSplineBodyIntervalNumber[2];
 
     currentTriangle = input_triangles[triangleIndex];
+    bool triangleModifyed = false;
+    for (int i = 0; i < 3; ++i) {
+        if (modifyRange[currentTriangle.range[i]] > 0) {
+            triangleModifyed = true;
+            break;
+        }
+    }
+    if (!triangleModifyed) {
+        return;
+    }
+
     //?!iftime
     //?!else
     for (int i = 0; i < 3; ++i) {
@@ -341,7 +357,7 @@ void main() {
             vec3 currentPosition = currentTriangle.pn_position[i / 2].xyz;
             vec3 controlPoint = bezierPositionControlPoint[move_control_point[i]];
             vec4 adj_normal = currentTriangle.adjacency_pn_normal[i];
-            if (adj_normal[3] == 0) {
+            if (adj_normal[3] != -1) {
                 //?!iftime
                 //?!else
                 temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
@@ -670,7 +686,6 @@ void sampleFast(inout SamplePoint samplePoint) {
 void getSamplePointHelper(inout SamplePoint samplePoint) {
     for (int i = 0; i < 3; ++i) {
         float temp = (samplePoint.position[i] - BSplineBodyMinParameter[i]) / BSplineBodyStep[i];
-
         samplePoint.knot_left_index[i] = uint(temp);
         if (samplePoint.knot_left_index[i] >= BSplineBodyIntervalNumber[i]) {
             samplePoint.knot_left_index[i] -= 1;
