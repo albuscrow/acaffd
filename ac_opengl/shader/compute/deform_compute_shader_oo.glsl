@@ -403,6 +403,11 @@ void main() {
     }
     //?!end
 
+    for (int i = 0; i < 10; ++i) {
+        bezierPositionControlPoint[i] *= 6;
+        bezierNormalControlPoint[i] *= 6;
+    }
+
     // 细分
     // 生成顶点数据
     uint point_offset = triangleIndex * tessellatedParameterLength - 1;
@@ -468,9 +473,9 @@ void main() {
 //    return rfactorial_temp[n];
 //}
 
-const float factorial[4] = {1,1,2,6};
+float factorial[4] = {1,1,2,6};
 
-const float rfactorial[4] = {1,1,0.5,0.166666666};
+float rfactorial[4] = {1,1,0.5,0.166666666};
 
 float power(float b, int n) {
     if (n == 0) {
@@ -507,7 +512,7 @@ vec4 getNormal(vec3 parameter) {
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
             k = 3 - i - j;
-            result += bezierNormalControlPoint[ctrlPointIndex ++] * 6f * rfactorial[i] * rfactorial[j] * rfactorial[k]
+            result += bezierNormalControlPoint[ctrlPointIndex ++] * rfactorial[i] * rfactorial[j] * rfactorial[k]
                 * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
         }
     }
@@ -521,7 +526,7 @@ vec4 getPosition(vec3 parameter) {
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
             k = 3 - i - j;
-            result += bezierPositionControlPoint[ctrlPointIndex ++] * 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
+            result += bezierPositionControlPoint[ctrlPointIndex ++] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
                     * rfactorial[i] * rfactorial[j] * rfactorial[k];
         }
     }

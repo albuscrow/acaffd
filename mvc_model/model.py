@@ -345,7 +345,7 @@ class OBJ:
 
         triangle_data = []
         for t in triangles:
-            triangle = t.as_element_for_shader()
+            triangle = t.as_element_for_shader(bspline)
             triangle_data.append(triangle)
         return len(triangle_data), \
                np.array(triangle_data, ACTriangle.DATA_TYPE), \

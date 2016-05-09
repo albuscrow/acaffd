@@ -180,6 +180,7 @@ class GLProxy:
         self._algorithm = algorithm
         self.previous_compute_controller.need_compute = True
         self.previous_compute_controller.gl_async_update_buffer_about_output()
+        self.aux_controller.b_spline_body.modify_range_flag = True
 
     @property
     def previous_compute_controller(self):

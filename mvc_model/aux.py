@@ -34,6 +34,14 @@ class BSplineBody:
         self.init_data()
 
     @property
+    def modify_range_flag(self):
+        return self._modify_range_flag
+
+    @modify_range_flag.setter
+    def modify_range_flag(self, b):
+        self._modify_range_flag = b
+
+    @property
     def step(self):
         return [l / s for l, s in zip(self._size, self.get_cage_size())]
 

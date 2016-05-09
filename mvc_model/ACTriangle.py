@@ -8,7 +8,7 @@ from numpy.linalg import LinAlgError
 
 from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec, ZERO
-from math import pow, factorial, sqrt
+from math import pow, factorial, sqrt, floor
 import config as conf
 
 SPLIT_PARAMETER_CHANGE_AUX = [[1, 0, 2], [0, 2, 1], [2, 1, 0]]
@@ -221,16 +221,24 @@ class ACTriangle:
     # uint bezier_patch_id;
     # float triangle_quality;
 
+    # vec4 pn_position[3];
+    # vec4 pn_normal[3];
+    # vec4 original_position[3];
+    # vec4 adjacency_pn_normal[6];
+    # uvec4 range;
+
     if conf.IS_FAST_MODE:
         DATA_TYPE = [('pn_position', '4f4', 3),
                      ('pn_normal', '4f4', 3),
                      ('original_position', '4f4', 3),
-                     ('adjacency_pn_normal', '4f4', 6)]
+                     ('adjacency_pn_normal', '4f4', 6),
+                     ('range', '4f4')]
     else:
         DATA_TYPE = [('pn_position', '4f4', 3),
                      ('pn_normal', '4f4', 3),
                      ('original_position', '4f4', 3),
                      ('adjacency_pn_normal_parameter', '4f4', 6),
+                     ('range', '4f4'),
                      ('adjacency_triangle_index3_original_triangle_index1', '4i4'),
                      ('parameter_in_original2_texcoord2', '4f4', 3),
                      ('original_normal', '4f4', 3),
@@ -253,7 +261,7 @@ class ACTriangle:
     def __str__(self):
         return ','.join([str(x.id if x else None) + '-' + str(y) for x, y in self._neighbor])
 
-    def as_element_for_shader(self) -> list:
+    def as_element_for_shader(self, bspline_body) -> list:
         original_position = self.positionv4
         pn_position = [self.get_position_in_pn_triangle(x) for x in self._parameter]
         self.positionv4 = np.array(pn_position, dtype='f4')
@@ -302,16 +310,22 @@ class ACTriangle:
             radius = double_area / perimeter
             triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4
 
+        modify_range = [self.get_range(x, bspline_body) for x in pn_position]
+        modify_range.append(0)
+
         if conf.IS_FAST_MODE:
             data = [pn_position,
                     pn_normal,
                     original_position,
-                    pn_normal_adjacent]
+                    pn_normal_adjacent,
+                    np.array(modify_range, dtype='f4')
+                    ]
         else:
             data = [pn_position,
                     pn_normal,
                     original_position,
                     pn_normal_adjacent,
+                    np.array(modify_range, dtype='f4'),
                     adjacency_triangle_index3_original_triangle_index1,
                     np.hstack((self.parameter[:, :2], self._tex_coord)),
                     self.normalv4,
@@ -540,6 +554,14 @@ class ACTriangle:
     @pn_triangle_n.setter
     def pn_triangle_n(self, pn_triangle_n):
         self._pn_triangle_n = pn_triangle_n
+
+    @staticmethod
+    def get_range(x, bspline_body: BSplineBody):
+        res = 0
+        for i, p in enumerate(x[:3]):
+            temp = (p - bspline_body.min_parameter[i]) / bspline_body.step[i]
+            res = res * bspline_body.get_cage_size()[i] + min(floor(temp), bspline_body.get_cage_size()[i] - 1)
+        return res
 
 
 if __name__ == '__main__':
