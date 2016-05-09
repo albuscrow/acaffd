@@ -123,8 +123,6 @@ layout(std430, binding=16) buffer ControlPointIndex{
 //};
 
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
-vec3 ZERO3 = vec3(0.000001);
-float ZERO = 0.000001;
 
 float Mr[54] = {
       -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
@@ -135,7 +133,7 @@ float Mr[54] = {
        0.0000000,        0.0000000,         0.0000000,         0.0000000,         0.0000000,         0.3333333,       -1.5000000,        3.0000000,       -0.8333333,
 };
 
-const float Mr_4[19] = {
+float Mr_4[19] = {
 0.2784553,
 -0.9969512,
 -0.9969512,
@@ -158,25 +156,7 @@ const float Mr_4[19] = {
 0.4390244,
 };
 
-const float aux_control_parameter[10] = {
-   0,
-   1,2,
-   2,0,1,
-   0,1,2,0
-};
-
-const uvec3 aux_control_index[9] =
-{{1 ,2 ,0},
-{3 ,4 ,1},
-{2 ,1 ,4},
-{4 ,5 ,2},
-{6 ,7 ,3},
-{4 ,3 ,7},
-{7 ,8 ,4},
-{5 ,4 ,8},
-{8 ,9 ,5}};
-
-const vec3 sampleParameter[19] = {
+vec3 sampleParameter[19] = {
     { 1.0 , 0.0 , 0.0 },
     { 0.6666666666666666 , 0.3333333333333333 , 0.0 },
     { 0.6666666666666666 , 0.0 , 0.3333333333333333 },
@@ -204,6 +184,25 @@ layout(location=4) uniform uint tessellatedParameterLength;
 layout(location=5) uniform uint tessellateIndexLength;
 //?!iftime
 //?!else
+
+const float aux_control_parameter[10] = {
+   0,
+   1,2,
+   2,0,1,
+   0,1,2,0
+};
+
+const uvec3 aux_control_index[9] =
+{{1 ,2 ,0},
+{3 ,4 ,1},
+{2 ,1 ,4},
+{4 ,5 ,2},
+{6 ,7 ,3},
+{4 ,3 ,7},
+{7 ,8 ,4},
+{5 ,4 ,8},
+{8 ,9 ,5}};
+
 layout(location=6) uniform int adjust_control_point;
 layout(location=1) uniform int use_pn_normal;
 //?!end
@@ -346,8 +345,7 @@ void main() {
     if (adjust_control_point > 0) {
     //?!end
         //调整控制顶点
-        const uint move_control_point[6] =  {2,1,3,7,8,5};
-        const uint adjacency_normal_index_to_edge_index[6] = {0,1,1,2,2,0};
+        uint move_control_point[6] =  {2,1,3,7,8,5};
         vec3 E = vec3(0);
         for (int i = 0; i < 6; ++i) {
             vec3 currentNormal = currentTriangle.pn_normal[i / 2].xyz;
@@ -360,6 +358,9 @@ void main() {
                 temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
                 //?!end
 
+                samplePointForNormal = samplePoint[vertexIndexInSamplePoint[i/2]];
+                samplePointForNormal.normal = adj_normal.xyz;
+                adj_normal.xyz = sampleFastNormal(samplePointForNormal);
                 vec3 n_ave = normalize(cross(currentNormal, adj_normal.xyz));
                 bezierPositionControlPoint[move_control_point[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;;
             } else {
@@ -475,7 +476,8 @@ float power(float b, int n) {
     if (n == 0) {
         return 1;
     }
-    if (b < ZERO) {
+
+    if (b < 0.000001) {
         return 0;
     }
     return pow(b, n);
@@ -825,9 +827,9 @@ void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 norma
 
     offsetId = id * 16;
     //以下代码是特地给犹它茶壶用的
-    if (id < 4 && u < ZERO){
+    if (id < 4 && u < 0.000001){
         normal = vec3(0, 0, 1);
-    } else if (id < 8 && u < ZERO) {
+    } else if (id < 8 && u < 0.000001) {
         normal = vec3(0, 0, -1);
     } else {
         vec3 n_u = vec3(0);
