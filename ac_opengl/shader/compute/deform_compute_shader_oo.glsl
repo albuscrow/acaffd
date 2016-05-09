@@ -122,7 +122,7 @@ layout(std430, binding=16) buffer ControlPointIndex{
 //    int myOutputBuffer[1000];
 //};
 
-layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
 float Mr[54] = {
       -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
@@ -245,8 +245,6 @@ vec4 getParameterInBSplineBody(vec3 pointParameter);
 vec4 BSplineBodyMinParameter;
 vec4 BSplineBodyStep;
 uvec4 BSplineBodyIntervalNumber;
-uint IntervalNumberVW;
-uint IntervalNumberW;
 uint OrderProduct;
 
 SplitedTriangle currentTriangle;
@@ -256,7 +254,7 @@ vec3 normalizedOriginalNormal[3];
 const int isBezier = -1;
 //?!end
 void main() {
-    uint triangleIndex = gl_GlobalInvocationID.x;
+    uint triangleIndex = gl_GlobalInvocationID.x * 16 + gl_GlobalInvocationID.y * 4 + gl_GlobalInvocationID.z;
     if (triangleIndex >= triangleNumber) {
         return;
     }
@@ -276,8 +274,6 @@ void main() {
         BSplineBodyMinParameter[i] = -BSplineBodyLength[i] / 2;
         BSplineBodyStep[i] = BSplineBodyLength[i] / BSplineBodyIntervalNumber[i];
     }
-    IntervalNumberVW = BSplineBodyIntervalNumber[1] * BSplineBodyIntervalNumber[2];
-    IntervalNumberW = BSplineBodyIntervalNumber[2];
 //    }
 
 
@@ -535,9 +531,13 @@ vec4 getPosition(vec3 parameter) {
 
 //?!iftime
 vec3 sample_helper(const uvec3 knot_left_index, const float[3] un, const float[3] vn, const float[3] wn){
-    uint controlPointOffset = (knot_left_index.x * IntervalNumberVW
-                             + knot_left_index.y * IntervalNumberW
-                             + knot_left_index.z) * OrderProduct - 1;
+//    uint controlPointOffset = (((knot_left_index.x * BSplineBodyIntervalNumber[1]) +
+//                             + knot_left_index.y) * BSplineBodyIntervalNumber[2]
+//                             + knot_left_index.z) * OrderProduct - 1;
+
+    uint controlPointOffset = knot_left_index.x * BSplineBodyIntervalNumber[1] + knot_left_index.y;
+    controlPointOffset = controlPointOffset * BSplineBodyIntervalNumber[2] + knot_left_index.z;
+    controlPointOffset = controlPointOffset * OrderProduct - 1;
     vec3 tempcp2[3][3];
     for (int i = 0; i < 3; ++i){
         for (int j = 0; j < 3; ++j){
@@ -617,22 +617,23 @@ vec3 sampleFastNormal(in SamplePoint samplePoint) {
 
     vec3 result = vec3(0);
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第一行三个元素
-    float J_bar_star_T_0 = fv.y * fw.z - fw.y * fv.z;
-    float J_bar_star_T_1 = fw.y * fu.z - fu.y * fw.z;
-    float J_bar_star_T_2 = fu.y * fv.z - fv.y * fu.z;
-    result.x = n.x * J_bar_star_T_0 * BSplineBodyStep[0] + n.y * J_bar_star_T_1 * BSplineBodyStep[1] + n.z * J_bar_star_T_2 * BSplineBodyStep[2];
+    vec3 J_bar_star_T;
+    J_bar_star_T[0] = fv.y * fw.z - fw.y * fv.z;
+    J_bar_star_T[1] = fw.y * fu.z - fu.y * fw.z;
+    J_bar_star_T[2] = fu.y * fv.z - fv.y * fu.z;
+    result.x = n.x * J_bar_star_T[0] * BSplineBodyStep[0] + n.y * J_bar_star_T[1] * BSplineBodyStep[1] + n.z * J_bar_star_T[2] * BSplineBodyStep[2];
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第二行三个元素
-    J_bar_star_T_0 = fv.z * fw.x - fw.z * fv.x;
-    J_bar_star_T_1 = fw.z * fu.x - fu.z * fw.x;
-    J_bar_star_T_2 = fu.z * fv.x - fv.z * fu.x;
-    result.y = n.x * J_bar_star_T_0 * BSplineBodyStep[0] + n.y * J_bar_star_T_1 * BSplineBodyStep[1] + n.z * J_bar_star_T_2 * BSplineBodyStep[2];
+    J_bar_star_T[0] = fv.z * fw.x - fw.z * fv.x;
+    J_bar_star_T[1] = fw.z * fu.x - fu.z * fw.x;
+    J_bar_star_T[2] = fu.z * fv.x - fv.z * fu.x;
+    result.y = n.x * J_bar_star_T[0] * BSplineBodyStep[0] + n.y * J_bar_star_T[1] * BSplineBodyStep[1] + n.z * J_bar_star_T[2] * BSplineBodyStep[2];
 
     // J_bar_star_T_[012]表示J_bar的伴随矩阵的转置(即J_bar*T)的第三行三个元素
-    J_bar_star_T_0 = fv.x * fw.y - fw.x * fv.y;
-    J_bar_star_T_1 = fw.x * fu.y - fu.x * fw.y;
-    J_bar_star_T_2 = fu.x * fv.y - fv.x * fu.y;
-    result.z = n.x * J_bar_star_T_0 * BSplineBodyStep[0] + n.y * J_bar_star_T_1 * BSplineBodyStep[1] + n.z * J_bar_star_T_2 * BSplineBodyStep[2];
+    J_bar_star_T[0] = fv.x * fw.y - fw.x * fv.y;
+    J_bar_star_T[1] = fw.x * fu.y - fu.x * fw.y;
+    J_bar_star_T[2] = fu.x * fv.y - fv.x * fu.y;
+    result.z = n.x * J_bar_star_T[0] * BSplineBodyStep[0] + n.y * J_bar_star_T[1] * BSplineBodyStep[1] + n.z * J_bar_star_T[2] * BSplineBodyStep[2];
     return normalize(result);
 }
 

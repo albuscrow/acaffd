@@ -489,7 +489,7 @@ class DeformAndDrawController:
 
     @property
     def group_size(self):
-        return [int(self.splited_triangle_number / 128 + 1), 1, 1]
+        return [int(self.splited_triangle_number / 64) + 1, 1, 1]
 
     @property
     def tessellation_level(self):
