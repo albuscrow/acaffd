@@ -344,17 +344,17 @@ void main() {
         uint move_control_point[6] =  {2,1,3,7,8,5};
         vec3 E = vec3(0);
         for (int i = 0; i < 6; ++i) {
-            vec3 currentNormal = currentTriangle.pn_normal[i / 2].xyz;
-            vec3 currentPosition = currentTriangle.pn_position[i / 2].xyz;
+            vec3 currentNormal = currentTriangle.pn_normal[i >> 1].xyz;
+            vec3 currentPosition = currentTriangle.pn_position[i >> 1].xyz;
             vec3 controlPoint = bezierPositionControlPoint[move_control_point[i]];
             vec4 adj_normal = currentTriangle.adjacency_pn_normal[i];
             if (adj_normal[3] != -1) {
                 //?!iftime
                 //?!else
-                temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
+                temp_sharp_parameter[i >> 1] = currentTriangle.parameter_in_original2_texcoord2[i >> 1].xy;
                 //?!end
 
-                samplePointForNormal = samplePoint[vertexIndexInSamplePoint[i/2]];
+                samplePointForNormal = samplePoint[vertexIndexInSamplePoint[i >> 1]];
                 samplePointForNormal.normal = adj_normal.xyz;
                 adj_normal.xyz = sampleFastNormal(samplePointForNormal);
                 vec3 n_ave = normalize(cross(currentNormal, adj_normal.xyz));
@@ -410,7 +410,9 @@ void main() {
     for (int i = 0; i < tessellatedParameterLength; ++i) {
         tessellatedVertex[++point_offset] = getPosition(tessellatedParameter[i].xyz);
         tessellatedNormal[point_offset] = getNormal(tessellatedParameter[i].xyz);
-        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(tessellatedParameter[i].xyz);
+        mat3 tm = mat3(currentTriangle.original_position[0].xyz, currentTriangle.original_position[1].xyz, currentTriangle.original_position[2].xyz);
+//        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(tessellatedParameter[i].xyz);
+        tessellatedParameterInBSplineBody[point_offset].xyz = tm * tessellatedParameter[i].xyz;
 
         //?!iftime
         //?!else
@@ -478,9 +480,10 @@ float power(float b, int n) {
         return 1;
     }
 
-    if (b < 0.000001) {
+    if (b < 0.00001) {
         return 0;
     }
+
     return pow(b, n);
 }
 
@@ -501,14 +504,20 @@ vec4 getTessellatedSplitParameter(vec4[3] parameterInOriginal, vec4 tessellatedP
     return res;
 }
 
+float rfactorialt[10] = {0.166666666f,
+    0.5f, 0.5f,
+    0.5f, 1f, 0.5f,
+    0.166666666f, 0.5f, 0.5f, 0.166666666f};
+
 vec4 getNormal(vec3 parameter) {
     vec3 result = vec3(0);
-    int ctrlPointIndex = 0;
+    int ctrlPointIndex = -1;
     int k;
+
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
             k = 3 - i - j;
-            result += bezierNormalControlPoint[ctrlPointIndex ++] * rfactorial[i] * rfactorial[j] * rfactorial[k]
+            result += bezierNormalControlPoint[++ ctrlPointIndex] * rfactorialt[ctrlPointIndex]
                 * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
         }
     }
@@ -517,13 +526,13 @@ vec4 getNormal(vec3 parameter) {
 
 vec4 getPosition(vec3 parameter) {
     vec3 result = vec3(0);
-    int ctrlPointIndex = 0;
+    int ctrlPointIndex = -1;
     int k;
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
             k = 3 - i - j;
-            result += bezierPositionControlPoint[ctrlPointIndex ++] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
-                    * rfactorial[i] * rfactorial[j] * rfactorial[k];
+            result += bezierPositionControlPoint[++ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
+                    * rfactorialt[ctrlPointIndex];
         }
     }
     return vec4(result, 1);
