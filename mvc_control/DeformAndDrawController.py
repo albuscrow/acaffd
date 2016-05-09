@@ -2,6 +2,8 @@ from functools import reduce
 
 from math import sqrt, acos, pi
 
+import time
+from OpenGL.GL.ARB.timer_query import glGetQueryObjectui64v as glgetq
 from PIL import Image
 
 from Constant import *
@@ -13,7 +15,6 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from pyrr.matrix44 import *
 import config as conf
-import time
 
 
 def add_compute_prefix(file_name: str):
@@ -111,6 +112,8 @@ class ModelRendererShader(ProgramWrap):
 
 class DeformAndDrawController:
     def __init__(self, has_texture, previous_controller, model, aux_controller: AuxController, controller=None):
+        self._time_number = -3
+        self._time_total = 0
         self._aux_controller = aux_controller  # type: AuxController
         self.model = model
         self._previous_controller = previous_controller  # type: PreviousComputeControllerGPU
@@ -361,11 +364,33 @@ class DeformAndDrawController:
 
         self._deform_program.update_uniform_about_modify_range()
 
+        # query_id = glGenQueries(2)
+        #
+        # glQueryCounter(query_id[0], GL_TIMESTAMP)
+        # glDispatchCompute(*self.group_size)
+        # glQueryCounter(query_id[1], GL_TIMESTAMP)
+        # stop_timer_available = 0
+        # while stop_timer_available == 0:
+        #     print("while")
+        #     stop_timer_available = glGetQueryObjectiv(query_id[1], GL_QUERY_RESULT_AVAILABLE)
+        #
+        # start_time = glgetq(query_id[0], GL_QUERY_RESULT)
+        # stop_time = glgetq(query_id[1], GL_QUERY_RESULT)
+        # print(query_id, start_time, stop_time)
+        # print("---deform shader run time: %s ms ---" % ((stop_time - start_time) * 1000))
+
         glFinish()
         start_time = time.time()
         glDispatchCompute(*self.group_size)
         glFinish()
-        print("---deform shader run time: %s ms ---" % ((time.time() - start_time) * 1000))
+        self._time_number += 1
+        if self._time_number > 0:
+            t = (time.time() - start_time) * 1000
+            if t > 10:
+                self._time_total += t
+                print("---deform shader run time: r%s ms, c %s ms---" % (self._time_total / self._time_number, t))
+            else:
+                self._time_number -= 1
         self._need_deform = False
         glUseProgram(0)
 
