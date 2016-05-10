@@ -710,9 +710,6 @@ void getSamplePointHelper(inout SamplePoint samplePoint) {
     for (int i = 0; i < 3; ++i) {
         float temp = (samplePoint.position[i] - BSplineBodyMinParameter[i]) / BSplineBodyStep[i];
         samplePoint.knot_left_index[i] = uint(temp);
-        if (samplePoint.knot_left_index[i] >= BSplineBodyIntervalNumber[i]) {
-            samplePoint.knot_left_index[i] -= 1;
-        }
         samplePoint.position[i] = temp - samplePoint.knot_left_index[i];
     }
 }
