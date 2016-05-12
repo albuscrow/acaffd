@@ -219,7 +219,6 @@ layout(std140, binding=3) uniform TessellateIndex{
 
 vec3 bezierPositionControlPoint[10];
 vec3 bezierNormalControlPoint[10];
-vec4 getPosition(vec3 parameter);
 //?!iftime
 //?!else
 vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
@@ -230,7 +229,7 @@ vec2 getUV(vec3 parameter);
 vec2 getTexCoord(vec3 parameter);
 //?!end
 vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
-vec4 getNormal(vec3 parameter);
+void getPoint(vec3 parameter, out vec4 position, out vec4 normal);
 vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter);
 vec2 getTessellatedSplitParameter(vec2[3] split_parameter, vec4 tessellatedParameter);
 
@@ -406,10 +405,9 @@ void main() {
 
     // 细分
     // 生成顶点数据
-    uint point_offset = triangleIndex * tessellatedParameterLength - 1;
+    uint point_offset = triangleIndex * tessellatedParameterLength;
     for (int i = 0; i < tessellatedParameterLength; ++i) {
-        tessellatedVertex[++point_offset] = getPosition(tessellatedParameter[i].xyz);
-        tessellatedNormal[point_offset] = getNormal(tessellatedParameter[i].xyz);
+        getPoint(tessellatedParameter[i].xyz, tessellatedVertex[point_offset], tessellatedNormal[point_offset]);
         mat3 tm = mat3(currentTriangle.original_position[0].xyz, currentTriangle.original_position[1].xyz, currentTriangle.original_position[2].xyz);
 //        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(tessellatedParameter[i].xyz);
         tessellatedParameterInBSplineBody[point_offset].xyz = tm * tessellatedParameter[i].xyz;
@@ -451,6 +449,7 @@ void main() {
         realNormal[point_offset] = vec4(sp.normal, 0);
         //?!end
         point_index[i] = point_offset;
+        ++point_offset;
     }
     // 生成index数据
     uint index_offset = triangleIndex * tessellateIndexLength * 3 - 1;
@@ -509,33 +508,22 @@ float rfactorialt[10] = {0.166666666f,
     0.5f, 1f, 0.5f,
     0.166666666f, 0.5f, 0.5f, 0.166666666f};
 
-vec4 getNormal(vec3 parameter) {
-    vec3 result = vec3(0);
-    int ctrlPointIndex = -1;
-    int k;
-
+void getPoint(vec3 parameter, out vec4 position, out vec4 normal) {
+    int ctrlPointIndex = 0;
+    position = vec4(0);
+    normal = vec4(0);
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
-            k = 3 - i - j;
-            result += bezierNormalControlPoint[++ ctrlPointIndex] * rfactorialt[ctrlPointIndex]
-                * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
+            int k = 3 - i - j;
+            float t = rfactorialt[ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
+            normal.xyz += bezierNormalControlPoint[ctrlPointIndex] * t;
+            position.xyz += bezierPositionControlPoint[ctrlPointIndex] * t;
+            ++ctrlPointIndex;
         }
     }
-    return vec4(normalize(result), 0);
-}
-
-vec4 getPosition(vec3 parameter) {
-    vec3 result = vec3(0);
-    int ctrlPointIndex = -1;
-    int k;
-    for (int i = 3; i >=0; --i) {
-        for (int j = 3 - i; j >= 0; --j) {
-            k = 3 - i - j;
-            result += bezierPositionControlPoint[++ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
-                    * rfactorialt[ctrlPointIndex];
-        }
-    }
-    return vec4(result, 1);
+    normalize(normal.xyz);
+    normal.w = 0;
+    position.w = 1;
 }
 
 //?!iftime
@@ -647,9 +635,9 @@ vec3 sampleFastNormal(in SamplePoint samplePoint) {
 }
 
 void sampleFast(inout SamplePoint samplePoint) {
-     float u = samplePoint.position.x;
-     float v = samplePoint.position.y;
-     float w = samplePoint.position.z;
+    float u = samplePoint.position.x;
+    float v = samplePoint.position.y;
+    float w = samplePoint.position.z;
 
     //?!iftime
     const float un[3] = {1, u, u * u};
@@ -660,6 +648,10 @@ void sampleFast(inout SamplePoint samplePoint) {
     const float vn_[3] = {0, 1, 2 * v};
     const float wn_[3] = {0, 1, 2 * w};
     //?!else
+
+    float u = samplePoint.position.x;
+    float v = samplePoint.position.y;
+    float w = samplePoint.position.z;
     const float un[4] = {1, u, u * u, u * u * u};
     const float vn[4] = {1, v, v * v, v * v * v};
     const float wn[4] = {1, w, w * w, w * w * w};
@@ -707,6 +699,9 @@ void sampleFast(inout SamplePoint samplePoint) {
 }
 
 void getSamplePointHelper(inout SamplePoint samplePoint) {
+//    vec3 temp = (samplePoint.position - BSplineBodyMinParameter.xyz) / BSplineBodyStep.xyz;
+//    samplePoint.knot_left_index = uvec3(temp);
+//    samplePoint.position = temp - samplePoint.knot_left_index;
     for (int i = 0; i < 3; ++i) {
         float temp = (samplePoint.position[i] - BSplineBodyMinParameter[i]) / BSplineBodyStep[i];
         samplePoint.knot_left_index[i] = uint(temp);
