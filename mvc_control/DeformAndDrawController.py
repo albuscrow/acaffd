@@ -364,23 +364,23 @@ class DeformAndDrawController:
 
         self._deform_program.update_uniform_about_modify_range()
 
-        # query_id = glGenQueries(1)
-        # glBeginQuery(GL_TIME_ELAPSED, query_id)
-        # glDispatchCompute(*self.group_size)
-        # glEndQuery(GL_TIME_ELAPSED)
-        # stop_timer_available = 0
-        # while stop_timer_available == 0:
-        #     stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
-        # time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT)
+        query_id = glGenQueries(1)
+        glBeginQuery(GL_TIME_ELAPSED, query_id)
+        glDispatchCompute(*self.group_size)
+        glEndQuery(GL_TIME_ELAPSED)
+        stop_timer_available = 0
+        while stop_timer_available == 0:
+            stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
+        run_time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT)
         # print(time / 1000000)
 
-        glFinish()
-        start_time = time.time()
-        glDispatchCompute(*self.group_size)
-        glFinish()
+        # glFinish()
+        # start_time = time.time()
+        # glDispatchCompute(*self.group_size)
+        # glFinish()
         self._time_number += 1
         if self._time_number > 0:
-            t = (time.time() - start_time) * 1000
+            t = run_time / 1000000
             if t > 10:
                 self._time_total += t
                 print("---deform shader run time: r%s ms, c %s ms---" % (self._time_total / self._time_number, t))
