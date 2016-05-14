@@ -364,20 +364,15 @@ class DeformAndDrawController:
 
         self._deform_program.update_uniform_about_modify_range()
 
-        # query_id = glGenQueries(2)
-        #
-        # glQueryCounter(query_id[0], GL_TIMESTAMP)
+        # query_id = glGenQueries(1)
+        # glBeginQuery(GL_TIME_ELAPSED, query_id)
         # glDispatchCompute(*self.group_size)
-        # glQueryCounter(query_id[1], GL_TIMESTAMP)
+        # glEndQuery(GL_TIME_ELAPSED)
         # stop_timer_available = 0
         # while stop_timer_available == 0:
-        #     print("while")
-        #     stop_timer_available = glGetQueryObjectiv(query_id[1], GL_QUERY_RESULT_AVAILABLE)
-        #
-        # start_time = glgetq(query_id[0], GL_QUERY_RESULT)
-        # stop_time = glgetq(query_id[1], GL_QUERY_RESULT)
-        # print(query_id, start_time, stop_time)
-        # print("---deform shader run time: %s ms ---" % ((stop_time - start_time) * 1000))
+        #     stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
+        # time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT)
+        # print(time / 1000000)
 
         glFinish()
         start_time = time.time()
