@@ -767,7 +767,12 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
     }
     //?!end
     normalize(result.normal);
-    getSamplePointHelper(result);
+
+    for (int i = 0; i < 3; ++i) {
+        float temp = (result.position[i] - BSplineBodyMinParameter[i]) / BSplineBodyStep[i];
+        result.knot_left_index[i] = uint(temp);
+        result.position[i] = temp - result.knot_left_index[i];
+    }
 
     return result;
 }
