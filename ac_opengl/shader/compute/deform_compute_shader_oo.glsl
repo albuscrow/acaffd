@@ -374,7 +374,7 @@ void main() {
     //?!end
 
     //?!iftime
-    uint point_index[16];
+    uint point_index[210];
     //?!else
     uint point_index[210];
     for (int i = 0; i < 3; ++i) {

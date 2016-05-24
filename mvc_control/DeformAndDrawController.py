@@ -111,6 +111,11 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
+
+    @property
+    def final_tessellation_level(self):
+        return self._final_tessellation_level
+
     def __init__(self, has_texture, previous_controller, model, aux_controller: AuxController, controller=None):
         self._time_number = -3
         self._time_total = 0
@@ -121,13 +126,14 @@ class DeformAndDrawController:
         self._splited_triangle_number = -1
 
         self._tessellation_level = -1  # type: int
+        self._final_tessellation_level = 0.01  # type: int
         self._tessellated_point_number_pre_splited_triangle = -1  # type: int
         self._tessellated_triangle_number_pre_splited_triangle = -1  # type: int
         self._tessellation_parameter = None  # type: list
         self._tessellation_index = None  # type: list
         self._tessellation_factor_changed = False  # type: bool
         self._splited_triangle_number_changed = False  # type: bool
-        self.init_tessellation_pattern_data(3)
+        self.init_tessellation_pattern_data(int(self._previous_controller.split_factor / self._final_tessellation_level))
 
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False
@@ -491,9 +497,12 @@ class DeformAndDrawController:
         return self._tessellation_level
 
     def init_tessellation_pattern_data(self, tessellation_level):
-        self._tessellation_level = tessellation_level
-        self._tessellated_point_number_pre_splited_triangle = (tessellation_level + 1) * (tessellation_level + 2) / 2
-        self._tessellated_triangle_number_pre_splited_triangle = tessellation_level * tessellation_level
+        self._tessellation_level = int(tessellation_level)
+        # todo
+        # self._tessellation_level = int(self._previous_controller.split_factor / self._final_tessellation_level)
+        print('tessellation level', self.tessellation_level)
+        self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) * (self._tessellation_level + 2) / 2
+        self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_level * self._tessellation_level
         self._tessellation_parameter = []  # type: list
         u = self._tessellation_level
         for i in range(self._tessellation_level + 1):

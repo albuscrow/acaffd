@@ -223,10 +223,10 @@ void main() {
 
     //生成分割三角形
     uint adjacency_normal_index_aux[6] = {5,0,1,2,3,4};
+    uint edgeInfo[3];
     for (uint i = splitIndexOffset; i < splitIndexOffset + subTriangleNumber; ++i) {
         uvec4 index = splitIndex[i];
         SplitedTriangle st;
-        uint edgeInfo[3];
         vec3 parameter_in_original[3];
         for (int j = 0; j < 3; ++j) {
             parameter_in_original[j] = changeParameter(splitParameter[index[j]]).xyz;

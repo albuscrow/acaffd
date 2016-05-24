@@ -12,6 +12,7 @@ import sys
 
 from mvc_model.plain_class import ACRect
 
+
 class GLProxy:
     def __init__(self, controller=None):
         self._controller = controller
@@ -47,7 +48,8 @@ class GLProxy:
             self.previous_compute_controller.b_spline_body = self._aux_controller.b_spline_body
 
     def draw(self, model_view_matrix, perspective_matrix):
-        number, need_deform = self.previous_compute_controller.gl_compute(self._aux_controller.gl_sync_buffer_for_previous_computer)
+        number, need_deform = self.previous_compute_controller.gl_compute(
+            self._aux_controller.gl_sync_buffer_for_previous_computer)
         glFinish()
         self._deform_and_renderer_controller.set_number_and_need_deform(number, need_deform)
         self._deform_and_renderer_controller.gl_renderer(model_view_matrix, perspective_matrix,
@@ -101,6 +103,7 @@ class GLProxy:
     def change_tessellation_level(self, level):
         self._deform_and_renderer_controller.set_tessellation_factor(level)  # type: DeformAndDrawController
         self._deform_and_renderer_controller.need_deform = True
+        self.aux_controller.b_spline_body.modify_range_flag = True
 
     def change_control_point_number(self, u, v, w):
         self._aux_controller.change_control_point_number(u, v, w)
@@ -115,6 +118,9 @@ class GLProxy:
     def change_split_factor(self, factor):
         if self._algorithm == ALGORITHM_AC:
             self.previous_compute_controller.split_factor = factor
+            self.change_tessellation_level(
+                self.previous_compute_controller.split_factor / self._deform_and_renderer_controller.final_tessellation_level)
+            self.aux_controller.b_spline_body.modify_range_flag = True
 
     def set_control_point_visibility(self, v):
         self._aux_controller.is_normal_control_point_mode = v
