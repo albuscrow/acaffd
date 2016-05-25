@@ -37,18 +37,27 @@ def filter_for_speed(src: str = None, file_name: str = None) -> str:
         remain = []
         for l in src.splitlines():
             if l.strip().startswith(conf.IF):
-                status = conf.IF
+                if l.strip().endswith(conf.TIME):
+                    status = conf.TIME
+                else:
+                    status = conf.TESS
                 continue
             if l.strip().startswith(conf.ELSE):
-                status = conf.ELSE
+                if status == conf.TIME:
+                    status = conf.ELSE_TIME
+                else:
+                    status = conf.ELSE_TESS
                 continue
             if l.strip().startswith(conf.ENDIF):
                 status = conf.NORMAL
                 continue
             if status == conf.NORMAL \
-                    or (status == conf.IF and conf.IS_FAST_MODE) \
-                    or (status == conf.ELSE and not conf.IS_FAST_MODE):
+                    or (status == conf.TIME and conf.IS_FAST_MODE) \
+                    or (status == conf.ELSE_TIME and not conf.IS_FAST_MODE) \
+                    or (status == conf.TESS and conf.IS_TESS_MODE) \
+                    or (status == conf.ELSE_TESS and not conf.IS_TESS_MODE):
                 remain.append(l)
+        print('\n'.join(remain))
         return '\n'.join(remain)
     else:
         with open(file_name) as file:

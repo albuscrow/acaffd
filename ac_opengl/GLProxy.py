@@ -118,8 +118,9 @@ class GLProxy:
     def change_split_factor(self, factor):
         if self._algorithm == ALGORITHM_AC:
             self.previous_compute_controller.split_factor = factor
-            self.change_tessellation_level(
-                self.previous_compute_controller.split_factor / self._deform_and_renderer_controller.final_tessellation_level)
+            if config.IS_UNIFORM_ADAPTIVE_TESSELLATION_FACTOR:
+                self.change_tessellation_level(
+                    self.previous_compute_controller.split_factor / self._deform_and_renderer_controller.final_tessellation_level)
             self.aux_controller.b_spline_body.modify_range_flag = True
 
     def set_control_point_visibility(self, v):

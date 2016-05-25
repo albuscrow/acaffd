@@ -180,8 +180,21 @@ vec3 sampleParameter[19] = {
 };
 
 layout(location=0) uniform uint triangleNumber;
+
+//?!iftess
+layout(binding = 1) uniform atomic_uint point_counter;
+layout(binding = 2) uniform atomic_uint triangle_counter;
+//?!else
+layout(std140, binding=2) uniform TessellatedParameter{
+    uniform vec4[66] tessellatedParameter;
+};
+layout(std140, binding=3) uniform TessellateIndex{
+    uniform uvec4[100] tessellateIndex;
+};
 layout(location=4) uniform uint tessellatedParameterLength;
 layout(location=5) uniform uint tessellateIndexLength;
+//?!end
+
 //?!iftime
 //?!else
 
@@ -209,13 +222,6 @@ layout(location=1) uniform int use_pn_normal;
 
 layout(location=7) uniform int modifyRange[84];
 
-layout(std140, binding=2) uniform TessellatedParameter{
-    uniform vec4[66] tessellatedParameter;
-};
-
-layout(std140, binding=3) uniform TessellateIndex{
-    uniform uvec4[100] tessellateIndex;
-};
 
 vec3 bezierPositionControlPoint[10];
 vec3 bezierNormalControlPoint[10];
@@ -403,8 +409,110 @@ void main() {
         bezierNormalControlPoint[i] *= 6;
     }
 
+    //?!iftess
+    uint tessellatedParameterLength;
+    uint tessellateIndexLength;
+    vec4[66] tessellatedParameter;
+    uvec4[100] tessellateIndex;
+    uint tessellationLevel = uint(length((currentTriangle.pn_position[0] - currentTriangle.pn_position[1]).xyz) / 100);
+    if (tessellationLevel == 0) {
+        tessellationLevel = 1;
+    }
+    tessellatedParameterLength = (tessellationLevel + 1) * (tessellationLevel + 2) / 2;
+    tessellateIndexLength = tessellationLevel * tessellationLevel;
+    float step = 1.0f / float(tessellationLevel);
+    float u = 1;
+    float v;
+    int offset = -1;
+    for (int i = 0; i <= tessellationLevel; ++i) {
+        v = 1 - u;
+        for (int j = 0; j <= i; ++j) {
+            tessellatedParameter[++offset] = vec4(u, v, 1 - u - v, 0);
+            v -= step;
+        }
+        u -= step;
+    }
+
+    offset = -1;
+    uvec4 nextIndex;
+    uint start;
+    uvec4 prev;
+    for (uint i = 0; i < tessellationLevel; ++i) {
+        start = (i + 1) * (i + 2) / 2;
+        prev = uvec4(start, start + 1, start - 1 - i, 0);
+        tessellateIndex[++offset] = prev;
+        for (int j = 0; j < 2 * i; ++j) {
+            if ((j & 1) == 0) {
+                nextIndex = uvec4(prev[2] + 1, prev[2], prev[1], 0);
+            } else {
+                nextIndex = uvec4(prev[2], prev[2] + 1, prev[1], 0);
+            }
+            tessellateIndex[++offset] = nextIndex;
+            prev = nextIndex;
+        }
+    }
+    //?!else
+    //?!end
+
     // 细分
     // 生成顶点数据
+//    uint point_offset;
+//    for (int i = 0; i < tessellatedParameterLength; ++i) {
+//        point_offset = atomicCounterIncrement(point_counter);
+//        getPoint(tessellatedParameter[i].xyz, tessellatedVertex[point_offset], tessellatedNormal[point_offset]);
+//        mat3 tm = mat3(currentTriangle.original_position[0].xyz, currentTriangle.original_position[1].xyz, currentTriangle.original_position[2].xyz);
+////        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(tessellatedParameter[i].xyz);
+//        tessellatedParameterInBSplineBody[point_offset].xyz = tm * tessellatedParameter[i].xyz;
+//
+//        //?!iftime
+//        //?!else
+//        tessellatedTexCoord[point_offset] = getTexCoord(tessellatedParameter[i].xyz);
+//        parameter_in_split2_is_sharp_info_2[point_offset] = tessellatedParameter[i];
+//        parameter_in_split2_is_sharp_info_2[point_offset].zw =
+//            getTessellatedSplitParameter(temp_sharp_parameter, tessellatedParameter[i]);
+//        parameterInOriginal3_triangle_quality1[point_offset] =
+//            getTessellatedSplitParameter(currentTriangle.parameter_in_original2_texcoord2, tessellatedParameter[i]);
+//        parameterInOriginal3_triangle_quality1[point_offset].z =
+//            1 - parameterInOriginal3_triangle_quality1[point_offset].x - parameterInOriginal3_triangle_quality1[point_offset].y;
+//        if (parameterInOriginal3_triangle_quality1[point_offset].z < 0) {
+//            parameterInOriginal3_triangle_quality1[point_offset].z = 0;
+//        }
+//        parameterInOriginal3_triangle_quality1[point_offset].w = currentTriangle.triangle_quality;
+//        // get background data
+//        vec3 temp = parameterInOriginal3_triangle_quality1[point_offset].xyz;
+//        SamplePoint sp;
+//        if (isBezier > 0) {
+//            vec3 p, n;
+//            vec2 uv = getUV(tessellatedParameter[i].xyz);
+//            sampleInBezier(currentTriangle.bezier_patch_id, uv[0], uv[1], p, n);
+//            sp.position = p;
+//            sp.normal = n;
+//        } else {
+//            if (adjust_control_point > 0) {
+//                sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
+//            } else {
+//                sp.position = getPositionInOriginal(tessellatedParameter[i].xyz);
+//            }
+//            sp.normal = getNormalInOriginal(tessellatedParameter[i].xyz);
+//        }
+//        getSamplePointHelper(sp);
+//        sampleFast(sp);
+//        realPosition[point_offset] = vec4(sp.position, 1);
+//        realNormal[point_offset] = vec4(sp.normal, 0);
+//        //?!end
+//        point_index[i] = point_offset;
+//        ++point_offset;
+//    }
+//    // 生成index数据
+//    uint index_offset;
+//    for (int i = 0; i < tessellateIndexLength; ++i) {
+//        index_offset = atomicCounterIncrement(triangle_counter) * 3 - 1;
+//        for (int j = 0; j < 3; ++j) {
+//            tessellatedIndex[++index_offset] = point_index[tessellateIndex[i][j]];
+//        }
+//    }
+
+
     uint point_offset = triangleIndex * tessellatedParameterLength;
     for (int i = 0; i < tessellatedParameterLength; ++i) {
         getPoint(tessellatedParameter[i].xyz, tessellatedVertex[point_offset], tessellatedNormal[point_offset]);

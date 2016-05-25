@@ -41,8 +41,9 @@ class DeformComputeProgram(ProgramWrap):
     def __init__(self, controller):
         super().__init__()
         self._controller = controller  # type: DeformAndDrawController
-        self._tessellation_parameter = ACVBO(GL_UNIFORM_BUFFER, 2, None, GL_STATIC_DRAW)  # type: ACVBO
-        self._tessellation_indexes = ACVBO(GL_UNIFORM_BUFFER, 3, None, GL_STATIC_DRAW)  # type: ACVBO
+        if not conf.IS_TESS_MODE:
+            self._tessellation_parameter = ACVBO(GL_UNIFORM_BUFFER, 2, None, GL_STATIC_DRAW)  # type: ACVBO
+            self._tessellation_indexes = ACVBO(GL_UNIFORM_BUFFER, 3, None, GL_STATIC_DRAW)  # type: ACVBO
 
     def init_uniform(self):
         self.update_uniform_triangle_number()
@@ -53,14 +54,15 @@ class DeformComputeProgram(ProgramWrap):
         glProgramUniform1ui(self._gl_program_name, 0, int(self._controller.splited_triangle_number))
 
     def update_uniform_about_tessellation(self):
-        glProgramUniform1ui(self._gl_program_name, 4,
-                            int(self._controller.tessellated_point_number_pre_splited_triangle))
-        glProgramUniform1ui(self._gl_program_name, 5,
-                            int(self._controller.tessellated_triangle_number_pre_splited_triangle))
-        self._tessellation_parameter.async_update(self._controller.tessellation_parameter)
-        self._tessellation_parameter.gl_sync()
-        self._tessellation_indexes.async_update(self._controller.tessellation_index)
-        self._tessellation_indexes.gl_sync()
+        if not conf.IS_TESS_MODE:
+            glProgramUniform1ui(self._gl_program_name, 4,
+                                int(self._controller.tessellated_point_number_pre_splited_triangle))
+            glProgramUniform1ui(self._gl_program_name, 5,
+                                int(self._controller.tessellated_triangle_number_pre_splited_triangle))
+            self._tessellation_parameter.async_update(self._controller.tessellation_parameter)
+            self._tessellation_parameter.gl_sync()
+            self._tessellation_indexes.async_update(self._controller.tessellation_index)
+            self._tessellation_indexes.gl_sync()
 
     def update_uniform_about_adjust_control_point_flag(self):
         if not conf.IS_FAST_MODE:
@@ -133,7 +135,11 @@ class DeformAndDrawController:
         self._tessellation_index = None  # type: list
         self._tessellation_factor_changed = False  # type: bool
         self._splited_triangle_number_changed = False  # type: bool
-        self.init_tessellation_pattern_data(int(self._previous_controller.split_factor / self._final_tessellation_level))
+
+        if config.IS_UNIFORM_ADAPTIVE_TESSELLATION_FACTOR:
+            self.init_tessellation_pattern_data(int(self._previous_controller.split_factor / self._final_tessellation_level))
+        else:
+            self.init_tessellation_pattern_data(3)
 
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False
@@ -214,6 +220,16 @@ class DeformAndDrawController:
                 .add_shader(ShaderWrap(GL_GEOMETRY_SHADER, add_renderer_prefix('normal.g.glsl')))  # type: ProgramWrap
 
         self._has_texture = has_texture
+
+        if conf.IS_TESS_MODE:
+            self._tessed_point_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 1, None, GL_DYNAMIC_DRAW)
+            self._tessed_triangle_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 2, None, GL_DYNAMIC_DRAW)
+
+    def gl_init_tess_counter(self):
+        self._tessed_point_counter_acbo.async_update(np.array([0], dtype=np.uint32))
+        self._tessed_point_counter_acbo.gl_sync()
+        self._tessed_triangle_counter_acbo.async_update(np.array([0], dtype=np.uint32))
+        self._tessed_triangle_counter_acbo.gl_sync()
 
     def gl_init(self):
         self._model_vao = glGenVertexArrays(1)
@@ -370,6 +386,8 @@ class DeformAndDrawController:
 
         self._deform_program.update_uniform_about_modify_range()
 
+        if conf.IS_TESS_MODE:
+            self.gl_init_tess_counter()
         query_id = glGenQueries(1)
         glBeginQuery(GL_TIME_ELAPSED, query_id)
         glDispatchCompute(*self.group_size)
@@ -498,9 +516,6 @@ class DeformAndDrawController:
 
     def init_tessellation_pattern_data(self, tessellation_level):
         self._tessellation_level = int(tessellation_level)
-        # todo
-        # self._tessellation_level = int(self._previous_controller.split_factor / self._final_tessellation_level)
-        print('tessellation level', self.tessellation_level)
         self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) * (self._tessellation_level + 2) / 2
         self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_level * self._tessellation_level
         self._tessellation_parameter = []  # type: list
