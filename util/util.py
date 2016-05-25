@@ -57,7 +57,7 @@ def filter_for_speed(src: str = None, file_name: str = None) -> str:
                     or (status == conf.TESS and conf.IS_TESS_MODE) \
                     or (status == conf.ELSE_TESS and not conf.IS_TESS_MODE):
                 remain.append(l)
-        print('\n'.join(remain))
+        # print('\n'.join([str(i) + " " + s for i, s in zip(range(len(remain)), remain)]))
         return '\n'.join(remain)
     else:
         with open(file_name) as file:
