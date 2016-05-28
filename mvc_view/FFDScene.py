@@ -1,5 +1,5 @@
-from PyQt5.QtCore import pyqtSlot, Qt, pyqtProperty
-from PyQt5.QtQuick import QQuickItem
+from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtQuick import QQuickItem, QQuickWindow
 
 from mvc_control.controller import Controller
 
@@ -11,7 +11,7 @@ class FFDScene(QQuickItem):
         super().__init__(parent)
         self._controller = Controller()  # type: Controller
         # noinspection PyUnresolvedReferences
-        self.windowChanged.connect(self.handle_window_changed, type=Qt.DirectConnection)  # type: pyqtSignal
+        self.windowChanged.connect(self.handle_window_changed, type=Qt.DirectConnection)
 
     @property
     def controller(self) -> Controller:
@@ -27,7 +27,6 @@ class FFDScene(QQuickItem):
         p = self.parentItem()
         self.controller.gl_on_view_port_change(p.x() * r, p.y() * r, p.width() * r, p.height() * r)
 
-    @pyqtSlot(object)
     def handle_window_changed(self, window):
         if window:
             window.beforeSynchronizing.connect(self.sync, type=Qt.DirectConnection)
