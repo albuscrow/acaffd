@@ -237,7 +237,7 @@ class Controller(QObject):
         self.diff_result.clear()
         step = self._gl_proxy.aux_controller.get_bspline_body_size()
         cage_length = reduce(lambda p, x: p + x ** 2, step, 0) ** 0.5
-        self.factors = np.arange(0.5, 2, 0.05, dtype='f4')
+        self.factors = np.arange(0.05, 0.5, 0.02, dtype='f4')
         indices = 0
         original_split_factor = self._gl_proxy.previous_compute_controller.split_factor
 

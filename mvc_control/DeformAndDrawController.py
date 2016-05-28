@@ -128,7 +128,7 @@ class DeformAndDrawController:
         self._splited_triangle_number = -1
 
         self._tessellation_level = -1  # type: int
-        self._final_tessellation_level = 0.01  # type: int
+        self._final_tessellation_level = 0.02  # type: int
         self._tessellated_point_number_pre_splited_triangle = -1  # type: int
         self._tessellated_triangle_number_pre_splited_triangle = -1  # type: int
         self._tessellation_parameter = None  # type: list

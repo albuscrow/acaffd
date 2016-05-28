@@ -369,13 +369,11 @@ void main() {
             }
             E += bezierPositionControlPoint[move_control_point[i]];
         }
-        //?!iftime
+
         E *= 0.25;
         bezierPositionControlPoint[4] = (bezierPositionControlPoint[0] + bezierPositionControlPoint[6] + bezierPositionControlPoint[9]) * -0.166666666 + E;
+        //?!iftime
         //?!else
-        E *= 0.16666666666;
-        vec3 V = (bezierPositionControlPoint[0] + bezierPositionControlPoint[6] + bezierPositionControlPoint[9]) * 0.33333333;
-        bezierPositionControlPoint[4] = (E - V) * 0.5 + E ;
     }
     //?!end
 
@@ -626,9 +624,9 @@ vec3 sample_helper(const uvec3 knot_left_index, const float[3] un, const float[3
 }
 //?!else
 vec3 sample_helper(const uvec3 knot_left_index, const float[4] un, const float[4] vn, const float[4] wn){
-    uint controlPointOffset = (knot_left_index.x * IntervalNumberVW
-                             + knot_left_index.y * IntervalNumberW
-                             + knot_left_index.z) * OrderProduct - 1;
+    uint controlPointOffset = knot_left_index.x * BSplineBodyIntervalNumber[1] + knot_left_index.y;
+    controlPointOffset = controlPointOffset * BSplineBodyIntervalNumber[2] + knot_left_index.z;
+    controlPointOffset = controlPointOffset * OrderProduct - 1;
     vec3 tempcp2[4][4];
     for (int i = 0; i < BSplineBodyOrder[0]; ++i){
         for (int j = 0; j < BSplineBodyOrder[1]; ++j){
@@ -719,10 +717,6 @@ void sampleFast(inout SamplePoint samplePoint) {
     const float vn_[3] = {0, 1, 2 * v};
     const float wn_[3] = {0, 1, 2 * w};
     //?!else
-
-    float u = samplePoint.position.x;
-    float v = samplePoint.position.y;
-    float w = samplePoint.position.z;
     const float un[4] = {1, u, u * u, u * u * u};
     const float vn[4] = {1, v, v * v, v * v * v};
     const float wn[4] = {1, w, w * w, w * w * w};
