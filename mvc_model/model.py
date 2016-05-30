@@ -4,6 +4,7 @@ from mvc_model.aux import BSplineBody
 from util.util import normalize, equal_vec
 from itertools import product
 from math import factorial
+import config as conf
 import numpy as np
 
 
@@ -194,7 +195,7 @@ class OBJ:
         self._length = [x / d for x in self._length]
 
         # 归一化 temp_vertices
-        temp_vertices = [[(e - m) / d / 1.4 for e, m in zip(v[:3], mid)] + v[3:] for v in temp_vertices]
+        temp_vertices = [[(e - m) / d * conf.MODEL_SCALE_FACTOR for e, m in zip(v[:3], mid)] + v[3:] for v in temp_vertices]
 
         # 归一化 bezier_control_points
         for c in self._bezier_control_points:

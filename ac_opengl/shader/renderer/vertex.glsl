@@ -20,7 +20,7 @@ layout(location=4) in vec4 real_normal;
 layout(location=5) in vec4 real_position;
 //?!end
 
-out vec3 varying_normal;
+out vec3 varying_normal_ori;
 out vec3 varying_position;
 out vec2 varying_tex_coord;
 
@@ -36,22 +36,22 @@ void main() {
     vec4 p = vec4(vertice.xyz, 1);
     //?!iftime
         gl_Position = wvp_matrix * p;
-        varying_normal.xyz = normalize(vec3(wv_matrix * normal));
+        varying_normal_ori = normalize(vec3(wv_matrix * normal));
         varying_position = gl_Position.xyz;
         varying_tex_coord = tex_coord;
     //?!else
         if (show_original > 0) {
             gl_Position = wvp_matrix * p;
             varying_position = gl_Position.xyz;
-            varying_normal.xyz = normalize(vec3(wv_matrix * normal));
+            varying_normal_ori = normalize(vec3(wv_matrix * normal));
             varying_tex_coord = tex_coord;
         } else {
             if (show_real > 0) {
                 gl_Position = wvp_matrix * real_position;
-                varying_normal.xyz = normalize(vec3(wv_matrix * real_normal));
+                varying_normal_ori = normalize(vec3(wv_matrix * real_normal));
             } else {
                 gl_Position = wvp_matrix * p;
-                varying_normal.xyz = normalize(vec3(wv_matrix * normal));
+                varying_normal_ori = normalize(vec3(wv_matrix * normal));
             }
             varying_position = gl_Position.xyz;
             varying_tex_coord = tex_coord;

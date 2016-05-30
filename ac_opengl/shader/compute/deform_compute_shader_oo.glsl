@@ -297,11 +297,11 @@ void main() {
 //    }
 
     uint vertexIndexInSamplePoint[3] = {0,5,8};
-    SamplePoint samplePointForNormal;
+    SamplePoint samplePointForNormal[3];
     for (int i = 0; i < 3; ++i) {
-        samplePointForNormal = samplePoint[vertexIndexInSamplePoint[i]];
-        samplePointForNormal.normal = currentTriangle.pn_normal[i].xyz;
-        currentTriangle.pn_normal[i].xyz = sampleFastNormal(samplePointForNormal);
+        samplePointForNormal[i] = samplePoint[vertexIndexInSamplePoint[i]];
+        samplePointForNormal[i].normal = currentTriangle.pn_normal[i].xyz;
+        currentTriangle.pn_normal[i].xyz = sampleFastNormal(samplePointForNormal[i]);
     }
 
     for (int i = 0; i < 19; ++i) {
@@ -356,12 +356,11 @@ void main() {
             if (adj_normal[3] != -1) {
                 //?!iftime
                 //?!else
-                temp_sharp_parameter[i >> 1] = currentTriangle.parameter_in_original2_texcoord2[i >> 1].xy;
+                temp_sharp_parameter[i / 2] = currentTriangle.parameter_in_original2_texcoord2[i / 2].xy;
                 //?!end
 
-                samplePointForNormal = samplePoint[vertexIndexInSamplePoint[i >> 1]];
-                samplePointForNormal.normal = adj_normal.xyz;
-                adj_normal.xyz = sampleFastNormal(samplePointForNormal);
+                samplePointForNormal[i / 2].normal = adj_normal.xyz;
+                adj_normal.xyz = sampleFastNormal(samplePointForNormal[i / 2]);
                 vec3 n_ave = normalize(cross(currentNormal, adj_normal.xyz));
                 bezierPositionControlPoint[move_control_point[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;;
             } else {

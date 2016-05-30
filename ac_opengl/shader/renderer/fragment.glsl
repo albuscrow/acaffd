@@ -22,12 +22,12 @@ in vec3 varying_diff_position;
 //?!end
 
 in vec3 varying_position;
-in vec3 varying_normal;
+in vec3 varying_normal_ori;
 in vec2 varying_tex_coord;
 out vec4 color;
 
 void main() {
-
+    vec3 varying_normal = normalize(varying_normal_ori);
     vec3 lightPosition = vec3(0,1,1);
     vec3 L = normalize(lightPosition - varying_position);
     vec3 E = normalize(-varying_position); // we are in Eye Coordinates, so EyePos is (0,0,0)
