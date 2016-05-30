@@ -14,6 +14,7 @@ from os.path import isfile, exists
 from Constant import ALGORITHM_AC, ALGORITHM_CYM
 import os
 from matplotlib.pylab import plot, show
+import util.util
 
 __author__ = 'ac'
 
@@ -38,10 +39,6 @@ class Controller(QObject):
         # window size for glSetViewPort
         self._window_size = ACRect()  # type: ACRect
 
-        # for rotate
-        self._rotate_x = 0  # type: int
-        self._rotate_y = 0  # type: int
-
         # for zoom
         self._scale = np.array([1, 1, 1], dtype='f4')
 
@@ -49,6 +46,7 @@ class Controller(QObject):
         self._perspective_matrix = None  # type: np.array
         self._translate = [0, 0, -8]  # type: np.array
         self._model_view_matrix = create_from_translation(np.array(self._translate), dtype='float32')  # type: np.array
+        self._rotate_matrix = create_identity(dtype='f4')
 
         self._inited = False  # type: bool
 
@@ -166,14 +164,10 @@ class Controller(QObject):
 
     @pyqtSlot(int, int)
     def rotate(self, x, y):
-        # record rotate_y and rotate_x
-        self._rotate_y += x
-        self._rotate_x += y
         # update _mode_view_matrix
+        self._rotate_matrix = multiply(self._rotate_matrix, util.util.create_rotate(2, y, x, 0))
         scale_matrix = create_from_scale(self._scale, dtype='f4')
-        self._model_view_matrix = multiply(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
-                                                                     -self._rotate_y / 180 * pi), dtype='f4'),
-                                           np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
+        self._model_view_matrix = multiply(self._rotate_matrix, np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
         self.updateScene.emit()
 
     @pyqtSlot(int, int)
@@ -183,9 +177,7 @@ class Controller(QObject):
         self._translate = [x + y for x, y in zip(self._translate, xyz)]
         # update _mode_view_matrix
         scale_matrix = create_from_scale(self._scale, dtype='f4')
-        self._model_view_matrix = multiply(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
-                                                                     -self._rotate_y / 180 * pi), dtype='f4'),
-                                           np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
+        self._model_view_matrix = multiply(self._rotate_matrix, np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
         self.updateScene.emit()
 
     @pyqtSlot(bool)
@@ -340,8 +332,7 @@ class Controller(QObject):
         if self._scale[0] == 0:
             self._scale += delta
         scale_matrix = create_from_scale(self._scale, dtype='f4')
-        self._model_view_matrix = np.dot(create_from_eulers(create(-self._rotate_x / 180 * pi, 0,
-                                                                   -self._rotate_y / 180 * pi), dtype='float32'),
+        self._model_view_matrix = np.dot(self._rotate_matrix,
                                          np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
         self.updateScene.emit()
 
@@ -389,7 +380,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/767.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    # file_path = "res/3d_model/cube2.obj"
+    file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
@@ -405,6 +396,6 @@ def get_test_file_name():
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
-    file_path = "res/3d_model/snail.obj"
+    # file_path = "res/3d_model/snail.obj"
     # file_path = "res/3d_model/t.bpt"
     return file_path
