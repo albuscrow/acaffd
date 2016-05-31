@@ -277,6 +277,7 @@ class BSplineBody:
         self._control_points_backup = self._ctrlPoints.copy()
 
     def change_control_points(self, control_points):
+        self._modify_range_flag = True
         self._ctrlPoints = control_points
         self._control_points_backup = self._ctrlPoints.copy()
 

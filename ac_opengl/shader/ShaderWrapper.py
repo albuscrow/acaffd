@@ -18,6 +18,8 @@ class ShaderWrap:
         return self
 
     def compile(self):
+        glFinish()
+        print("begin compile shader")
         self._gl_shader_name = compileShader(filter_for_speed(self._source_code), self._shader_type)
         return self
 

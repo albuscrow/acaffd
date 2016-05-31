@@ -7,7 +7,10 @@ from OpenGL.GLU import *
 from pyrr.matrix44 import *
 import config as conf
 
-PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/pattern_data.txt'
+# PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/pattern_data.txt'
+# PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/30.txt'
+PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/20.txt'
+# PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/19.txt'
 
 
 def add_prefix(file_name: str):
@@ -20,6 +23,9 @@ class PreviousComputeShader(ShaderWrap):
         self._controller = controller  # type : PreviousComputeController
 
     def pre_compile(self):
+        print(self._controller.pattern_parameters.size / 4)
+        print(self._controller.pattern_indexes.size / 4)
+        print(self._controller.pattern_offsets.size)
         self._source_code = self._source_code \
             .replace('const int isBezier = -1',
                      'const int isBezier = ' + str(1 if self._controller.model.from_bezier else -1)) \
@@ -90,6 +96,7 @@ class PreviousComputeControllerGPU:
         indexes_size = self._pattern_indexes.size * self._pattern_indexes.itemsize
         parameter_size = self._pattern_parameters.size * self._pattern_parameters.itemsize
         offset_size = self._pattern_offsets.size * self._pattern_offsets.itemsize
+        print((offset_size + indexes_size + parameter_size) / 1024 / 1024, "kb")
         split_info_buffer = glGenBuffers(1)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, split_info_buffer)
         glBufferData(GL_SHADER_STORAGE_BUFFER, offset_size + indexes_size + parameter_size,
@@ -205,11 +212,20 @@ class PreviousComputeControllerGPU:
     def init_pattern_data(self):
         with open(PATTERN_FILE_PATH) as file:
             max_factor, offset_line, indexes_line, parameter_line = file
+        print('read pattern file ok')
         self.MAX_SEGMENTS = int(max_factor)
         self._pattern_offsets = np.asarray([int(x) for x in offset_line.strip().split(" ")], dtype=np.uint32)
         self._pattern_indexes = np.asarray([int(x) for x in indexes_line.strip().split(" ")], dtype=np.uint32)
         self._pattern_parameters = np.asarray([abs(float(x)) for x in parameter_line.strip().split(" ")],
                                               dtype=np.float32)
+        print('translate to np array ok')
+        indexes_size = self._pattern_indexes.size * self._pattern_indexes.itemsize
+        parameter_size = self._pattern_parameters.size * self._pattern_parameters.itemsize
+        offset_size = self._pattern_offsets.size * self._pattern_offsets.itemsize
+        print(indexes_size / 1024 / 1024, "mb")
+        print(parameter_size / 1024 / 1024, "mb")
+        print('offset line', offset_size)
+        print((offset_size + indexes_size + parameter_size) / 1024 / 1024, "mb")
 
     def get_offset_for_i(self) -> str:
         look_up_table_for_i = [0]
