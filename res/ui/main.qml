@@ -164,7 +164,7 @@ ApplicationWindow {
                     }
 
                     SpinBox {
-                        value: 3
+                        value: 19
                         onValueChanged: {
                             if (value <= 0) {
                                 value = 1

@@ -144,7 +144,7 @@ class DeformAndDrawController:
                 self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) * (self._tessellation_level + 2) / 2
                 self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_level * self._tessellation_level
             else:
-                self.init_tessellation_pattern_data(3)
+                self.init_tessellation_pattern_data(19)
 
 
         self._need_deform = True  # type: bool
