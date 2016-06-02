@@ -8,8 +8,8 @@ from pyrr.matrix44 import *
 import config as conf
 
 # PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/pattern_data.txt'
-PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/31.txt'
-# PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/20.txt'
+# PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/31.txt'
+PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/20.txt'
 # PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/19.txt'
 
 

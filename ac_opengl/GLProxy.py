@@ -140,6 +140,7 @@ class GLProxy:
 
     def set_adjust_control_point(self, is_adjust):
         self._deform_and_renderer_controller.set_adjust_control_point(is_adjust)
+        self._aux_controller.b_spline_body.modify_range_flag = True
 
     def set_show_control_point(self, is_show):
         self._deform_and_renderer_controller.show_control_point = is_show

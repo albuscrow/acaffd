@@ -231,6 +231,7 @@ void main() {
         for (int j = 0; j < 3; ++j) {
             parameter_in_original[j] = changeParameter(splitParameter[index[j]]).xyz;
             st.pn_position[j] = vec4(getPNPosition(parameter_in_original[j]), 1);
+//            st.pn_position[j] = vec4(getPositionOrg(parameter_in_original[j]), 1);
             st.range[j] = 0;
             for (int k = 0; k < 3; ++k) {
                 float temp = (st.pn_position[j][k] - BSplineBodyMinParameter[k]) / BSplineBodyStep[k];
@@ -387,12 +388,14 @@ vec4 getAdjacencyNormalPN(vec3 parameter,uint adjacency_triangle_index_) {
 vec3 getPNPosition(vec3 parameter) {
     vec3 result = vec3(0);
     int ctrlPointIndex = 0;
+
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
             int k = 3 - i - j;
             float n = 6.0f * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k)
                     / factorial(i) / factorial(j) / factorial(k);
-            result += PNTriangleP[ctrlPointIndex ++] * n;
+            result += PNTriangleP_shared[triangleIndex * 10  + ctrlPointIndex].xyz * n;
+            ++ ctrlPointIndex;
         }
     }
     return result;
