@@ -52,6 +52,8 @@ class Controller(QObject):
 
         self.factors = None
         self.diff_result = []
+        self.cage_length = 0
+        self.cym_position_error = 0
 
         self.gl_task = None
         self.show_figure.connect(self.show_diff_result)
@@ -64,6 +66,11 @@ class Controller(QObject):
         np.save(path + '/split_data', self.diff_result)
         position = [x[0][0] for x in self.diff_result]
         plot(self.factors, position)
+        plot(self.factors, [self.cym_position_error] * len(self.factors))
+        print(self.cym_position_error)
+        print(position)
+        print(self.factors)
+        print([x * self.cage_length for x in self.factors])
         show()
 
     @pyqtSlot()
@@ -227,15 +234,15 @@ class Controller(QObject):
     def begin_test_split_factor(self):
         self.diff_result.clear()
         step = self._gl_proxy.aux_controller.get_bspline_body_size()
-        cage_length = reduce(lambda p, x: p + x ** 2, step, 0) ** 0.5
-        self.factors = np.arange(0.1, 5.5, 0.05, dtype='f4')
+        self.cage_length = reduce(lambda p, x: p + x ** 2, step, 0) ** 0.5
+        self.factors = np.arange(0.1, 3.5, 0.05, dtype='f4')
         indices = 0
         original_split_factor = self._gl_proxy.previous_compute_controller.split_factor
 
         def gl_task1():
             nonlocal indices
             if indices < len(self.factors):
-                self.change_split_factor(self.factors[indices] * cage_length)
+                self.change_split_factor(self.factors[indices] * self.cage_length)
                 self.set_need_comparison()
                 indices += 1
                 self.updateScene.emit()
@@ -273,6 +280,7 @@ class Controller(QObject):
                         print(label + '比对: 平均/最大/标准差')
                         print('ac %e / %e / %e' % (ac[0], ac[1], ac[2]))
                         print('cym %e / %e / %e' % (cym[0], cym[1], cym[2]))
+                    self.cym_position_error = self.diff_result[1][0][0]
 
                 self.gl_task = gl_task2
                 self.updateScene.emit()
@@ -378,11 +386,11 @@ def get_test_file_name():
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    file_path = "res/3d_model/cube2.obj"
+    # file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
-    # file_path = "res/3d_model/star.obj"
+    file_path = "res/3d_model/star.obj"
     # file_path = "res/3d_model/legoDog.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/test_2_triangle_plain.obj"

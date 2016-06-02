@@ -362,7 +362,7 @@ void main() {
                 samplePointForNormal[i / 2].normal = adj_normal.xyz;
                 adj_normal.xyz = sampleFastNormal(samplePointForNormal[i / 2]);
                 vec3 n_ave = normalize(cross(currentNormal, adj_normal.xyz));
-                bezierPositionControlPoint[move_control_point[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;;
+                bezierPositionControlPoint[move_control_point[i]] = currentPosition + dot(controlPoint - currentPosition, n_ave) * n_ave;
             } else {
                 bezierPositionControlPoint[move_control_point[i]] = controlPoint - dot(controlPoint - currentPosition, currentNormal) * currentNormal;
             }
@@ -382,7 +382,11 @@ void main() {
     uint point_index[210];
     for (int i = 0; i < 3; ++i) {
         positionSplitedTriangle[triangleIndex * 3 + i] = currentTriangle.pn_position[i];
-        normalSplitedTriangle[triangleIndex * 3 + i] =  currentTriangle.pn_normal[i];
+        normalSplitedTriangle[triangleIndex * 3 + i].xyz = normalizedOriginalNormal[i];
+        normalSplitedTriangle[triangleIndex * 3 + i].w = 0;
+//        currentTriangle.original_normal[i].xyz
+//        normalSplitedTriangle[triangleIndex * 3 + i] =  currentTriangle.pn_normal[i];
+
     }
     // 细分显示控制顶点
     // 生成顶点数据
@@ -589,7 +593,7 @@ void getPoint(vec3 parameter, out vec4 position, out vec4 normal) {
             ++ctrlPointIndex;
         }
     }
-    normalize(normal.xyz);
+    normal.xyz = normalize(normal.xyz);
     normal.w = 0;
     position.w = 1;
 }
@@ -804,6 +808,10 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
         for (int i = 0; i < 3; ++i) {
             result.position += (currentTriangle.pn_position[i] * parameter[i]).xyz;
         }
+
+//        for (int i = 0; i < 3; ++i) {
+//            result.position += (currentTriangle.original_position[i] * parameter[i]).xyz;
+//        }
     } else {
         for (int i = 0; i < 3; ++i) {
             result.position += (currentTriangle.original_position[i] * parameter[i]).xyz;
@@ -830,7 +838,7 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
         }
     }
     //?!end
-    normalize(result.normal);
+    result.normal = normalize(result.normal);
 
     for (int i = 0; i < 3; ++i) {
         float temp = (result.position[i] - BSplineBodyMinParameter[i]) / BSplineBodyStep[i];
@@ -925,8 +933,7 @@ void sampleInBezier(uint id, float u, float v, out vec3 position, out vec3 norma
             }
             n_v += b(u, 3, i) * temp;
         }
-        normal = cross(n_v, n_u);
-        normalize(normal);
+        normal = normalize(cross(n_v, n_u));
     }
     return;
 }
