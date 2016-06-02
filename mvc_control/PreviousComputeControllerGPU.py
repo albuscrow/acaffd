@@ -42,8 +42,9 @@ class PreviousComputeShader(ShaderWrap):
 
 
 class PreviousComputeControllerGPU:
-    def __init__(self, model: OBJ):
+    def __init__(self, model: OBJ, controller):
         self._model = model  # type: OBJ
+        self._controller = controller
 
         # init pattern data
         self._split_factor = 0.2  # type: float
@@ -162,6 +163,7 @@ class PreviousComputeControllerGPU:
         glUseProgram(0)
 
         self._splited_triangle_number = self.get_splited_triangles_number()
+        self._controller.add_splited_number(self._splited_triangle_number)
         glFinish()
 
         self._need_recompute = False

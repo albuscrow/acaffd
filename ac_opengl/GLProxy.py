@@ -37,10 +37,10 @@ class GLProxy:
 
         if self.previous_compute_controller is None:
             self._previous_compute_controller_AC = \
-                PreviousComputeControllerGPU(model)
+                PreviousComputeControllerGPU(model, self._controller)
             self._previous_compute_controller_CYM = \
                 PreviousComputeControllerCPU(model, self._aux_controller.b_spline_body,
-                                             self._previous_compute_controller_AC)
+                                             self._previous_compute_controller_AC, self._controller)
             if self._algorithm == ALGORITHM_AC:
                 self._previous_compute_controller_CYM.need_upload_control_points = False
         else:

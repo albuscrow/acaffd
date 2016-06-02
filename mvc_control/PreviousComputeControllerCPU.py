@@ -8,7 +8,7 @@ import config as conf
 
 
 class PreviousComputeControllerCPU:
-    def __init__(self, model: OBJ, b_spline_body: BSplineBody, ac: PreviousComputeControllerGPU):
+    def __init__(self, model: OBJ, b_spline_body: BSplineBody, ac: PreviousComputeControllerGPU, controller):
         self._model = model  # type: OBJ
 
         self._need_recompute = True  # type: bool
@@ -27,6 +27,7 @@ class PreviousComputeControllerCPU:
 
         self._b_spline_body = b_spline_body
         self._need_upload_control_points = True
+        self._controller = controller
 
     @property
     def need_upload_control_points(self):
@@ -51,6 +52,7 @@ class PreviousComputeControllerCPU:
         glFinish()
         self._need_recompute = False
         print('gl_compute:', 'cpu splited triangle number: %d' % self._splited_triangle_number)
+        self._controller.set_cpu_splited_number(self._splited_triangle_number)
         return self._splited_triangle_number, True
 
     @property

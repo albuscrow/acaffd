@@ -54,6 +54,8 @@ class Controller(QObject):
         self.diff_result = []
         self.cage_length = 0
         self.cym_position_error = 0
+        self.splited_number = []
+        self.cpu_split_number = 0
 
         self.gl_task = None
         self.show_figure.connect(self.show_diff_result)
@@ -61,13 +63,19 @@ class Controller(QObject):
     def add_diff_result(self, r):
         self.diff_result.append(r)
 
+    def add_splited_number(self, n):
+        self.splited_number.append(n)
+
     def show_diff_result(self):
         path = self.get_save_path()
         np.save(path + '/split_data', self.diff_result)
         position = [x[0][0] for x in self.diff_result]
         plot(self.factors, position)
         plot(self.factors, [self.cym_position_error] * len(self.factors))
+        plot(self.factors, self.splited_number)
+        plot(self.factors, [self.cpu_split_number] * len(self.factors))
         print(self.cym_position_error)
+        print(self.splited_number)
         print(position)
         print(self.factors)
         print([x * self.cage_length for x in self.factors])
@@ -230,9 +238,13 @@ class Controller(QObject):
     def set_use_pn_normal(self, use: bool):
         self._gl_proxy.set_use_pn_normal(use)
 
+    def set_cpu_splited_number(self, n):
+        self.cpu_split_number = n
+
     @pyqtSlot()
     def begin_test_split_factor(self):
         self.diff_result.clear()
+        self.splited_number.clear()
         step = self._gl_proxy.aux_controller.get_bspline_body_size()
         self.cage_length = reduce(lambda p, x: p + x ** 2, step, 0) ** 0.5
         self.factors = np.arange(0.1, 3.5, 0.05, dtype='f4')
@@ -386,7 +398,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    # file_path = "res/3d_model/cube2.obj"
+    file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
@@ -400,7 +412,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/rabbit_cym.obj"
     # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
-    file_path = "res/3d_model/sphere.obj"
+    # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"
     # file_path = "res/3d_model/t.bpt"
