@@ -70,8 +70,15 @@ class Controller(QObject):
         path = self.get_save_path()
         np.save(path + '/split_data', self.diff_result)
         position = [x[0][0] for x in self.diff_result]
+
+        print(len(self.splited_number))
+        print(len(position))
+        print(len(self.factors))
+
         plot(self.factors, position)
         plot(self.factors, [self.cym_position_error] * len(self.factors))
+        if len(self.factors) < len(self.splited_number):
+            self.splited_number = self.splited_number[:len(self.factors)]
         plot(self.factors, self.splited_number)
         plot(self.factors, [self.cpu_split_number] * len(self.factors))
         print(self.cym_position_error)
@@ -181,7 +188,8 @@ class Controller(QObject):
         # update _mode_view_matrix
         self._rotate_matrix = multiply(self._rotate_matrix, util.util.create_rotate(2, y, x, 0))
         scale_matrix = create_from_scale(self._scale, dtype='f4')
-        self._model_view_matrix = multiply(self._rotate_matrix, np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
+        self._model_view_matrix = multiply(self._rotate_matrix,
+                                           np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
         self.updateScene.emit()
 
     @pyqtSlot(int, int)
@@ -191,7 +199,8 @@ class Controller(QObject):
         self._translate = [x + y for x, y in zip(self._translate, xyz)]
         # update _mode_view_matrix
         scale_matrix = create_from_scale(self._scale, dtype='f4')
-        self._model_view_matrix = multiply(self._rotate_matrix, np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
+        self._model_view_matrix = multiply(self._rotate_matrix,
+                                           np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
         self.updateScene.emit()
 
     @pyqtSlot(bool)
@@ -398,7 +407,7 @@ def get_test_file_name():
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    file_path = "res/3d_model/cube2.obj"
+    # file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
@@ -409,8 +418,8 @@ def get_test_file_name():
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    # file_path = "res/3d_model/rabbit_cym.obj"
-    # file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
+    file_path = "res/3d_model/rabbit_cym.obj"
+    #### file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"

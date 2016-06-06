@@ -9,6 +9,7 @@ from mvc_model.model import OBJ
 from OpenGL.GL import *
 from Constant import *
 import sys
+import config as conf
 
 from mvc_model.plain_class import ACRect
 
@@ -34,6 +35,9 @@ class GLProxy:
             self._aux_controller = AuxController(model.get_length_xyz())  # type: AuxController
         else:
             self._aux_controller.change_size(model.get_length_xyz())
+
+        if conf.REMOVE_UN_SPLIT_TRIANGLE:
+            self._model.remove_un_split_triangle(self._aux_controller.b_spline_body)
 
         if self.previous_compute_controller is None:
             self._previous_compute_controller_AC = \
@@ -118,7 +122,7 @@ class GLProxy:
     def change_split_factor(self, factor):
         if self._algorithm == ALGORITHM_AC:
             self.previous_compute_controller.split_factor = factor
-            if config.IS_UNIFORM_ADAPTIVE_TESSELLATION_FACTOR:
+            if conf.IS_UNIFORM_ADAPTIVE_TESSELLATION_FACTOR:
                 self.change_tessellation_level(
                     self.previous_compute_controller.split_factor / self._deform_and_renderer_controller.final_tessellation_level)
             self.aux_controller.b_spline_body.modify_range_flag = True

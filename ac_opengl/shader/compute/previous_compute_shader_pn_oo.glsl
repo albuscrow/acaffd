@@ -69,7 +69,7 @@ vec3 getAdjacencyNormal(uint adjacency_index, bool isFirst, vec3 normal) {
     }
     return vec3(originalNormal[
                                originalIndex[
-                                             triangleIndex * 3
+                                             triangleIndex * 4
                                              + pointIndex
                                             ]
                               ]);
@@ -143,7 +143,7 @@ layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
     triangleIndex = gl_GlobalInvocationID.x;
-    if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
+    if (gl_GlobalInvocationID.x >= originalIndex.length() / 4) {
         return;
     }
 
@@ -160,7 +160,7 @@ void main() {
 
     // get current tirangle index point and normal
     for (int i = 0; i < 3; ++i) {
-        original_index[i] = originalIndex[triangleIndex * 3 + i];
+        original_index[i] = originalIndex[triangleIndex * 4 + i];
         point[i] = vec3(originalVertex[original_index[i]]);
         normal[i] = vec3(originalNormal[original_index[i]]);
     }

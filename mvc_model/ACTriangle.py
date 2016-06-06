@@ -130,14 +130,21 @@ class ACPoly:
     UP = 'u'
     DOWN = 'd'
 
+    def is_intersect(self, component, value):
+        down, up = self.split_up_and_down(component, value)
+        return ACPoly.check(down) and ACPoly.check(up)
+
     def split(self, component, value):
+        down, up = self.split_up_and_down(component, value)
+        return ACPoly.check_then_new(self._triangle, up), ACPoly.check_then_new(self._triangle, down)
+
+    def split_up_and_down(self, component, value):
         up = []
         down = []
         if self._points[-1].large_than(component, value):
             last = ACPoly.UP
         else:
             last = ACPoly.DOWN
-
         for i in range(len(self._points)):
             if self._points[i].large_than(component, value):
                 if last == ACPoly.UP:
@@ -155,8 +162,7 @@ class ACPoly:
                     last = ACPoly.DOWN
                 else:
                     down.append(self._points[i])
-
-        return ACPoly.check_then_new(self._triangle, up), ACPoly.check_then_new(self._triangle, down)
+        return down, up
 
     def to_triangle(self):
         res = []
@@ -181,32 +187,22 @@ class ACPoly:
         return res
 
     @staticmethod
-    def check_then_new(triangle, points):
-        if points is None or len(points) == 0:
-            return None
-
-        # res = [points[0]]
-        # for p in points[1:]:
-        #     if not p == res[-1]:
-        #         res.append(p)
-        # if res[0] == res[-1]:
-        #     res = res[1:]
-
-        # res = []
-        # for i, p in enumerate(points):
-        #     if p.is_new:
-        #         p.is_new = False
-        #         p1 = points[i - 1]
-        #         p2 = points[(i + 1) % len(points)]
-        #         if (p == p1 and not p1.is_new) or (p == p2 and not p2.is_new):
-        #             continue
-        #     res.append(p)
-        res = points
-
-        if len(res) < 3:
-            return None
+    def check(points):
+        if points is None or len(points) < 3:
+            return False
         else:
-            return ACPoly(triangle, res)
+            return True
+
+    @staticmethod
+    def check_then_new(triangle, points):
+        if ACPoly.check(points):
+            return ACPoly(triangle, points)
+        else:
+            return None
+
+    @property
+    def triangle(self):
+        return self._triangle
 
 
 class ACTriangle:
@@ -256,7 +252,16 @@ class ACTriangle:
         self._pn_triangle_p = [None] * 10  # type: list
         self._pn_triangle_n = [None] * 6
         self._parameter = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype='f4')
+        self._index = None
         self.bezier_id = -1
+
+    @property
+    def index(self):
+        return self._index
+
+    @index.setter
+    def index(self, i):
+        self._index = i
 
     def __str__(self):
         return ','.join([str(x.id if x else None) + '-' + str(y) for x, y in self._neighbor])

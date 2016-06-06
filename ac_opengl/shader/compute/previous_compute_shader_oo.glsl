@@ -174,7 +174,7 @@ const int isBezier = -1;
 
 void main() {
     triangleIndex = gl_GlobalInvocationID.x;
-    if (gl_GlobalInvocationID.x >= originalIndex.length() / 3) {
+    if (gl_GlobalInvocationID.x >= originalIndex.length() / 4 || originalIndex[triangleIndex * 4 + 3] == 0) {
         return;
     }
 
@@ -203,7 +203,7 @@ void main() {
 
     // get current tirangle index point and normal
     for (int i = 0; i < 3; ++i) {
-        original_index[i] = originalIndex[triangleIndex * 3 + i];
+        original_index[i] = originalIndex[triangleIndex * 4 + i];
         point[i] = vec3(originalVertex[original_index[i]]);
         normal[i] = vec3(originalNormal[original_index[i]]);
     }

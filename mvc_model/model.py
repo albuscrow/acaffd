@@ -220,7 +220,7 @@ class OBJ:
                 raise Exception()
         logging.info('load obj finish, has vertices:' + str(len(self._vertex)))
         self._original_index_number = len(self._index)
-        self._original_triangle_number = self._original_index_number / 3
+        self._original_triangle_number = self._original_index_number / 4
         self._original_vertex_number = len(self._vertex)
         self._original_normal_number = len(self._normal)
         self._triangles = None  # type: list[ACTriangle]
@@ -257,9 +257,10 @@ class OBJ:
                 aux_vertex_map[v] = len(aux_vertex_map)
 
             self._index.append(aux_vertex_map[v])
+        self._index.append(1)
         self._adjacency.append([-1, -1, -1])
 
-        current_triangle_index = int((len(self._index) - 3) / 3)
+        current_triangle_index = int((len(self._index) - 4) / 4)
         # 建立邻接关系
         for i in range(len(point_indexes)):
             current_vertex_index = point_indexes[i]
@@ -272,7 +273,7 @@ class OBJ:
                 triangle_index = triangle_index_set.pop()[0]
                 temp = temp_vertices[prev_vertex_index]
                 for j in range(3):
-                    if self._vertex[self._index[triangle_index * 3 + j]] == temp:
+                    if self._vertex[self._index[triangle_index * 4 + j]] == temp:
                         self._adjacency[triangle_index][j] = current_triangle_index * 4 + i
                         self._adjacency[-1][i] = triangle_index * 4 + j
                         break
@@ -314,16 +315,46 @@ class OBJ:
     def adjacency(self):
         return np.array(self._adjacency, dtype=np.int32)
 
+    def remove_un_split_triangle(self, bspline: BSplineBody):
+        polygons = []
+        for t in self._triangles:
+            polygons.append(ACPoly(t))
+
+        split_line = bspline.get_split_line()
+        self._index = []
+        for p in polygons:
+            for i in range(3):
+                for j in split_line[i][::-1]:
+                    if p.is_intersect(i, j):
+                        self._index += p.triangle.index + [1]
+                        break
+                else:
+                    continue
+                break
+            else:
+                self._index += p.triangle.index + [0]
+
     def split(self, bspline: BSplineBody):
         pnp_data = []
         pnn_data = []
+        polygons = []
+        split_line = bspline.get_split_line()
         for t in self._triangles:
             pnp, pnn = t.gen_pn_triangle()
             pnp_data.append(np.hstack((pnp, [[0]] * 10)))
             pnn_data.append(np.hstack((pnn, [[0]] * 6)))
-        polygons = []
-        for t in self._triangles:
-            polygons.append(ACPoly(t))
+            ac_poly = ACPoly(t)
+            if conf.REMOVE_UN_SPLIT_TRIANGLE:
+                for i in range(3):
+                    for j in split_line[i][::-1]:
+                        if ac_poly.is_intersect(i, j):
+                            polygons.append(ac_poly)
+                            break
+                    else:
+                        continue
+                    break
+            else:
+                polygons.append(ac_poly)
 
         split_line = bspline.get_split_line()
         for i in range(3):
@@ -355,13 +386,14 @@ class OBJ:
 
     def reorganize(self):
         self._triangles = []  # type: list[ACTriangle]
-        for i, index in enumerate(zip(*([iter(self._index)] * 3))):
+        for i, index in enumerate(zip(*([iter(self._index)] * 4))):
             t = ACTriangle(i)  # type: ACTriangle
             t.positionv4, t.normalv4, t.tex_coord, t.bezier_uv = [np.array([lst[x] for x in index], dtype='f4') for lst
                                                                   in
                                                                   [self._vertex, self._normal, self._tex_coord,
                                                                    self._bezier_uv]]
             t.bezier_id = int(t.positionv4[0][3])
+            t.index = list(index[:3])
             self._triangles.append(t)
         for i, triangle in enumerate(self._triangles):
             triangle.neighbor = []
@@ -397,6 +429,7 @@ class OBJ:
     @property
     def bezier_uv(self):
         return np.array(self._bezier_uv, dtype='f4')
+
 
 
 from matplotlib.pylab import plot, show
