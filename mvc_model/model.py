@@ -195,7 +195,8 @@ class OBJ:
         self._length = [x / d for x in self._length]
 
         # 归一化 temp_vertices
-        temp_vertices = [[(e - m) / d * conf.MODEL_SCALE_FACTOR for e, m in zip(v[:3], mid)] + v[3:] for v in temp_vertices]
+        temp_vertices = [[(e - m) / d * conf.MODEL_SCALE_FACTOR for e, m in zip(v[:3], mid)] + v[3:] for v in
+                         temp_vertices]
 
         # 归一化 bezier_control_points
         for c in self._bezier_control_points:
@@ -356,6 +357,14 @@ class OBJ:
             else:
                 polygons.append(ac_poly)
 
+        # with open('debug.txt', 'w') as f:
+        #     ii = 0
+        #     for i in np.array(pnp_data).reshape((-1, 4)):
+        #         f.write(str(i) + '\n')
+        #         if ii % 10 == 9:
+        #             f.write('\n')
+        #         ii += 1
+
         split_line = bspline.get_split_line()
         for i in range(3):
             up = []
@@ -429,7 +438,6 @@ class OBJ:
     @property
     def bezier_uv(self):
         return np.array(self._bezier_uv, dtype='f4')
-
 
 
 from matplotlib.pylab import plot, show

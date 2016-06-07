@@ -404,25 +404,25 @@ class Controller(QObject):
 
 def get_test_file_name():
     # todo
-    # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/ttest.obj"
     # file_path = "res/3d_model/cube.obj"
-    # file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/test2.obj"
     # file_path = "res/3d_model/bishop.obj"
     # file_path = "res/3d_model/test_same_normal.obj"
-    # file_path = "res/3d_model/star.obj"
     # file_path = "res/3d_model/legoDog.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
     # file_path = "res/3d_model/test_2_triangle_plain.obj"
-    # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/test_2_triangle.obj"
-    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    file_path = "res/3d_model/rabbit_cym.obj"
-    #### file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
+    ## file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
-    # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"
     # file_path = "res/3d_model/t.bpt"
+
+    file_path = "res/3d_model/Mobile.obj"
+    # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
+    # file_path = "res/3d_model/cube2.obj"
+    # file_path = "res/3d_model/star.obj"
+    # file_path = "res/3d_model/sphere.obj"
+    # file_path = "res/3d_model/rabbit_cym.obj"
     return file_path

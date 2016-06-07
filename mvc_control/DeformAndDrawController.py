@@ -471,7 +471,8 @@ class DeformAndDrawController:
             number = int(self.get_tessed_triangles_number() * 3)
         else:
             number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
-        glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
+        if not self._show_control_point:
+            glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
         glActiveTexture(GL_TEXTURE0)
         glBindVertexArray(0)
         glUseProgram(0)

@@ -813,9 +813,14 @@ SamplePoint getSamplePointBeforeSample(vec3 parameter) {
 //            result.position += (currentTriangle.original_position[i] * parameter[i]).xyz;
 //        }
     } else {
+//        for (int i = 0; i < 3; ++i) {
+//            result.position += (currentTriangle.pn_position[i] * parameter[i]).xyz;
+//        }
+
         for (int i = 0; i < 3; ++i) {
             result.position += (currentTriangle.original_position[i] * parameter[i]).xyz;
         }
+
     }
     //?!end
 

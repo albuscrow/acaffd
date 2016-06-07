@@ -182,6 +182,7 @@ class ACPoly:
             t.pn_triangle_p = self._triangle.pn_triangle_p
             t.pn_triangle_n = self._triangle.pn_triangle_n
             t.bezier_id = self._triangle.bezier_id
+            t.parent_triangle = self._triangle
             res.append(t)
             pre = p
         return res
@@ -253,6 +254,7 @@ class ACTriangle:
         self._pn_triangle_n = [None] * 6
         self._parameter = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype='f4')
         self._index = None
+        self.parent_triangle = None  # type: ACTriangle
         self.bezier_id = -1
 
     @property
@@ -268,6 +270,16 @@ class ACTriangle:
 
     def as_element_for_shader(self, bspline_body) -> list:
         original_position = self.positionv4
+        # for p, o in zip(self._parameter, original_position):
+        #     test = np.array([0.0, 0.0, 0.0, 0.0])
+        #     for pp, v in zip(p, self.parent_triangle.positionv4):
+        #         test += v * pp
+        #
+        #     print(test, o)
+        #     if not equal_vec(o, test):
+        #         print(test, o)
+        #         print('parameter error')
+
         pn_position = [self.get_position_in_pn_triangle(x) for x in self._parameter]
         self.positionv4 = np.array(pn_position, dtype='f4')
 
@@ -400,7 +412,11 @@ class ACTriangle:
         if triangle is None:
             return self.normalv3[original_normal_index]
         else:
-            return triangle.normalv3[neighbor_edge - 1 if flag else neighbor_edge]
+            if flag:
+                if neighbor_edge == 0:
+                    neighbor_edge = 3
+                neighbor_edge -= 1
+            return triangle.normalv3[neighbor_edge]
 
     @staticmethod
     def gen_position_control_point(p_s: np.array, p_e: np.array, n: np.array, n_adj: np.array):

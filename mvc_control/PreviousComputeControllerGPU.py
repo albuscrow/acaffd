@@ -9,6 +9,7 @@ import config as conf
 
 # PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/pattern_data.txt'
 PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/31.txt'
+
 # PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/20.txt'
 # PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/19.txt'
 
@@ -156,6 +157,15 @@ class PreviousComputeControllerGPU:
         self._program_gen_pn_triangle.use()
         glDispatchCompute(*self.group_size)
         glFinish()
+
+        # with open('debug2.txt', 'w') as f:
+        #     ii = 0
+        #     for i in self._share_adjacency_pn_triangle_position_ssbo.get_value(ctypes.c_float, (
+        #         self._model._original_triangle_number * 10, 4)):
+        #         f.write(str(i) + '\n')
+        #         if ii % 10 == 9:
+        #             f.writ('\n')
+        #         ii += 1
 
         self._program.use()
         self.gl_init_split_counter()
