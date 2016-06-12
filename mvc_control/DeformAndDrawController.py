@@ -15,6 +15,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from pyrr.matrix44 import *
 import config as conf
+from util.util import power
 
 
 def add_compute_prefix(file_name: str):
@@ -113,7 +114,6 @@ class ModelRendererShader(ProgramWrap):
 
 
 class DeformAndDrawController:
-
     @property
     def final_tessellation_level(self):
         return self._final_tessellation_level
@@ -137,15 +137,16 @@ class DeformAndDrawController:
         self._splited_triangle_number_changed = False  # type: bool
 
         if config.IS_UNIFORM_ADAPTIVE_TESSELLATION_FACTOR:
-            self.init_tessellation_pattern_data(int(self._previous_controller.split_factor / self._final_tessellation_level))
+            self.init_tessellation_pattern_data(
+                int(self._previous_controller.split_factor / self._final_tessellation_level))
         else:
             if conf.IS_TESS_MODE:
                 self._tessellation_level = 30
-                self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) * (self._tessellation_level + 2) / 2
+                self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) * (
+                self._tessellation_level + 2) / 2
                 self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_level * self._tessellation_level
             else:
                 self.init_tessellation_pattern_data(19)
-
 
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False
@@ -471,7 +472,8 @@ class DeformAndDrawController:
             number = int(self.get_tessed_triangles_number() * 3)
         else:
             number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
-        if not self._show_control_point:
+
+        if conf.IS_FAST_MODE or not self._show_control_point:
             glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
         glActiveTexture(GL_TEXTURE0)
         glBindVertexArray(0)
@@ -532,7 +534,8 @@ class DeformAndDrawController:
         if conf.IS_TESS_MODE:
             return
         self._tessellation_level = int(tessellation_level)
-        self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) * (self._tessellation_level + 2) / 2
+        self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) * (
+        self._tessellation_level + 2) / 2
         self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_level * self._tessellation_level
         self._tessellation_parameter = []  # type: list
         u = self._tessellation_level
@@ -543,6 +546,20 @@ class DeformAndDrawController:
                                                      (self._tessellation_level - u - v) / self._tessellation_level, 0])
                 v -= 1
             u -= 1
+        rfactorialt = [0.166666666,
+                       0.5, 0.5,
+                       0.5, 1, 0.5,
+                       0.166666666, 0.5, 0.5, 0.166666666]
+
+        tessellation_aux = []
+        for p in self._tessellation_parameter:
+            index = 0
+            for i in range(3, -1, -1):
+                for j in range(3 - i, -1, -1):
+                    k = 3 - i - j
+                    t = rfactorialt[index] * power(p[0], i) * power(p[1], j) * power(p[2], k)
+                    index += 1
+                    tessellation_aux.append(t)
 
         self._tessellation_index = []  # type: list
         for i in range(self._tessellation_level):

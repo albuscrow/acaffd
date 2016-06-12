@@ -25,6 +25,14 @@ def length_vec3(n):
     return (n[0] ** 2 + n[1] ** 2 + n[2] ** 2) ** 0.5
 
 
+def power(b, e):
+    if e == 0:
+        return 1
+    if b < 0.00001:
+        return 0
+    return math.pow(b, e)
+
+
 ZERO = 0.000001
 
 
