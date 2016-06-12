@@ -419,10 +419,10 @@ def get_test_file_name():
     # file_path = "res/3d_model/snail.obj"
     # file_path = "res/3d_model/t.bpt"
 
-    file_path = "res/3d_model/Mobile.obj"
+    # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/star.obj"
     # file_path = "res/3d_model/sphere.obj"
-    # file_path = "res/3d_model/rabbit_cym.obj"
+    file_path = "res/3d_model/rabbit_cym.obj"
     return file_path
