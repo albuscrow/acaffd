@@ -45,6 +45,7 @@ class DeformComputeProgram(ProgramWrap):
         if not conf.IS_TESS_MODE:
             self._tessellation_parameter = ACVBO(GL_UNIFORM_BUFFER, 2, None, GL_STATIC_DRAW)  # type: ACVBO
             self._tessellation_indexes = ACVBO(GL_UNIFORM_BUFFER, 3, None, GL_STATIC_DRAW)  # type: ACVBO
+            self._tessellation_aux = ACVBO(GL_UNIFORM_BUFFER, 4, None, GL_STATIC_DRAW)  # type: ACVBO
 
     def init_uniform(self):
         self.update_uniform_triangle_number()
@@ -60,6 +61,8 @@ class DeformComputeProgram(ProgramWrap):
                                 int(self._controller.tessellated_point_number_pre_splited_triangle))
             glProgramUniform1ui(self._gl_program_name, 5,
                                 int(self._controller.tessellated_triangle_number_pre_splited_triangle))
+            self._tessellation_aux.async_update(self._controller.tessellation_aux)
+            self._tessellation_aux.gl_sync()
             self._tessellation_parameter.async_update(self._controller.tessellation_parameter)
             self._tessellation_parameter.gl_sync()
             self._tessellation_indexes.async_update(self._controller.tessellation_index)
@@ -135,6 +138,7 @@ class DeformAndDrawController:
         self._tessellation_index = None  # type: list
         self._tessellation_factor_changed = False  # type: bool
         self._splited_triangle_number_changed = False  # type: bool
+        self._tessellation_aux = None
 
         if config.IS_UNIFORM_ADAPTIVE_TESSELLATION_FACTOR:
             self.init_tessellation_pattern_data(
@@ -534,8 +538,8 @@ class DeformAndDrawController:
         if conf.IS_TESS_MODE:
             return
         self._tessellation_level = int(tessellation_level)
-        self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) * (
-        self._tessellation_level + 2) / 2
+        self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) \
+            * (self._tessellation_level + 2) / 2
         self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_level * self._tessellation_level
         self._tessellation_parameter = []  # type: list
         u = self._tessellation_level
@@ -551,7 +555,7 @@ class DeformAndDrawController:
                        0.5, 1, 0.5,
                        0.166666666, 0.5, 0.5, 0.166666666]
 
-        tessellation_aux = []
+        self._tessellation_aux = []
         for p in self._tessellation_parameter:
             index = 0
             for i in range(3, -1, -1):
@@ -559,7 +563,7 @@ class DeformAndDrawController:
                     k = 3 - i - j
                     t = rfactorialt[index] * power(p[0], i) * power(p[1], j) * power(p[2], k)
                     index += 1
-                    tessellation_aux.append(t)
+                    self._tessellation_aux.append(t)
 
         self._tessellation_index = []  # type: list
         for i in range(self._tessellation_level):
@@ -587,6 +591,10 @@ class DeformAndDrawController:
     @property
     def tessellation_parameter(self):
         return np.array(self._tessellation_parameter, dtype=np.float32)
+
+    @property
+    def tessellation_aux(self):
+        return np.array(self._tessellation_aux, dtype=np.float32)
 
     @property
     def tessellation_index(self):

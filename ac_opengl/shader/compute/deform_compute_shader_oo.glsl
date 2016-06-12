@@ -191,8 +191,16 @@ layout(std140, binding=2) uniform TessellatedParameter{
 layout(std140, binding=3) uniform TessellateIndex{
     uniform uvec4[100] tessellateIndex;
 };
+
 layout(location=4) uniform uint tessellatedParameterLength;
 layout(location=5) uniform uint tessellateIndexLength;
+//?!end
+
+//?!iftime
+//layout(std140, binding=4) uniform TessellateAux{
+//    uniform float[100] tessellateAux;
+//};
+//?!else
 //?!end
 
 //?!iftime
