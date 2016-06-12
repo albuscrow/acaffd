@@ -33,7 +33,7 @@ class AuxController:
 
         # init buffer
         self._control_point_position_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._control_point_for_sample_ubo = ACVBO(GL_UNIFORM_BUFFER, 1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._control_point_for_sample_ubo = ACVBO(GL_SHADER_STORAGE_BUFFER, 15, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         self._b_spline_body_info_ubo = ACVBO(GL_UNIFORM_BUFFER, 0, None, GL_STATIC_DRAW)  # type: ACVBO
         self._selected_counter_acbo = ACVBO(GL_ATOMIC_COUNTER_BUFFER, 1, None, GL_DYNAMIC_DRAW)
         self._vao_control_point = -1  # type: int

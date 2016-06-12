@@ -37,7 +37,6 @@ class DeformComputeShader(ShaderWrap):
                      'const int isBezier = ' + str(1 if self._controller.model.from_bezier else -1))
         return self
 
-
 class DeformComputeProgram(ProgramWrap):
     def __init__(self, controller):
         super().__init__()
@@ -46,7 +45,7 @@ class DeformComputeProgram(ProgramWrap):
             self._tessellation_parameter = ACVBO(GL_UNIFORM_BUFFER, 2, None, GL_STATIC_DRAW)  # type: ACVBO
             self._tessellation_indexes = ACVBO(GL_UNIFORM_BUFFER, 3, None, GL_STATIC_DRAW)  # type: ACVBO
             if conf.IS_FAST_MODE:
-                self._tessellation_aux = ACVBO(GL_SHADER_STORAGE_BUFFER, 16, None, GL_STATIC_DRAW)  # type: ACVBO
+                self._tessellation_aux = ACVBO(GL_UNIFORM_BUFFER, 4, None, GL_STATIC_DRAW)  # type: ACVBO
 
     def init_uniform(self):
         self.update_uniform_triangle_number()
@@ -566,6 +565,9 @@ class DeformAndDrawController:
                     t = rfactorialt[index] * power(p[0], i) * power(p[1], j) * power(p[2], k)
                     index += 1
                     self._tessellation_aux.append(t)
+                    self._tessellation_aux.append(0)
+                    self._tessellation_aux.append(0)
+                    self._tessellation_aux.append(0)
 
         self._tessellation_index = []  # type: list
         for i in range(self._tessellation_level):

@@ -37,8 +37,8 @@ layout(std430, binding=5) buffer TriangleBuffer{
 
 //input
 //用于加速计算的控制顶点
-layout(std140, binding=1) uniform ControlPointForSample{
-    uniform vec4[729] newControlPoints;
+layout(std140, binding=15) buffer ControlPointForSample{
+    vec4[729] newControlPoints;
 };
 
 //output
@@ -197,8 +197,8 @@ layout(location=5) uniform uint tessellateIndexLength;
 //?!end
 
 //?!iftime
-layout(std430, binding=16) buffer TessellateAux{
-    float[] tessellateAux;
+layout(std140, binding=4) uniform TessellateAux{
+    uniform float[100] tessellateAux;
 };
 //?!else
 //?!end
