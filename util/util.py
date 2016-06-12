@@ -1,6 +1,7 @@
 import numpy as np
 import config as conf
 import math
+import random
 
 
 def static_var(**kwargs):
@@ -70,11 +71,13 @@ def filter_for_speed(src: str = None, file_name: str = None) -> str:
                     or (status == conf.TESS and conf.IS_TESS_MODE) \
                     or (status == conf.ELSE_TESS and not conf.IS_TESS_MODE):
                 remain.append(l)
-        # print('\n'.join([str(i) + " " + s for i, s in zip(range(len(remain)), remain)]))
+        output_file_name = file_name + '.tmp'
+        with open(output_file_name, 'w') as file:
+            file.write('\n'.join(remain))
         return '\n'.join(remain)
     else:
         with open(file_name) as file:
-            src = filter_for_speed(src=file.read())
+            src = filter_for_speed(src=file.read(), file_name=file_name)
         output_file_name = file_name + '.tmp'
         with open(output_file_name, 'w') as file:
             file.write(src)

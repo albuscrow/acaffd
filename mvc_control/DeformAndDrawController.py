@@ -45,7 +45,8 @@ class DeformComputeProgram(ProgramWrap):
         if not conf.IS_TESS_MODE:
             self._tessellation_parameter = ACVBO(GL_UNIFORM_BUFFER, 2, None, GL_STATIC_DRAW)  # type: ACVBO
             self._tessellation_indexes = ACVBO(GL_UNIFORM_BUFFER, 3, None, GL_STATIC_DRAW)  # type: ACVBO
-            self._tessellation_aux = ACVBO(GL_UNIFORM_BUFFER, 4, None, GL_STATIC_DRAW)  # type: ACVBO
+            if conf.IS_FAST_MODE:
+                self._tessellation_aux = ACVBO(GL_SHADER_STORAGE_BUFFER, 16, None, GL_STATIC_DRAW)  # type: ACVBO
 
     def init_uniform(self):
         self.update_uniform_triangle_number()
@@ -61,8 +62,9 @@ class DeformComputeProgram(ProgramWrap):
                                 int(self._controller.tessellated_point_number_pre_splited_triangle))
             glProgramUniform1ui(self._gl_program_name, 5,
                                 int(self._controller.tessellated_triangle_number_pre_splited_triangle))
-            self._tessellation_aux.async_update(self._controller.tessellation_aux)
-            self._tessellation_aux.gl_sync()
+            if conf.IS_FAST_MODE:
+                self._tessellation_aux.async_update(self._controller.tessellation_aux)
+                self._tessellation_aux.gl_sync()
             self._tessellation_parameter.async_update(self._controller.tessellation_parameter)
             self._tessellation_parameter.gl_sync()
             self._tessellation_indexes.async_update(self._controller.tessellation_index)
@@ -150,7 +152,7 @@ class DeformAndDrawController:
                 self._tessellation_level + 2) / 2
                 self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_level * self._tessellation_level
             else:
-                self.init_tessellation_pattern_data(19)
+                self.init_tessellation_pattern_data(3)
 
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False

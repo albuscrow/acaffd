@@ -197,9 +197,9 @@ layout(location=5) uniform uint tessellateIndexLength;
 //?!end
 
 //?!iftime
-//layout(std140, binding=4) uniform TessellateAux{
-//    uniform float[100] tessellateAux;
-//};
+layout(std430, binding=16) buffer TessellateAux{
+    float[] tessellateAux;
+};
 //?!else
 //?!end
 
@@ -243,7 +243,11 @@ vec2 getUV(vec3 parameter);
 vec2 getTexCoord(vec3 parameter);
 //?!end
 vec3 getNormalInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
+//?!iftime
+void getPoint(int offset, out vec4 position, out vec4 normal);
+//?!else
 void getPoint(vec3 parameter, out vec4 position, out vec4 normal);
+//?!end
 vec4 getTessellatedSplitParameter(vec4[3] split_parameter, vec4 tessellatedParameter);
 vec2 getTessellatedSplitParameter(vec2[3] split_parameter, vec4 tessellatedParameter);
 
@@ -475,7 +479,12 @@ void main() {
         point_offset = atomicCounterIncrement(point_counter);
         //?!else
         //?!end
+        //?!iftime
+        getPoint(i * 10, tessellatedVertex[point_offset], tessellatedNormal[point_offset]);
+        //?!else
         getPoint(tessellatedParameter[i].xyz, tessellatedVertex[point_offset], tessellatedNormal[point_offset]);
+        //?!end
+
         mat3 tm = mat3(currentTriangle.original_position[0].xyz, currentTriangle.original_position[1].xyz, currentTriangle.original_position[2].xyz);
 //        tessellatedParameterInBSplineBody[point_offset] = getParameterInBSplineBody(tessellatedParameter[i].xyz);
         tessellatedParameterInBSplineBody[point_offset].xyz = tm * tessellatedParameter[i].xyz;
@@ -588,6 +597,19 @@ float rfactorialt[10] = {0.166666666f,
     0.5f, 1f, 0.5f,
     0.166666666f, 0.5f, 0.5f, 0.166666666f};
 
+//?!iftime
+void getPoint(int offset, out vec4 position, out vec4 normal) {
+    position = vec4(0);
+    normal = vec4(0);
+    for (int i = 0; i <10; ++i) {
+            normal.xyz += bezierNormalControlPoint[i] * tessellateAux[offset + i];
+            position.xyz += bezierPositionControlPoint[i] * tessellateAux[offset + i];
+    }
+    normal.xyz = normalize(normal.xyz);
+    normal.w = 0;
+    position.w = 1;
+}
+//?!else
 void getPoint(vec3 parameter, out vec4 position, out vec4 normal) {
     int ctrlPointIndex = 0;
     position = vec4(0);
@@ -605,6 +627,7 @@ void getPoint(vec3 parameter, out vec4 position, out vec4 normal) {
     normal.w = 0;
     position.w = 1;
 }
+//?!end
 
 //?!iftime
 vec3 sample_helper(const uvec3 knot_left_index, const float[3] un, const float[3] vn, const float[3] wn){
