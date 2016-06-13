@@ -187,10 +187,6 @@ vec3 sampleParameter[19] = {
 
 layout(location=0) uniform uint triangleNumber;
 
-//?!iftess
-layout(binding = 1) uniform atomic_uint point_counter;
-layout(binding = 2) uniform atomic_uint triangle_counter;
-//?!else
 layout(std140, binding=2) uniform TessellatedParameter{
     uniform vec4[66] tessellatedParameter;
 };
@@ -200,7 +196,6 @@ layout(std140, binding=3) uniform TessellateIndex{
 
 layout(location=4) uniform uint tessellatedParameterLength;
 layout(location=5) uniform uint tessellateIndexLength;
-//?!end
 
 //?!iftime
 layout(std140, binding=4) uniform TessellateAux{
@@ -424,63 +419,11 @@ void main() {
     }
     //?!end
 
-    //?!iftess
-    uint tessellatedParameterLength;
-    uint tessellateIndexLength;
-    vec4[496] tessellatedParameter;
-    uvec4[900] tessellateIndex;
-    uint tessellationLevel = uint(length((currentTriangle.pn_position[0] - currentTriangle.pn_position[1]).xyz) / 0.5);
-    if (tessellationLevel == 0) {
-        tessellationLevel = 1;
-    }
-    tessellatedParameterLength = (tessellationLevel + 1) * (tessellationLevel + 2) / 2;
-    tessellateIndexLength = tessellationLevel * tessellationLevel;
-    float step = 1.0f / float(tessellationLevel);
-    float u = 1;
-    float v;
-    int offset = -1;
-    for (int i = 0; i <= tessellationLevel; ++i) {
-        v = 1 - u;
-        for (int j = 0; j <= i; ++j) {
-            tessellatedParameter[++offset] = vec4(u, v, 1 - u - v, 0);
-            v -= step;
-        }
-        u -= step;
-    }
-
-    offset = -1;
-    uvec4 nextIndex;
-    uint start;
-    uvec4 prev;
-    for (uint i = 0; i < tessellationLevel; ++i) {
-        start = (i + 1) * (i + 2) / 2;
-        prev = uvec4(start, start + 1, start - 1 - i, 0);
-        tessellateIndex[++offset] = prev;
-        for (int j = 0; j < 2 * i; ++j) {
-            if ((j & 1) == 0) {
-                tessellateIndex[++offset] = uvec4(prev[2] + 1, prev[2], prev[1], 0);
-            } else {
-                tessellateIndex[++offset] = uvec4(prev[2], prev[2] + 1, prev[1], 0);
-            }
-            prev = uvec4(prev[2], prev[2] + 1, prev[1], 0);
-        }
-    }
-    //?!else
-    //?!end
-
     // 细分
     // 生成顶点数据
 
-    //?!iftess
-    uint point_offset;
-    //?!else
     uint point_offset = triangleIndex * tessellatedParameterLength;
-    //?!end
     for (int i = 0; i < tessellatedParameterLength; ++i) {
-        //?!iftess
-        point_offset = atomicCounterIncrement(point_counter);
-        //?!else
-        //?!end
 
         //?!iftime
         getPoint(i * 3, tessellatedVertex[point_offset], tessellatedNormal[point_offset]);
@@ -534,22 +477,12 @@ void main() {
     // 生成index数据
 
 
-    //?!iftess
-    uint index_offset;
-    for (int i = 0; i < tessellateIndexLength; ++i) {
-        index_offset = atomicCounterIncrement(triangle_counter) * 3;
-        for (int j = 0; j < 3; ++j) {
-            tessellatedIndex[index_offset++] = point_index[tessellateIndex[i][j]];
-        }
-    }
-    //?!else
     uint index_offset = triangleIndex * tessellateIndexLength * 3 - 1;
     for (int i = 0; i < tessellateIndexLength; ++i) {
         for (int j = 0; j < 3; ++j) {
             tessellatedIndex[++index_offset] = point_index[tessellateIndex[i][j]];
         }
     }
-    //?!end
 }
 
 //const float factorial_temp[4] = {1,1,2,6};

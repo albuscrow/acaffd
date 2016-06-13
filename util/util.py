@@ -67,9 +67,7 @@ def filter_for_speed(src: str = None, file_name: str = None) -> str:
                 continue
             if status == conf.NORMAL \
                     or (status == conf.TIME and conf.IS_FAST_MODE) \
-                    or (status == conf.ELSE_TIME and not conf.IS_FAST_MODE) \
-                    or (status == conf.TESS and conf.IS_TESS_MODE) \
-                    or (status == conf.ELSE_TESS and not conf.IS_TESS_MODE):
+                    or (status == conf.ELSE_TIME and not conf.IS_FAST_MODE):
                 remain.append(l)
         output_file_name = file_name + '.tmp'
         with open(output_file_name, 'w') as file:

@@ -5,7 +5,6 @@ elif sys.argv[1] == 'fast':
     IS_FAST_MODE = True
 elif sys.argv[1] == 'normal':
     IS_FAST_MODE = False
-IS_TESS_MODE = False
 IF = '//?!if'
 TIME = 'time'
 TESS = 'tess'
