@@ -562,12 +562,11 @@ class DeformAndDrawController:
             for i in range(3, -1, -1):
                 for j in range(3 - i, -1, -1):
                     k = 3 - i - j
-                    t = rfactorialt[index] * power(p[0], i) * power(p[1], j) * power(p[2], k)
+                    t = 6 * rfactorialt[index] * power(p[0], i) * power(p[1], j) * power(p[2], k)
                     index += 1
                     self._tessellation_aux.append(t)
-                    self._tessellation_aux.append(0)
-                    self._tessellation_aux.append(0)
-                    self._tessellation_aux.append(0)
+            self._tessellation_aux.append(0)
+            self._tessellation_aux.append(0)
 
         self._tessellation_index = []  # type: list
         for i in range(self._tessellation_level):

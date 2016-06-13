@@ -37,9 +37,15 @@ layout(std430, binding=5) buffer TriangleBuffer{
 
 //input
 //用于加速计算的控制顶点
-layout(std140, binding=15) buffer ControlPointForSample{
+//?!iftime
+layout(std430, binding=15) buffer ControlPointForSample{
     vec4[729] newControlPoints;
 };
+//?!else
+layout(std140, binding=1) uniform ControlPointForSample{
+    uniform vec4[729] newControlPoints;
+};
+//?!end
 
 //output
 layout(std430, binding=6) buffer TesselatedVertexBuffer{
@@ -198,7 +204,7 @@ layout(location=5) uniform uint tessellateIndexLength;
 
 //?!iftime
 layout(std140, binding=4) uniform TessellateAux{
-    uniform float[100] tessellateAux;
+    uniform vec4[30] tessellateAux;
 };
 //?!else
 //?!end
@@ -231,8 +237,8 @@ layout(location=1) uniform int use_pn_normal;
 layout(location=7) uniform int modifyRange[84];
 
 
-vec3 bezierPositionControlPoint[10];
-vec3 bezierNormalControlPoint[10];
+vec3 bezierPositionControlPoint[12];
+vec3 bezierNormalControlPoint[12];
 //?!iftime
 //?!else
 vec3 getPositionInOriginalPNTriangle(vec3 parameter, uint original_triangle_index);
@@ -325,6 +331,11 @@ void main() {
     }
 
     // 计算Bezier曲面片控制顶点
+    for (int i = 0; i < 12; ++i) {
+        bezierPositionControlPoint[i] = vec3(0);
+        bezierNormalControlPoint[i] = vec3(0);
+    }
+
     bezierPositionControlPoint[0] = samplePoint[0].position;
     bezierNormalControlPoint[0] = samplePoint[0].normal;
     bezierPositionControlPoint[6] = samplePoint[5].position;
@@ -335,15 +346,11 @@ void main() {
     int tempindex = -1;
     int aux1[6] = {1,2,3,5,7,8};
     for (int i = 0; i < 6; ++i) {
-        bezierPositionControlPoint[aux1[i]] = vec3(0);
-        bezierNormalControlPoint[aux1[i]] = vec3(0);
         for (int j = 0; j < 9; ++j) {
             bezierPositionControlPoint[aux1[i]] += samplePoint[j].position * Mr[++tempindex];
             bezierNormalControlPoint[aux1[i]] += samplePoint[j].normal * Mr[tempindex];
         }
     }
-    bezierNormalControlPoint[4] = vec3(0);
-    bezierPositionControlPoint[4] = vec3(0);
     for (int j = 0; j < 19; ++j) {
         bezierPositionControlPoint[4] += samplePoint[j].position * Mr_4[j];
         bezierNormalControlPoint[4] += samplePoint[j].normal * Mr_4[j];
@@ -417,11 +424,6 @@ void main() {
     }
     //?!end
 
-    for (int i = 0; i < 10; ++i) {
-        bezierPositionControlPoint[i] *= 6;
-        bezierNormalControlPoint[i] *= 6;
-    }
-
     //?!iftess
     uint tessellatedParameterLength;
     uint tessellateIndexLength;
@@ -479,8 +481,9 @@ void main() {
         point_offset = atomicCounterIncrement(point_counter);
         //?!else
         //?!end
+
         //?!iftime
-        getPoint(i * 10, tessellatedVertex[point_offset], tessellatedNormal[point_offset]);
+        getPoint(i * 3, tessellatedVertex[point_offset], tessellatedNormal[point_offset]);
         //?!else
         getPoint(tessellatedParameter[i].xyz, tessellatedVertex[point_offset], tessellatedNormal[point_offset]);
         //?!end
@@ -601,9 +604,11 @@ float rfactorialt[10] = {0.166666666f,
 void getPoint(int offset, out vec4 position, out vec4 normal) {
     position = vec4(0);
     normal = vec4(0);
-    for (int i = 0; i <10; ++i) {
-            normal.xyz += bezierNormalControlPoint[i] * tessellateAux[offset + i];
-            position.xyz += bezierPositionControlPoint[i] * tessellateAux[offset + i];
+    float temp;
+    for (int i = 0; i < 10; ++i) {
+        temp = tessellateAux[offset + (i >> 2)][i & 3];
+        normal.xyz += bezierNormalControlPoint[i] * temp;
+        position.xyz += bezierPositionControlPoint[i] * temp;
     }
     normal.xyz = normalize(normal.xyz);
     normal.w = 0;
@@ -617,7 +622,7 @@ void getPoint(vec3 parameter, out vec4 position, out vec4 normal) {
     for (int i = 3; i >=0; --i) {
         for (int j = 3 - i; j >= 0; --j) {
             int k = 3 - i - j;
-            float t = rfactorialt[ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
+            float t = 6 * rfactorialt[ctrlPointIndex] * power(parameter.x, i) * power(parameter.y, j) * power(parameter.z, k);
             normal.xyz += bezierNormalControlPoint[ctrlPointIndex] * t;
             position.xyz += bezierPositionControlPoint[ctrlPointIndex] * t;
             ++ctrlPointIndex;
