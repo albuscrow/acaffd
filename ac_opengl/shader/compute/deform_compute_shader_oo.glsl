@@ -187,12 +187,21 @@ vec3 sampleParameter[19] = {
 
 layout(location=0) uniform uint triangleNumber;
 
+//?!iftime
+layout(std430, binding=16) buffer TessellatedParameter{
+    vec4[66] tessellatedParameter;
+};
+layout(std430, binding=13) buffer TessellateIndex{
+    uvec4[100] tessellateIndex;
+};
+//?!else
 layout(std140, binding=2) uniform TessellatedParameter{
     uniform vec4[66] tessellatedParameter;
 };
 layout(std140, binding=3) uniform TessellateIndex{
     uniform uvec4[100] tessellateIndex;
 };
+//?!end
 
 layout(location=4) uniform uint tessellatedParameterLength;
 layout(location=5) uniform uint tessellateIndexLength;

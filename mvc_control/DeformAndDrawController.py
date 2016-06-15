@@ -41,10 +41,13 @@ class DeformComputeProgram(ProgramWrap):
     def __init__(self, controller):
         super().__init__()
         self._controller = controller  # type: DeformAndDrawController
-        self._tessellation_parameter = ACVBO(GL_UNIFORM_BUFFER, 2, None, GL_STATIC_DRAW)  # type: ACVBO
-        self._tessellation_indexes = ACVBO(GL_UNIFORM_BUFFER, 3, None, GL_STATIC_DRAW)  # type: ACVBO
         if conf.IS_FAST_MODE:
+            self._tessellation_parameter = ACVBO(GL_SHADER_STORAGE_BUFFER, 16, None, GL_STATIC_DRAW)  # type: ACVBO
+            self._tessellation_indexes = ACVBO(GL_SHADER_STORAGE_BUFFER, 13, None, GL_STATIC_DRAW)  # type: ACVBO
             self._tessellation_aux = ACVBO(GL_UNIFORM_BUFFER, 4, None, GL_STATIC_DRAW)  # type: ACVBO
+        else:
+            self._tessellation_parameter = ACVBO(GL_UNIFORM_BUFFER, 2, None, GL_STATIC_DRAW)  # type: ACVBO
+            self._tessellation_indexes = ACVBO(GL_UNIFORM_BUFFER, 3, None, GL_STATIC_DRAW)  # type: ACVBO
 
     def init_uniform(self):
         self.update_uniform_triangle_number()
@@ -175,9 +178,9 @@ class DeformAndDrawController:
         self._show_real = False
 
         # vbo
-        self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_DRAW)  # type: ACVBO
-        self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_COPY)  # type: ACVBO
+        self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_COPY)  # type: ACVBO
+        self._index_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 8, None, GL_DYNAMIC_COPY)  # type: ACVBO
         if self.model.from_bezier:
             self._bezier_control_point_buffer = ACVBO(GL_SHADER_STORAGE_BUFFER, 25, None, GL_DYNAMIC_DRAW)
         self._model_vao = -1  # type: int
