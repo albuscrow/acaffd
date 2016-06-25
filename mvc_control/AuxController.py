@@ -88,8 +88,23 @@ class AuxController:
         self._b_spline_body_info_ubo.gl_sync()
 
     def gl_sync_buffer_for_deformation(self):
-        self._control_point_for_sample_ubo.gl_sync()
-        self._b_spline_body_info_ubo.gl_sync()
+
+        query_id = glGenQueries(1)
+        glBeginQuery(GL_TIME_ELAPSED, query_id)
+        repeat = 1
+        for _ in range(repeat):
+            self._control_point_for_sample_ubo.gl_sync()
+            self._b_spline_body_info_ubo.gl_sync()
+        glEndQuery(GL_TIME_ELAPSED)
+        stop_timer_available = 0
+        while stop_timer_available == 0:
+            stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
+        run_time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT) / 1000000 / repeat
+        print('copy controlto gpu', run_time, 'ms')
+        #
+        #
+        # self._control_point_for_sample_ubo.gl_sync()
+        # self._b_spline_body_info_ubo.gl_sync()
 
     def gl_draw(self, model_view_matrix: np.array, perspective_matrix: np.array):
         glEnable(GL_DEPTH_TEST)

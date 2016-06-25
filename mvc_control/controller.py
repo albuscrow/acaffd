@@ -71,24 +71,24 @@ class Controller(QObject):
         np.save(path + '/split_data', self.diff_result)
         position = [x[0][0] for x in self.diff_result]
 
-        if len(self.factors) < len(self.splited_number):
-            self.splited_number = self.splited_number[:len(self.factors)]
-
-        print(self.cym_position_error)
-        print(self.splited_number)
-        print(position)
-        print(self.factors)
-        print([x * self.cage_length for x in self.factors])
+        print('cym position error: \n', self.cym_position_error)
+        print('split number: \n', self.splited_number)
+        print('position: \n', position)
+        # print('factors: \n', self.factors)
+        print('factors: \n', [x * self.cage_length for x in self.factors])
 
         # plot(self.factors, position)
         # plot(self.factors, [self.cym_position_error] * len(self.factors))
 
         # plot(self.factors, self.splited_number)
         # plot(self.factors, [self.cpu_split_number] * len(self.factors))
-        print(len(self.splited_number))
-        print(len(position))
-        print(len(self.factors))
-        plot(list(self.splited_number), list(position))
+        # print(len(self.splited_number))
+        # print(len(position))
+        # print(len(self.factors))
+        number = self.splited_number[:len(self.factors)]
+        r_number = [1 / x for x in number]
+        # plot(r_number, position, 'bo', r_number, position, 'k')
+        plot(number, position, 'bo', number, position, 'k')
         show()
 
     @pyqtSlot()
@@ -419,13 +419,13 @@ def get_test_file_name():
     ## file_path = "res/3d_model/biship_cym_direct_average_normal.obj"
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/wheel.obj"
-    # file_path = "res/3d_model/snail.obj"
+    file_path = "res/3d_model/snail.obj"
     # file_path = "res/3d_model/t.bpt"
 
-    file_path = "res/3d_model/Mobile.obj"
+    # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/cube2.obj"
-    # file_path = "res/3d_model/star.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/rabbit_cym.obj"
+    # file_path = "res/3d_model/star.obj"
     return file_path

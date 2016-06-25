@@ -298,7 +298,6 @@ class DeformAndDrawController:
 
     def gl_async_update_buffer_for_self(self):
         if self._vertex_vbo is not None:
-            print('tess point pre split triangle', self.tessellated_point_number_pre_splited_triangle)
             self._vertex_vbo.capacity = self.splited_triangle_number \
                                         * self.tessellated_point_number_pre_splited_triangle * VERTEX_SIZE
         if self._normal_vbo is not None:
@@ -306,7 +305,6 @@ class DeformAndDrawController:
                                         * self.tessellated_point_number_pre_splited_triangle * NORMAL_SIZE
 
         if self._index_vbo is not None:
-            print('tess index pre split triangle', self.tessellated_triangle_number_pre_splited_triangle)
             self._index_vbo.capacity = self.splited_triangle_number \
                                        * self.tessellated_triangle_number_pre_splited_triangle * PER_TRIANGLE_INDEX_SIZE
 

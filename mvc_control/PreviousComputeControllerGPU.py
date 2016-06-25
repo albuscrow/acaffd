@@ -159,7 +159,18 @@ class PreviousComputeControllerGPU:
             self.gl_set_split_factor()
             self._need_update_split_factor = False
         self._program_gen_pn_triangle.use()
-        glDispatchCompute(*self.group_size)
+
+        query_id = glGenQueries(1)
+        glBeginQuery(GL_TIME_ELAPSED, query_id)
+        repeat = 1
+        for _ in range(repeat):
+            glDispatchCompute(*self.group_size)
+        glEndQuery(GL_TIME_ELAPSED)
+        stop_timer_available = 0
+        while stop_timer_available == 0:
+            stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
+        run_time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT) / 1000000 / repeat
+        print('gen PN triangle time', run_time, 'ms')
         glFinish()
 
         # with open('debug2.txt', 'w') as f:
@@ -173,7 +184,18 @@ class PreviousComputeControllerGPU:
 
         self._program.use()
         self.gl_init_split_counter()
-        glDispatchCompute(*self.group_size)
+
+        query_id = glGenQueries(1)
+        glBeginQuery(GL_TIME_ELAPSED, query_id)
+        for _ in range(repeat):
+            glDispatchCompute(*self.group_size)
+        glEndQuery(GL_TIME_ELAPSED)
+        stop_timer_available = 0
+        while stop_timer_available == 0:
+            stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
+        run_time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT) / 1000000 / repeat
+        print('pre compute time', run_time, 'ms')
+
         glUseProgram(0)
 
         self._splited_triangle_number = self.get_splited_triangles_number()
