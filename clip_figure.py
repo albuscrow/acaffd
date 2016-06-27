@@ -1,7 +1,7 @@
 from matplotlib.pyplot import *
 
-point_size = 15
-line_width = 4
+point_size = 1
+line_width = 1
 
 
 def point(p, c):
@@ -39,7 +39,6 @@ table = {'ts': triangles,
 
 def clip():
     with open('figure.txt') as f:
-        i = 0
         ls = []
         for l in f:
             ls.append(l)
@@ -91,4 +90,108 @@ def clip():
     index += 1
     show()
 
-clip()
+
+def cvt_zoom():
+    with open('figure_cvt.txt') as f:
+        ls = []
+        for l in f:
+            ls.append(l)
+    index = 0
+    for i in range(len(ls) - 1):
+        tokens = ls[i].split()
+        table[tokens[0]](tokens[1:], '#aaaaaa')
+
+        tokens = ls[i + 1].split()
+        table[tokens[0]](tokens[1:], 'r')
+
+        axis('off')
+        xlim([1.8, 2.05])
+        ylim([0.7, 0.905])
+        savefig('clip_figure/v_zoom_clip_figure' + str(index) + ".png")
+        index += 1
+        show()
+
+def cvt():
+    with open('figure_cvt.txt') as f:
+        ls = []
+        for l in f:
+            ls.append(l)
+    index = 0
+    for i in range(len(ls) - 1):
+        tokens = ls[i].split()
+        table[tokens[0]](tokens[1:], '#aaaaaa')
+
+        tokens = ls[i + 1].split()
+        table[tokens[0]](tokens[1:], 'r')
+
+        axis('off')
+        xlim([-1, 6])
+        ylim([-1, 6])
+        savefig('clip_figure/v_clip_figure' + str(index) + ".png")
+        index += 1
+        show()
+
+
+def cvt_fine():
+    with open('figure_cvt.txt') as f:
+        ls = []
+        for l in f:
+            ls.append(l)
+    index = 0
+    for i in range(len(ls) - 1):
+        tokens = ls[i].split()
+        table[tokens[0]](tokens[1:], '#aaaaaa')
+
+        tokens = ls[i + 1].split()
+        table[tokens[0]](tokens[1:], 'r')
+        plot([1.8, 2.05, 2.05, 1.8, 1.8], [0.7, 0.7, 0.95, 0.95, 0.7], '-k')
+
+        axis('off')
+        xlim([-1, 6])
+        ylim([-1, 6])
+        savefig('clip_figure/v_f_clip_figure' + str(index) + ".png")
+        index += 1
+        show()
+
+
+def cvt_total():
+    with open('figure_cvt.txt') as f:
+        ls = []
+        for l in f:
+            ls.append(l)
+    index = 0
+    for i in range(len(ls) - 1):
+        tokens = ls[i].split()
+        table[tokens[0]](tokens[1:], '#aaaaaa')
+
+    tokens = ls[-1].split()
+    table[tokens[0]](tokens[1:], 'r')
+    plot([1.8, 2.05, 2.05, 1.8, 1.8], [0.7, 0.7, 0.95, 0.95, 0.7], '-k')
+    axis('off')
+    xlim([-1, 6])
+    ylim([-1, 6])
+    savefig('clip_figure/t_v_clip_figure' + str(index) + ".png")
+    index += 1
+    show()
+
+    for i in range(len(ls) - 1):
+        tokens = ls[i].split()
+        table[tokens[0]](tokens[1:], '#aaaaaa')
+
+    tokens = ls[-1].split()
+    table[tokens[0]](tokens[1:], 'r')
+
+    axis('off')
+    xlim([1.8, 2.05])
+    ylim([0.7, 0.905])
+    # xlim([-1, 6])
+    # ylim([-1, 6])
+    savefig('clip_figure/t_v_clip_figure' + str(index) + ".png")
+    index += 1
+    show()
+
+
+# clip()
+# cvt()
+# cvt_total()
+cvt_zoom()
