@@ -36,31 +36,17 @@ table = {'ts': triangles,
          'ls': line,
          'ps': point}
 
-with open('figure.txt') as f:
-    i = 0
-    ls = []
-    for l in f:
-        ls.append(l)
-index = 0
 
-tokens = ls[0].split()
-table[tokens[0]](tokens[1:], 'k')
+def clip():
+    with open('figure.txt') as f:
+        i = 0
+        ls = []
+        for l in f:
+            ls.append(l)
+    index = 0
 
-axis('off')
-ylim([-1, 6])
-xlim([-1, 6])
-savefig('clip_figure' + str(index) + ".png")
-index += 1
-show()
-
-
-for i in range(1, len(ls)):
-    for l in ls[:i]:
-        tokens = l.split()
-        table[tokens[0]](tokens[1:], '#aaaaaa')
-
-    tokens = ls[i].split()
-    table[tokens[0]](tokens[1:], 'r')
+    tokens = ls[0].split()
+    table[tokens[0]](tokens[1:], 'k')
 
     axis('off')
     ylim([-1, 6])
@@ -68,14 +54,41 @@ for i in range(1, len(ls)):
     savefig('clip_figure' + str(index) + ".png")
     index += 1
     show()
+    for i in range(1, len(ls) - 2):
+        for l in ls[:i]:
+            tokens = l.split()
+            table[tokens[0]](tokens[1:], '#aaaaaa')
 
-for l in ls:
-    tokens = l.split()
+        tokens = ls[i].split()
+        table[tokens[0]](tokens[1:], 'r')
+
+        axis('off')
+        ylim([-1, 6])
+        xlim([-1, 6])
+        savefig('clip_figure/clip_figure' + str(index) + ".png")
+        index += 1
+        show()
+    tokens = ls[-2].split()
     table[tokens[0]](tokens[1:], 'k')
 
-axis('off')
-ylim([-1, 6])
-xlim([-1, 6])
-savefig('clip_figure/clip_figure' + str(index) + ".png")
-index += 1
-show()
+    axis('off')
+    ylim([-1, 6])
+    xlim([-1, 6])
+    savefig('clip_figure/clip_figure' + str(index) + ".png")
+    index += 1
+    show()
+
+    tokens = ls[-2].split()
+    table[tokens[0]](tokens[1:], '#aaaaaa')
+
+    tokens = ls[-1].split()
+    table[tokens[0]](tokens[1:], 'r')
+
+    axis('off')
+    ylim([-1, 6])
+    xlim([-1, 6])
+    savefig('clip_figure/clip_figure' + str(index) + ".png")
+    index += 1
+    show()
+
+clip()
