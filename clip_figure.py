@@ -38,27 +38,39 @@ table = {'ts': triangles,
 
 
 def clip():
-    with open('figure.txt') as f:
-        ls = []
+    global point_size
+    point_size = 10
+    global line_width
+    line_width = 5
+
+    # read from file
+    before_cvt = []
+    after_cvt = []
+    ls = before_cvt
+    with open('figure2.txt') as f:
         for l in f:
+            if l.strip() == 'cvt':
+                ls = after_cvt
+                continue
             ls.append(l)
+
+    # original triangle black
     index = 0
-
-    tokens = ls[0].split()
+    tokens = before_cvt[0].split()
     table[tokens[0]](tokens[1:], 'k')
-
     axis('off')
     ylim([-1, 6])
     xlim([-1, 6])
     savefig('clip_figure' + str(index) + ".png")
     index += 1
     show()
-    for i in range(1, len(ls) - 2):
-        for l in ls[:i]:
+
+    for i in range(1, len(before_cvt) - 1):
+        for l in before_cvt[:i]:
             tokens = l.split()
             table[tokens[0]](tokens[1:], '#aaaaaa')
 
-        tokens = ls[i].split()
+        tokens = before_cvt[i].split()
         table[tokens[0]](tokens[1:], 'r')
 
         axis('off')
@@ -67,9 +79,9 @@ def clip():
         savefig('clip_figure/clip_figure' + str(index) + ".png")
         index += 1
         show()
-    tokens = ls[-2].split()
+    # cvt 之前的分割结果
+    tokens = before_cvt[-1].split()
     table[tokens[0]](tokens[1:], 'k')
-
     axis('off')
     ylim([-1, 6])
     xlim([-1, 6])
@@ -77,26 +89,49 @@ def clip():
     index += 1
     show()
 
-    tokens = ls[-2].split()
+    # cvt
+    tokens = before_cvt[-1].split()
     table[tokens[0]](tokens[1:], '#aaaaaa')
+    tokens = after_cvt[-1].split()
+    table[tokens[0]](tokens[1:], 'r')
+    axis('off')
+    ylim([-1, 6])
+    xlim([-1, 6])
+    savefig('clip_figure/clip_figure' + str(index) + ".png")
+    index += 1
+    show()
+
+    # 最终结果
+    tokens = after_cvt[-1].split()
+    table[tokens[0]](tokens[1:], 'k')
+    axis('off')
+    ylim([-1, 6])
+    xlim([-1, 6])
+    savefig('clip_figure/clip_figure' + str(index) + ".png")
+    index += 1
+    show()
+
+
+def cvt_zoom_total(ls):
+    d = (0.4, 0.4, 0.4)
+    o = (0.8, 0.8, 0.8)
+    for i in range(len(ls) - 1):
+        tokens = ls[i].split()
+        table[tokens[0]](tokens[1:], interpolate_color(o, d, i / (len(ls) - 1)))
 
     tokens = ls[-1].split()
     table[tokens[0]](tokens[1:], 'r')
 
     axis('off')
-    ylim([-1, 6])
-    xlim([-1, 6])
-    savefig('clip_figure/clip_figure' + str(index) + ".png")
-    index += 1
+    xlim([1.8, 2.05])
+    ylim([0.7, 0.905])
+    savefig('clip_figure/cvt_zoom_total.png')
     show()
 
 
-def cvt_zoom():
-    with open('figure_cvt.txt') as f:
-        ls = []
-        for l in f:
-            ls.append(l)
+def cvt_zoom_compare(ls):
     index = 0
+    # zoom every iter
     for i in range(len(ls) - 1):
         tokens = ls[i].split()
         table[tokens[0]](tokens[1:], '#aaaaaa')
@@ -107,36 +142,36 @@ def cvt_zoom():
         axis('off')
         xlim([1.8, 2.05])
         ylim([0.7, 0.905])
-        savefig('clip_figure/v_zoom_clip_figure' + str(index) + ".png")
+        savefig('clip_figure/cvt_zoom_compare' + str(index) + ".png")
         index += 1
         show()
+
 
 def cvt():
-    with open('figure_cvt.txt') as f:
-        ls = []
+    global point_size
+    point_size = 4
+    global line_width
+    line_width = 2
+
+    # read from file
+    before_cvt = []
+    after_cvt = []
+    ls = before_cvt
+    with open('figure2.txt') as f:
         for l in f:
+            if l.strip() == 'cvt':
+                ls = after_cvt
+                continue
             ls.append(l)
-    index = 0
-    for i in range(len(ls) - 1):
-        tokens = ls[i].split()
-        table[tokens[0]](tokens[1:], '#aaaaaa')
 
-        tokens = ls[i + 1].split()
-        table[tokens[0]](tokens[1:], 'r')
-
-        axis('off')
-        xlim([-1, 6])
-        ylim([-1, 6])
-        savefig('clip_figure/v_clip_figure' + str(index) + ".png")
-        index += 1
-        show()
+    after_cvt = [before_cvt[-1]] + after_cvt
+    cvt_zoom_compare(after_cvt)
+    cvt_zoom_total(after_cvt)
+    cvt_compare(after_cvt)
+    cvt_total(after_cvt)
 
 
-def cvt_fine():
-    with open('figure_cvt.txt') as f:
-        ls = []
-        for l in f:
-            ls.append(l)
+def cvt_compare(ls):
     index = 0
     for i in range(len(ls) - 1):
         tokens = ls[i].split()
@@ -149,20 +184,23 @@ def cvt_fine():
         axis('off')
         xlim([-1, 6])
         ylim([-1, 6])
-        savefig('clip_figure/v_f_clip_figure' + str(index) + ".png")
+        savefig('clip_figure/cvt_compare' + str(index) + ".png")
         index += 1
         show()
 
 
-def cvt_total():
-    with open('figure_cvt.txt') as f:
-        ls = []
-        for l in f:
-            ls.append(l)
-    index = 0
+def interpolate_color(o, d, p):
+    if 0 > p or p > 1:
+        raise Exception()
+    return tuple((oo + (dd - oo) * p for oo, dd in zip(o, d)))
+
+
+def cvt_total(ls):
+    d = (0.4, 0.4, 0.4)
+    o = (0.8, 0.8, 0.8)
     for i in range(len(ls) - 1):
         tokens = ls[i].split()
-        table[tokens[0]](tokens[1:], '#aaaaaa')
+        table[tokens[0]](tokens[1:], interpolate_color(o, d, i / (len(ls) - 1)))
 
     tokens = ls[-1].split()
     table[tokens[0]](tokens[1:], 'r')
@@ -170,28 +208,29 @@ def cvt_total():
     axis('off')
     xlim([-1, 6])
     ylim([-1, 6])
-    savefig('clip_figure/t_v_clip_figure' + str(index) + ".png")
-    index += 1
+    savefig('clip_figure/cvt_total.png')
     show()
 
-    for i in range(len(ls) - 1):
-        tokens = ls[i].split()
-        table[tokens[0]](tokens[1:], '#aaaaaa')
 
-    tokens = ls[-1].split()
-    table[tokens[0]](tokens[1:], 'r')
-
-    axis('off')
-    xlim([1.8, 2.05])
-    ylim([0.7, 0.905])
-    # xlim([-1, 6])
-    # ylim([-1, 6])
-    savefig('clip_figure/t_v_clip_figure' + str(index) + ".png")
-    index += 1
-    show()
+def show_cvt_in_different_stage():
+    ls = []
+    with open('cvt.txt') as f:
+        for l in f:
+            ls.append(l)
+    index = 0
+    for l1, l2 in zip(*[iter(ls)] * 2):
+        tokens = l1.split()
+        table[tokens[0]](tokens[1:], 'k')
+        tokens = l2.split()
+        table[tokens[0]](tokens[1:], 'r')
+        axis('off')
+        # xlim([-1, 6])
+        # ylim([-1, 6])
+        savefig('clip_figure/show_cvt_in_different_stage%d.png' % index)
+        index += 1
+        show()
 
 
 # clip()
 # cvt()
-# cvt_total()
-cvt_zoom()
+show_cvt_in_different_stage()
