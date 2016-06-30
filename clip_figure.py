@@ -1,4 +1,5 @@
 from matplotlib.pyplot import *
+import matplotlib.image as mpimg
 
 point_size = 1
 line_width = 1
@@ -112,41 +113,6 @@ def clip():
     show()
 
 
-def cvt_zoom_total(ls):
-    d = (0.4, 0.4, 0.4)
-    o = (0.8, 0.8, 0.8)
-    for i in range(len(ls) - 1):
-        tokens = ls[i].split()
-        table[tokens[0]](tokens[1:], interpolate_color(o, d, i / (len(ls) - 1)))
-
-    tokens = ls[-1].split()
-    table[tokens[0]](tokens[1:], 'r')
-
-    axis('off')
-    xlim([1.8, 2.05])
-    ylim([0.7, 0.905])
-    savefig('clip_figure/cvt_zoom_total.png')
-    show()
-
-
-def cvt_zoom_compare(ls):
-    index = 0
-    # zoom every iter
-    for i in range(len(ls) - 1):
-        tokens = ls[i].split()
-        table[tokens[0]](tokens[1:], '#aaaaaa')
-
-        tokens = ls[i + 1].split()
-        table[tokens[0]](tokens[1:], 'r')
-
-        axis('off')
-        xlim([1.8, 2.05])
-        ylim([0.7, 0.905])
-        savefig('clip_figure/cvt_zoom_compare' + str(index) + ".png")
-        index += 1
-        show()
-
-
 def cvt():
     global point_size
     point_size = 4
@@ -157,7 +123,7 @@ def cvt():
     before_cvt = []
     after_cvt = []
     ls = before_cvt
-    with open('figure2.txt') as f:
+    with open('figure1.txt') as f:
         for l in f:
             if l.strip() == 'cvt':
                 ls = after_cvt
@@ -171,6 +137,43 @@ def cvt():
     cvt_total(after_cvt)
 
 
+def cvt_zoom_compare(ls):
+    index = 0
+    # zoom every iter
+    for i in range(len(ls) - 1):
+        tokens = ls[i].split()
+        table[tokens[0]](tokens[1:], '#aaaaaa')
+
+        tokens = ls[i + 1].split()
+        table[tokens[0]](tokens[1:], 'r')
+
+        gca().get_xaxis().set_visible(False)
+        gca().get_yaxis().set_visible(False)
+        xlim([1.8, 2.05])
+        ylim([0.7, 0.905])
+        savefig('clip_figure/cvt_zoom_compare' + str(index) + ".png", bbox_inches='tight', pad_inches=0)
+        index += 1
+        show()
+
+
+def cvt_zoom_total(ls):
+    d = (0.4, 0.4, 0.4)
+    o = (0.8, 0.8, 0.8)
+    for i in range(len(ls) - 1):
+        tokens = ls[i].split()
+        table[tokens[0]](tokens[1:], interpolate_color(o, d, i / (len(ls) - 1)))
+
+    tokens = ls[-1].split()
+    table[tokens[0]](tokens[1:], 'r')
+
+    gca().get_xaxis().set_visible(False)
+    gca().get_yaxis().set_visible(False)
+    xlim([1.8, 2.05])
+    ylim([0.7, 0.905])
+    savefig('clip_figure/cvt_zoom_total.png', bbox_inches='tight', pad_inches=0)
+    show()
+
+
 def cvt_compare(ls):
     index = 0
     for i in range(len(ls) - 1):
@@ -181,18 +184,13 @@ def cvt_compare(ls):
         table[tokens[0]](tokens[1:], 'r')
         plot([1.8, 2.05, 2.05, 1.8, 1.8], [0.7, 0.7, 0.95, 0.95, 0.7], '-k')
 
-        axis('off')
-        xlim([-1, 6])
-        ylim([-1, 6])
-        savefig('clip_figure/cvt_compare' + str(index) + ".png")
+        gca().get_xaxis().set_visible(False)
+        gca().get_yaxis().set_visible(False)
+        xlim([-0.05, 6])
+        ylim([-0.05, 6])
+        savefig('clip_figure/cvt_compare' + str(index) + ".png", bbox_inches='tight', pad_inches=0)
         index += 1
         show()
-
-
-def interpolate_color(o, d, p):
-    if 0 > p or p > 1:
-        raise Exception()
-    return tuple((oo + (dd - oo) * p for oo, dd in zip(o, d)))
 
 
 def cvt_total(ls):
@@ -205,11 +203,18 @@ def cvt_total(ls):
     tokens = ls[-1].split()
     table[tokens[0]](tokens[1:], 'r')
     plot([1.8, 2.05, 2.05, 1.8, 1.8], [0.7, 0.7, 0.95, 0.95, 0.7], '-k')
-    axis('off')
-    xlim([-1, 6])
-    ylim([-1, 6])
-    savefig('clip_figure/cvt_total.png')
+    gca().get_xaxis().set_visible(False)
+    gca().get_yaxis().set_visible(False)
+    xlim([-0.05, 6])
+    ylim([-0.05, 6])
+    savefig('clip_figure/cvt_total.png', bbox_inches='tight', pad_inches=0)
     show()
+
+
+def interpolate_color(o, d, p):
+    if 0 > p or p > 1:
+        raise Exception()
+    return tuple((oo + (dd - oo) * p for oo, dd in zip(o, d)))
 
 
 def show_cvt_in_different_stage():
@@ -231,6 +236,58 @@ def show_cvt_in_different_stage():
         show()
 
 
+def cvt_for_paper():
+    zoom = 'clip_figure/cvt_zoom_compare%d.png'
+    unzoom = 'clip_figure/cvt_compare%d.png'
+    index = 0
+    unzoom_image_position = (200, 300)
+    unzoom_image_width = 800
+
+    zoom_image_position = (0, 0)
+    zoom_image_width = 400
+
+    def pw2e(p, w):
+        return (p[0], p[0] + w, p[1], p[1] + w * 0.75)
+
+    for i in range(5):
+        unzoom_img = mpimg.imread(unzoom % index)[5:-3, 5:-3]
+        zoom_img = mpimg.imread(zoom % index)[5:-3, 5:-3]
+        # print(zoom_img)
+        imshow(unzoom_img, extent=pw2e(unzoom_image_position, unzoom_image_width), zorder=-1)
+        imshow(zoom_img, extent=pw2e(zoom_image_position, zoom_image_width), zorder=-1)
+        # axis('off')
+        plot([443, 0], [396, 300], 'k', linewidth=1)
+        plot([476, 400], [374, 0], 'k', linewidth=1)
+        plot([0, 400, 400, 0, 0], [0, 0, 300, 300, 0], 'k', linewidth=1)
+        gca().get_xaxis().set_visible(False)
+        gca().get_yaxis().set_visible(False)
+        xlim([-50, 950])
+        ylim([-50, 950])
+        grid()
+        savefig('clip_figure/cvt_for_paper%d.png' % index)
+        index += 1
+        show()
+
+    unzoom_img = mpimg.imread("clip_figure/cvt_total.png")[5:-3, 5:-3]
+    zoom_img = mpimg.imread("clip_figure/cvt_zoom_total.png")[5:-3, 5:-3]
+    # print(zoom_img)
+    imshow(unzoom_img, extent=pw2e(unzoom_image_position, unzoom_image_width), zorder=-1)
+    imshow(zoom_img, extent=pw2e(zoom_image_position, zoom_image_width), zorder=-1)
+    # axis('off')
+    plot([443, 0], [396, 300], 'k', linewidth=1)
+    plot([476, 400], [374, 0], 'k', linewidth=1)
+    plot([0, 400, 400, 0, 0], [0, 0, 300, 300, 0], 'k', linewidth=1)
+    gca().get_xaxis().set_visible(False)
+    gca().get_yaxis().set_visible(False)
+    xlim([-50, 950])
+    ylim([-50, 950])
+    grid()
+    savefig('clip_figure/cvt_for_paper%d.png' % index)
+    index += 1
+    show()
+
+
 # clip()
 # cvt()
-show_cvt_in_different_stage()
+# show_cvt_in_different_stage()
+cvt_for_paper()
