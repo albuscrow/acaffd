@@ -37,6 +37,7 @@ class DeformComputeShader(ShaderWrap):
                      'const int isBezier = ' + str(1 if self._controller.model.from_bezier else -1))
         return self
 
+
 class DeformComputeProgram(ProgramWrap):
     def __init__(self, controller):
         super().__init__()
@@ -513,7 +514,7 @@ class DeformAndDrawController:
     def init_tessellation_pattern_data(self, tessellation_level):
         self._tessellation_level = int(tessellation_level)
         self._tessellated_point_number_pre_splited_triangle = (self._tessellation_level + 1) \
-            * (self._tessellation_level + 2) / 2
+                                                              * (self._tessellation_level + 2) / 2
         self._tessellated_triangle_number_pre_splited_triangle = self._tessellation_level * self._tessellation_level
         self._tessellation_parameter = []  # type: list
         u = self._tessellation_level
@@ -524,6 +525,7 @@ class DeformAndDrawController:
                                                      (self._tessellation_level - u - v) / self._tessellation_level, 0])
                 v -= 1
             u -= 1
+
         rfactorialt = [0.166666666,
                        0.5, 0.5,
                        0.5, 1, 0.5,

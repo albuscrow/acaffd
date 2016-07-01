@@ -128,7 +128,7 @@ layout(std430, binding=16) buffer ControlPointIndex{
 //    int myOutputBuffer[1000];
 //};
 
-layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 float Mr[54] = {
       -0.8333333,        3.0000000,         0.0000000,        -1.5000000,         0.0000000,         0.3333333,        0.0000000,        0.0000000,        0.0000000,
@@ -281,7 +281,8 @@ vec3 normalizedOriginalNormal[3];
 const int isBezier = -1;
 //?!end
 void main() {
-    uint triangleIndex = gl_GlobalInvocationID.x * 16 + gl_GlobalInvocationID.y * 4 + gl_GlobalInvocationID.z;
+    uint triangleIndex = gl_GlobalInvocationID.x;
+//    uint triangleIndex = gl_GlobalInvocationID.x * 16 + gl_GlobalInvocationID.y * 4 + gl_GlobalInvocationID.z;
     if (triangleIndex >= triangleNumber) {
         return;
     }
