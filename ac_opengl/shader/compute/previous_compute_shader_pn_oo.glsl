@@ -90,7 +90,7 @@ vec3 genPNControlNormal(vec3 p_s, vec3 p_e, vec3 n_s, vec3 n_e) {
     if (all(lessThan(abs(v), ZERO3))) {
         return normalize(n);
     } else {
-        return normalize(n - 2 * dot(v, n) / dot(v,v) * v);
+        return normalize(n - 2 * dot(v, n) / dot(v, v) * v);
     }
 }
 
