@@ -55,10 +55,10 @@ void main() {
     color = vec4(0);
     if (has_texture > 0) {
         color += texture(acTextureSampler, varying_tex_coord);
+    } else {
+        color += Iamb + Idiff + Ispec + Idiff2;
+        color.w = 1;
     }
-
-    color += Iamb + Idiff + Ispec + Idiff2;
-    color.w = 1;
 
     //?!iftime
     //?!else

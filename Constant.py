@@ -26,8 +26,6 @@ CONTROL_POINT_TRIANGLE_NUMBER = 9
 
 SHOW_NORMAL_POINT_NUMBER_PER_TRIANGLE = 3
 
-
-
 # vec4 pn_position[3];
 # vec4 pn_normal[3];
 # vec4 original_position[3];

@@ -1,0 +1,25 @@
+# 
+# Wavefront material file
+# Converted by the DEEP Exploration  Deep Exploration 6.3 x64 6.3.3.8069
+# Right Hemisphere, LTD
+# http://www.righthemisphere.com/
+# 
+
+newmtl skin_pirat
+Ka 1 1 1
+Kd 0.588235 0.588235 0.588235
+Ks 0 0 0
+#Ka 0.5 0.5 0.5
+#Kd 0.5 0.5 0.5
+#Ks 0.9 0.9 0.9
+illum 2
+Ns 10
+map_Kd 20110919042911785706.png
+map_bump 
+bump 
+map_opacity 20110919042911785706.png
+map_d 20110919042911785706.png
+refl 
+map_kS 
+map_kA 20110919042911785706.png
+map_Ns 

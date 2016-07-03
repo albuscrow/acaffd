@@ -104,6 +104,9 @@ class OBJ:
         with open(file_path, 'r') as file:
             for l in file:
                 l = l.strip()
+                find = l.find('#')
+                if find != -1:
+                    l = l[:find]
                 if l is None or len(l) == 0 or l.startswith('#'):
                     continue
                 tokens = l.split()
@@ -116,8 +119,14 @@ class OBJ:
                     temp_normals[-1] = normalize(temp_normals[-1])
                     temp_normals[-1].append(0)
                 elif first_token == 'vt':
-                    temp_tex_coords.append(list(map(float, tokens)))
+                    tex = list(map(float, tokens))
+                    # tex[0] = 1 - tex[0]
+                    tex[1] = 1 - tex[1]
+                    temp_tex_coords.append(tex[:2])
                 elif first_token == 'f':
+                    for t in tokens:
+                        for tt in t.split('/'):
+                            a = int(tt)
                     f_store.add(' '.join(tokens))
                 elif first_token == 'vp':
                     pass
@@ -249,9 +258,11 @@ class OBJ:
                     self._normal.append([0, 0, 0, 0])
                 else:
                     if index[1]:
+                        if conf.TEXTURE:
+                            self._has_texture = True
                         self._tex_coord.append(temp_tex_coords[int(index[1])])
                     else:
-                        self._has_texture = False
+                        # self._has_texture = False
                         self._tex_coord.append([0, 0])
                     self._normal.append(temp_normals[int(index[2])])
 
@@ -311,6 +322,10 @@ class OBJ:
     @property
     def index(self):
         return np.array(self._index, dtype=np.uint32)
+
+    @property
+    def index_without_mark(self):
+        return np.array(self._index, dtype=np.uint32).reshape((-1, 4))[:, :3]
 
     @property
     def adjacency(self):
@@ -425,6 +440,7 @@ class OBJ:
 
     @property
     def has_texture(self):
+        print('has texture', self._has_texture)
         return self._has_texture
 
     @property

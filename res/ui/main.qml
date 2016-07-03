@@ -68,6 +68,7 @@ ApplicationWindow {
         Item {
             Layout.fillWidth: true;
             FFDScene {
+                antialiasing:true
                 anchors.fill: parent
                 objectName: "scene"
             }

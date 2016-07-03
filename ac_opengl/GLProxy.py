@@ -179,6 +179,7 @@ class GLProxy:
 
     def set_show_original(self, is_show):
         self._deform_and_renderer_controller.set_show_original(is_show)
+        self.previous_compute_controller.gl_update_index(is_show)
 
     def set_need_comparison(self):
         self._deform_and_renderer_controller.set_need_comparison()

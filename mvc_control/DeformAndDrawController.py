@@ -286,7 +286,7 @@ class DeformAndDrawController:
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
-        image = DeformAndDrawController.load_texture_data('res/3d_model/test1024.png')
+        image = DeformAndDrawController.load_texture_data('res/3d_model/rabbit_real/rabbit256.png')
         # Give the image to OpenGL
         image_data = np.array(list(image.getdata()), dtype=np.uint8)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.size[0], image.size[1],
@@ -360,6 +360,7 @@ class DeformAndDrawController:
             self._control_point_index_vbo.gl_sync()
             self._show_normal_position_vbo.gl_sync()
             self._show_normal_normal_vbo.gl_sync()
+            self._previous_controller.original_index_ssbo.gl_sync()
             if self.model.from_bezier:
                 self._bezier_control_point_buffer.gl_sync()
 

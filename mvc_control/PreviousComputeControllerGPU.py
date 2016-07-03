@@ -126,6 +126,13 @@ class PreviousComputeControllerGPU:
         self._adjacency_info_ssbo.async_update(self._model.adjacency)
         self.gl_async_update_buffer_about_output()
 
+    def gl_update_index(self, is_original):
+        if not is_original:
+            self._original_index_ssbo.async_update(self._model.index)
+        else:
+            print('update index for original')
+            self._original_index_ssbo.async_update(self._model.index_without_mark)
+
     def gl_async_update_buffer_about_output(self):
         self._share_adjacency_pn_triangle_normal_ssbo.capacity = self._model._original_triangle_number \
                                                                  * PER_TRIANGLE_PN_NORMAL_TRIANGLE_SIZE
