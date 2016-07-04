@@ -219,3 +219,7 @@ class GLProxy:
 
     def clear_director_control_points(self):
         self.aux_controller.clear_all_direct_control_point()
+
+    def save_image(self):
+        self._deform_and_renderer_controller.save_screen(self._controller.window_size.w,
+                                                         self._controller.window_size.h)

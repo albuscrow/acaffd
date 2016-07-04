@@ -322,6 +322,13 @@ ApplicationWindow {
                             controller.begin_test_split_factor()
                         }
                     }
+
+                    Button {
+                        text: "save image"
+                        onClicked: {
+                            controller.save_image()
+                        }
+                    }
                     //?!end
 
                     ExclusiveGroup { id: group }

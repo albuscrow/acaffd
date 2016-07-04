@@ -124,9 +124,6 @@ class OBJ:
                     tex[1] = 1 - tex[1]
                     temp_tex_coords.append(tex[:2])
                 elif first_token == 'f':
-                    for t in tokens:
-                        for tt in t.split('/'):
-                            a = int(tt)
                     f_store.add(' '.join(tokens))
                 elif first_token == 'vp':
                     pass
@@ -258,7 +255,7 @@ class OBJ:
                     self._normal.append([0, 0, 0, 0])
                 else:
                     if index[1]:
-                        if conf.TEXTURE:
+                        if conf.TEXTURE and not conf.IS_FAST_MODE:
                             self._has_texture = True
                         self._tex_coord.append(temp_tex_coords[int(index[1])])
                     else:

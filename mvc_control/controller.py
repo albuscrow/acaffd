@@ -404,6 +404,10 @@ class Controller(QObject):
             self._inited = True
         self.gl_on_frame_draw()
 
+    @pyqtSlot()
+    def save_image(self):
+        self._gl_proxy.save_image()
+
 
 def get_test_file_name():
     # todo

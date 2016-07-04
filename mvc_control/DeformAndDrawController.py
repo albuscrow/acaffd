@@ -17,6 +17,8 @@ from pyrr.matrix44 import *
 import config as conf
 from util.util import power
 
+import matplotlib.image as mpimg
+
 
 def add_compute_prefix(file_name: str):
     return 'ac_opengl/shader/compute/' + file_name
@@ -125,6 +127,9 @@ class DeformAndDrawController:
         return self._final_tessellation_level
 
     def __init__(self, has_texture, previous_controller, model, aux_controller: AuxController, controller=None):
+        self._screen_shot = False
+        self._screen_width = 0
+        self._screen_height = 0
         self._time_number = -3
         self._time_total = 0
         self._aux_controller = aux_controller  # type: AuxController
@@ -482,12 +487,34 @@ class DeformAndDrawController:
                 glFinish()
                 glUseProgram(0)
                 glBindVertexArray(0)
+            if self._screen_shot:
+                if self._screen_height > self._screen_width:
+                    x = 0
+                    y = (self._screen_height - self._screen_width) / 2
+                    w = self._screen_width
+                    h = self._screen_width
+                else:
+                    x = (self._screen_width - self._screen_height) / 2
+                    y = 0
+                    w = self._screen_height
+                    h = self._screen_height
+                image_data = glReadPixels(x, y, w, h, GL_RGB, GL_FLOAT)
+                shape = image_data.shape
+                print('save size', shape)
+                mpimg.imsave('test.png', image_data.reshape((shape[1], shape[0], shape[2])), format='png',
+                             origin='lower')
+                self._screen_shot = False
 
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_BLEND)
         if self._vertex_vbo.capacity == 0:
             return
         self.comparison()
+
+    def save_screen(self, w, h):
+        self._screen_shot = True
+        self._screen_width = w
+        self._screen_height = h
 
     @property
     def splited_triangle_number(self):
