@@ -18,6 +18,7 @@ import config as conf
 from util.util import power
 
 import matplotlib.image as mpimg
+import os.path
 
 
 def add_compute_prefix(file_name: str):
@@ -94,6 +95,9 @@ class ModelRendererShader(ProgramWrap):
 
     def init_uniform(self):
         self.update_uniform_about_split_edge()
+        glProgramUniform1i(self._gl_program_name, 8, 1 if self._controller.has_texture else -1)
+
+    def update_uniform_about_texture(self):
         glProgramUniform1i(self._gl_program_name, 8, 1 if self._controller.has_texture else -1)
 
     def update_uniform_about_show_original(self):
@@ -183,6 +187,9 @@ class DeformAndDrawController:
         self._need_update_show_real_flag = True
         self._show_real = False
 
+        self._need_update_use_texture_flag = False
+        self._has_texture = has_texture
+
         # vbo
         self._vertex_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 6, None, GL_DYNAMIC_COPY)  # type: ACVBO
         self._normal_vbo = ACVBO(GL_SHADER_STORAGE_BUFFER, 7, None, GL_DYNAMIC_COPY)  # type: ACVBO
@@ -231,7 +238,6 @@ class DeformAndDrawController:
                 .add_shader(ShaderWrap(GL_VERTEX_SHADER, add_renderer_prefix('normal.v.glsl'))) \
                 .add_shader(ShaderWrap(GL_FRAGMENT_SHADER, add_renderer_prefix('normal.f.glsl'))) \
                 .add_shader(ShaderWrap(GL_GEOMETRY_SHADER, add_renderer_prefix('normal.g.glsl')))  # type: ProgramWrap
-        self._has_texture = has_texture
 
     def gl_init(self):
         self._model_vao = glGenVertexArrays(1)
@@ -291,7 +297,9 @@ class DeformAndDrawController:
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
-        image = DeformAndDrawController.load_texture_data('res/3d_model/rabbit_real/rabbit256.png')
+        # image = DeformAndDrawController.load_texture_data('res/3d_model/rabbit_real/rabbit256.png')
+        # image = DeformAndDrawController.load_texture_data('res/3d_model/ship/ship_texture.png')
+        image = DeformAndDrawController.load_texture_data('res/colormap.png')
         # Give the image to OpenGL
         image_data = np.array(list(image.getdata()), dtype=np.uint8)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.size[0], image.size[1],
@@ -422,6 +430,10 @@ class DeformAndDrawController:
             self._renderer_program.update_uniform_about_split_edge()
             self._need_update_show_splited_edge_flag = False
 
+        if self._need_update_use_texture_flag:
+            self._renderer_program.update_uniform_about_texture()
+            self._need_update_use_texture_flag = False
+
         if self._need_update_show_original:
             self._renderer_program.update_uniform_about_show_original()
             self._need_update_show_original = False
@@ -501,8 +513,11 @@ class DeformAndDrawController:
                 image_data = glReadPixels(x, y, w, h, GL_RGB, GL_FLOAT)
                 shape = image_data.shape
                 print('save size', shape)
-                mpimg.imsave('test.png', image_data.reshape((shape[1], shape[0], shape[2])), format='png',
-                             origin='lower')
+                i = 0
+                while os.path.exists('sc%d.png' % i):
+                    i += 1
+
+                mpimg.imsave('sc%d.png' % i, image_data.reshape((shape[1], shape[0], shape[2])), origin='lower')
                 self._screen_shot = False
 
         glDisable(GL_DEPTH_TEST)
@@ -653,6 +668,10 @@ class DeformAndDrawController:
     def set_show_original(self, is_show):
         self._show_original = is_show
         self._need_update_show_original = True
+
+    def use_texture(self, b):
+        self._has_texture = b
+        self._need_update_use_texture_flag = True
 
     def set_adjust_control_point(self, v):
         self._adjust_control_point = v

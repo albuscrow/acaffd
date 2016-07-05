@@ -223,3 +223,6 @@ class GLProxy:
     def save_image(self):
         self._deform_and_renderer_controller.save_screen(self._controller.window_size.w,
                                                          self._controller.window_size.h)
+
+    def use_texture(self, b):
+        self._deform_and_renderer_controller.use_texture(b)

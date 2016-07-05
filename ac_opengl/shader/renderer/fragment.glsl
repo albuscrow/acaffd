@@ -88,8 +88,11 @@ void main() {
         }
     }
     if (show_triangle_quality > 0) {
-        color = vec4(1 - varying_parameter_in_original3_triangle_quality1.w,
-                    varying_parameter_in_original3_triangle_quality1.w, 0,1);
+//        color = vec4(1 - varying_parameter_in_original3_triangle_quality1.w,
+//                    varying_parameter_in_original3_triangle_quality1.w, 0,1);
+
+        color = texture(acTextureSampler, vec2(1 - varying_parameter_in_original3_triangle_quality1.w, 0));
+        color.w = 1;
         return;
     }
     if (show_normal_diff > 0) {

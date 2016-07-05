@@ -408,6 +408,9 @@ class Controller(QObject):
     def save_image(self):
         self._gl_proxy.save_image()
 
+    @pyqtSlot(bool)
+    def set_use_texture(self, b):
+        self._gl_proxy.use_texture(b)
 
 def get_test_file_name():
     # todo
@@ -429,10 +432,11 @@ def get_test_file_name():
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
     # file_path = "res/3d_model/cube2.obj"
-    # file_path = "res/3d_model/sphere.obj"
+    file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/rabbit_cym.obj"
     # file_path = "res/3d_model/star.obj"
 
     # for renderer effect
-    file_path = 'res/3d_model/rabbit_real/rabbit.obj'
+    # file_path = 'res/3d_model/rabbit_real/rabbit.obj'
+    # file_path = 'res/3d_model/ship/ship2.obj'
     return file_path

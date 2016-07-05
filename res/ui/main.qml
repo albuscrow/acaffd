@@ -309,6 +309,44 @@ ApplicationWindow {
                             controller.set_show_real(checked)
                         }
                     }
+
+                    CheckBox {
+                        text: qsTr("pn法向绘制")
+                        checked: false
+                        onClicked: {
+                            controller.set_use_pn_normal(checked)
+                        }
+                    }
+
+                    CheckBox {
+                        text: qsTr("贴图")
+                        checked: true
+                        onClicked: {
+                            controller.set_use_texture(checked)
+                        }
+                    }
+                    //?!end
+
+                    ExclusiveGroup { id: group }
+
+                    RadioButton {
+                        text: "ac"
+                        exclusiveGroup: group
+                        checked: true
+                        onClicked: {
+                            controller.change_algorithm(0)
+                        }
+                    }
+                    RadioButton {
+                        text: "cym"
+                        exclusiveGroup: group
+                        onClicked: {
+                            controller.change_algorithm(1)
+                        }
+                    }
+
+                    //?!iftime
+                    //?!else
                     Button {
                         text: "打印精度对比"
                         onClicked: {
@@ -331,30 +369,6 @@ ApplicationWindow {
                     }
                     //?!end
 
-                    ExclusiveGroup { id: group }
-                    RadioButton {
-                        text: "ac"
-                        exclusiveGroup: group
-                        checked: true
-                        onClicked: {
-                            controller.change_algorithm(0)
-                        }
-                    }
-                    RadioButton {
-                        text: "cym"
-                        exclusiveGroup: group
-                        onClicked: {
-                            controller.change_algorithm(1)
-                        }
-                    }
-
-                    CheckBox {
-                        text: qsTr("pn法向绘制")
-                        checked: false
-                        onClicked: {
-                            controller.set_use_pn_normal(checked)
-                        }
-                    }
                 }
             }
         }
