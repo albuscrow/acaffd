@@ -1,3 +1,3 @@
 #!/bin/zsh
 
-optirun python main.py $1 $2 $3
+primusrun python main.py $1 $2 $3

@@ -57,8 +57,8 @@ void main() {
             varying_tex_coord = tex_coord;
             varying_parameter_in_original3_triangle_quality1 = parameter_in_original3_triangle_quality1;
             varying_parameter_in_splited_triangle = parameter_in_splited_edge;
-            varying_diff_normal = abs((real_normal - normal).xyz*5.2);
-            varying_diff_position = abs((real_position - p).xyz*30);
+            varying_diff_normal = abs((real_normal - normal).xyz * 5.2);
+            varying_diff_position = abs((real_position - p).xyz * 25);
         }
     //?!end
 }

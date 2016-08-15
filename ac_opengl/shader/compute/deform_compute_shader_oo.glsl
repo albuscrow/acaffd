@@ -470,7 +470,8 @@ void main() {
             sp.normal = n;
         } else {
             if (adjust_control_point > 0) {
-                sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
+//                sp.position = getPositionInOriginalPNTriangle(temp, currentTriangle.adjacency_triangle_index3_original_triangle_index1[3]);
+                sp.position = getPositionInOriginal(tessellatedParameter[i].xyz);
             } else {
                 sp.position = getPositionInOriginal(tessellatedParameter[i].xyz);
             }
