@@ -1,7 +1,7 @@
 import logging
 from mvc_model.ACTriangle import ACTriangle, ACPoly
 from mvc_model.aux import BSplineBody
-from util.util import normalize, equal_vec
+from util.util import normalize
 from itertools import product
 from math import factorial
 import config as conf
@@ -62,6 +62,7 @@ class BPT:
                 for _ in range(u * v):
                     control_points.append([float(x) for x in file.readline().split()])
                 self._b_spline_patch.append(BSplinePatch(control_points))
+        # self._b_spline_patch = self._b_spline_patch[:32]
 
     @property
     def b_spline_patch(self):
@@ -175,9 +176,6 @@ class OBJ:
                 temp_uv.append([u, v])
             for index in temp_index:
                 real_index = [ii + i * one_patch_point for ii in index]
-                # p1, p2, p3 = [np.array(temp_vertices[ii], dtype='f4') for ii in real_index]
-                # if equal_vec(p1, p2) or equal_vec(p1, p3) or equal_vec(p3, p2):
-                #     continue
                 f_store.add("{0}//{0} {1}//{1} {2}//{2}".format(*real_index))
 
         self.handle_face(f_store, temp_normals, None, temp_vertices, temp_uv)
@@ -259,7 +257,7 @@ class OBJ:
                             self._has_texture = True
                         self._tex_coord.append(temp_tex_coords[int(index[1])])
                     else:
-                        # self._has_texture = False
+                        self._has_texture = False
                         self._tex_coord.append([0, 0])
                     self._normal.append(temp_normals[int(index[2])])
 

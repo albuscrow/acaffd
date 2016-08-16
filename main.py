@@ -1,6 +1,3 @@
-import logging
-import threading
-
 from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtCore import QUrl
 from PyQt5.QtQml import qmlRegisterType
