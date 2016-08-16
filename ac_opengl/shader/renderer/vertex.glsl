@@ -28,7 +28,7 @@ out vec2 varying_tex_coord;
 //?!else
 out vec4 varying_parameter_in_original3_triangle_quality1;
 out vec4 varying_parameter_in_splited_triangle;
-out vec3 varying_diff_normal;
+out float varying_diff_normal;
 out vec3 varying_diff_position;
 //?!end
 
@@ -57,7 +57,8 @@ void main() {
             varying_tex_coord = tex_coord;
             varying_parameter_in_original3_triangle_quality1 = parameter_in_original3_triangle_quality1;
             varying_parameter_in_splited_triangle = parameter_in_splited_edge;
-            varying_diff_normal = abs((real_normal - normal).xyz * 5.2);
+
+            varying_diff_normal = abs(acos(clamp(dot(normalize(normal.xyz), normalize(real_normal.xyz)), -1.0f, 1.0f)) * 30 / 3.1415926);
             varying_diff_position = abs((real_position - p).xyz * 25);
         }
     //?!end

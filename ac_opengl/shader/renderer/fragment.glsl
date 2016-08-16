@@ -17,7 +17,7 @@ layout(binding=1) uniform sampler2D acTextureSampler;
 //?!else
 in vec4 varying_parameter_in_original3_triangle_quality1;
 in vec4 varying_parameter_in_splited_triangle;
-in vec3 varying_diff_normal;
+in float varying_diff_normal;
 in vec3 varying_diff_position;
 //?!end
 
@@ -96,9 +96,9 @@ void main() {
         return;
     }
     if (show_normal_diff > 0) {
-        float l = min(length(varying_diff_normal) * 10, 1);
+//        float l = min(length(varying_diff_normal) * 10, 1);
 //        color = vec4(l, 1-l, 0, 1);
-        color = texture(acTextureSampler, vec2(l, 0.5));
+        color = texture(acTextureSampler, vec2(clamp(varying_diff_normal, 0, 1), 0.5));
         color.w = 1;
         return;
     }
