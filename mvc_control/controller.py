@@ -48,6 +48,13 @@ class Controller(QObject):
         self._model_view_matrix = create_from_translation(np.array(self._translate), dtype='float32')  # type: np.array
         self._rotate_matrix = create_identity(dtype='f4')
 
+        # rotate matrix for cube
+        self._rotate_matrix = np.array(
+            [[0.44967501, -0.06625679, -0.89087461, 0.],
+             [-0.84477917, 0.29277544, -0.4481853, 0.],
+             [0.29048993, 0.95400547, 0.07567401, 0.],
+             [0., 0., 0., 1.]])
+
         self._inited = False  # type: bool
 
         self.factors = None
@@ -190,6 +197,7 @@ class Controller(QObject):
     def rotate(self, x, y):
         # update _mode_view_matrix
         self._rotate_matrix = multiply(self._rotate_matrix, util.util.create_rotate(2, y, x, 0))
+        print(self._rotate_matrix)
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = multiply(self._rotate_matrix,
                                            np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
@@ -411,6 +419,7 @@ class Controller(QObject):
     @pyqtSlot(bool)
     def set_use_texture(self, b):
         self._gl_proxy.use_texture(b)
+
 
 def get_test_file_name():
     # todo
