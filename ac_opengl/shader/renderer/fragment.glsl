@@ -103,7 +103,7 @@ void main() {
         return;
     }
     if (show_position_diff > 0) {
-        float l = min(length(varying_diff_position), 1) + 0.1;
+        float l = clamp(length(varying_diff_position), 0, 1);
 //        color = vec4(l, 1-l, 0, 1);
         color = texture(acTextureSampler, vec2(l, 0.5));
         color.w = 1;

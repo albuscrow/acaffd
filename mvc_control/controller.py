@@ -48,12 +48,12 @@ class Controller(QObject):
         self._model_view_matrix = create_from_translation(np.array(self._translate), dtype='float32')  # type: np.array
         self._rotate_matrix = create_identity(dtype='f4')
 
-        # rotate matrix for cube
-        # self._rotate_matrix = np.array(
-        #     [[0.44967501, -0.06625679, -0.89087461, 0.],
-        #      [-0.84477917, 0.29277544, -0.4481853, 0.],
-        #      [0.29048993, 0.95400547, 0.07567401, 0.],
-        #      [0., 0., 0., 1.]])
+        ## rotate matrix for cube
+        self._rotate_matrix = np.array(
+            [[0.44967501, -0.06625679, -0.89087461, 0.],
+             [-0.84477917, 0.29277544, -0.4481853, 0.],
+             [0.29048993, 0.95400547, 0.07567401, 0.],
+             [0., 0., 0., 1.]])
 
 
         self._inited = False  # type: bool
@@ -385,11 +385,11 @@ class Controller(QObject):
         #      [0.0, 0.0, -8.0, 1.0]])
 
         # deformation
-        self._model_view_matrix = np.array(
-            [[-1.33853, -0.952707, -0.436706, 0.0],
-             [0.663226, -1.31852, 0.84363, 0.0],
-             [-0.81148, 0.49387, 1.40984, 0.0],
-             [0.27, 0.02, -8.0, 1.0]])
+        # self._model_view_matrix = np.array(
+        #     [[-1.33853, -0.952707, -0.436706, 0.0],
+        #      [0.663226, -1.31852, 0.84363, 0.0],
+        #      [-0.81148, 0.49387, 1.40984, 0.0],
+        #      [0.27, 0.02, -8.0, 1.0]])
 
         self.updateScene.emit()
 
@@ -471,11 +471,11 @@ def get_test_file_name():
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"
-    file_path = "res/3d_model/t.bpt"
+    # file_path = "res/3d_model/t.bpt"
 
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    # file_path = "res/3d_model/cube2.obj"
+    file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/rabbit_cym.obj"
     # file_path = "res/3d_model/star.obj"
