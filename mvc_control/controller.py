@@ -49,11 +49,12 @@ class Controller(QObject):
         self._rotate_matrix = create_identity(dtype='f4')
 
         # rotate matrix for cube
-        self._rotate_matrix = np.array(
-            [[0.44967501, -0.06625679, -0.89087461, 0.],
-             [-0.84477917, 0.29277544, -0.4481853, 0.],
-             [0.29048993, 0.95400547, 0.07567401, 0.],
-             [0., 0., 0., 1.]])
+        # self._rotate_matrix = np.array(
+        #     [[0.44967501, -0.06625679, -0.89087461, 0.],
+        #      [-0.84477917, 0.29277544, -0.4481853, 0.],
+        #      [0.29048993, 0.95400547, 0.07567401, 0.],
+        #      [0., 0., 0., 1.]])
+
 
         self._inited = False  # type: bool
 
@@ -197,10 +198,11 @@ class Controller(QObject):
     def rotate(self, x, y):
         # update _mode_view_matrix
         self._rotate_matrix = multiply(self._rotate_matrix, util.util.create_rotate(2, y, x, 0))
-        print(self._rotate_matrix)
+        ##print(self._rotate_matrix)
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = multiply(self._rotate_matrix,
                                            np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
+
         self.updateScene.emit()
 
     @pyqtSlot(int, int)
@@ -373,7 +375,40 @@ class Controller(QObject):
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = np.dot(self._rotate_matrix,
                                          np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
+
+        self.print_matrix(self._model_view_matrix)
+        # normal
+        # self._model_view_matrix = np.array(
+        #     [[-1.64843, -1.10888, 0.230428, 0.0],
+        #      [1.01591, -1.26784, 1.16642, 0.0],
+        #      [-0.500636, 1.07843, 1.60822, 0.0],
+        #      [0.0, 0.0, -8.0, 1.0]])
+
+        # deformation
+        self._model_view_matrix = np.array(
+            [[-1.33853, -0.952707, -0.436706, 0.0],
+             [0.663226, -1.31852, 0.84363, 0.0],
+             [-0.81148, 0.49387, 1.40984, 0.0],
+             [0.27, 0.02, -8.0, 1.0]])
+
         self.updateScene.emit()
+
+    @staticmethod
+    def print_matrix(matrix):
+        print('[', end='')
+        for j in range(4):
+            print('[', end='')
+            for i in range(4):
+                if i == 3:
+                    print(matrix[j, i], end='')
+                else:
+                    print(matrix[j, i], end=', ')
+            if j == 3:
+                print(']', end='')
+            else:
+                print('],')
+        print(']')
+        print()
 
     @property
     def window_size(self):
@@ -436,11 +471,11 @@ def get_test_file_name():
     # file_path = "res/3d_model/vase_cym.obj"
     # file_path = "res/3d_model/wheel.obj"
     # file_path = "res/3d_model/snail.obj"
-    # file_path = "res/3d_model/t.bpt"
+    file_path = "res/3d_model/t.bpt"
 
     # file_path = "res/3d_model/Mobile.obj"
     # file_path = "res/3d_model/biship_cym_area_average_normal.obj"
-    file_path = "res/3d_model/cube2.obj"
+    # file_path = "res/3d_model/cube2.obj"
     # file_path = "res/3d_model/sphere.obj"
     # file_path = "res/3d_model/rabbit_cym.obj"
     # file_path = "res/3d_model/star.obj"
