@@ -291,7 +291,175 @@ def cvt_for_paper():
 # cvt()
 # show_cvt_in_different_stage()
 # cvt_for_paper()
-unzoom_img = mpimg.imread("clip_figure/cvt_total.png")
-print(unzoom_img.shape)
-print(unzoom_img.transpose((1, 0, 2)).shape)
+# unzoom_img = mpimg.imread("clip_figure/cvt_total.png")
+# print(unzoom_img.shape)
+# print(unzoom_img.transpose((1, 0, 2)).shape)
 # print(unzoom_img)
+
+
+def gen_error_cube(file_name):
+    pic = mpimg.imread('error/' + file_name)
+    colormap = mpimg.imread('res/colormap.png').transpose((1, 0, 2))[::-1, ::, ::]
+    picPosition = (150, 0)
+    outputSize = pic.shape[:2]
+    picSize = [x * 0.8 for x in pic.shape[:2]]
+
+    # picSize[1] += 200
+
+    def ps2e(p, s):
+        return (p[0], p[0] + s[0], p[1], p[1] + s[1])
+
+    colorSize = (10, 200)
+    colorMapExtent = (outputSize[0] - colorSize[0], outputSize[0],
+                      0 + 50, colorSize[1] + 50)
+
+    imshow(pic, extent=ps2e(picPosition, picSize), zorder=-1)
+    imshow(colormap, extent=colorMapExtent, zorder=-1)
+
+    text(outputSize[0] - 50, 55, '    0', fontsize=11)
+    text(outputSize[0] - 63, 35 + colorSize[1], ' π/30', fontsize=11)
+    gca().get_xaxis().set_visible(False)
+    gca().get_yaxis().set_visible(False)
+
+    xlim([150, outputSize[0]])
+    ylim([50, outputSize[1] - 200])
+    # grid()
+    savefig('/home/ac/paperlzq/pic/7_with_colormap.png', bbox_inches='tight', pad_inches=-0.015)
+    # show()
+
+
+def gen_error_cube_and_teapot(file_name_cube, file_name_teapot, output_file_name):
+    gcf().clear()
+    cube = mpimg.imread('error/' + file_name_cube)
+    teapot = mpimg.imread('error/' + file_name_teapot)
+
+    original_size = teapot.shape[1::-1]
+
+    colormap = mpimg.imread('res/colormap.png').transpose((1, 0, 2))[::-1, ::, ::]
+
+    cube_size = list(original_size)
+    teapot_size = list(original_size)
+    color_map_size = colormap.shape[1::-1]
+
+    cube_position = (0, 0)
+    teapot_position = (cube_size[0] - 100, -150)
+    color_map_position = [teapot_position[0] - 55, 50]
+
+    text_offset = 35
+    text_down_position = [color_map_position[0] + text_offset, color_map_position[1]]
+    text_up_position = [color_map_position[0] + text_offset, color_map_position[1] + color_map_size[1] - 20]
+    text_font_size = 20
+
+    output_range_x = [0, teapot_size[0] * 2 - 100]
+    output_range_y = [45, teapot_size[1] - 200]
+
+    def get_range_size(x):
+        return x[1] - x[0]
+
+    # print(output_range_x)
+    # print(output_range_y)
+
+    def ps2e(p, s):
+        return (p[0], p[0] + s[0], p[1], p[1] + s[1])
+
+    imshow(cube, extent=ps2e(cube_position, [x * 0.8 for x in cube_size]), zorder=-1)
+    imshow(teapot, extent=ps2e(teapot_position, teapot_size), zorder=-1)
+    # imshow(colormap, extent=ps2e(color_map_position, color_map_size), zorder=-1)
+    #
+    # text(*text_down_position, '0', fontsize=text_font_size)
+    # text(*text_up_position, top_text, fontsize=text_font_size)
+    gca().get_xaxis().set_visible(False)
+    gca().get_yaxis().set_visible(False)
+    xlim(output_range_x)
+    ylim(output_range_y)
+    dpi = 100
+    gcf().set_size_inches(get_range_size(output_range_x) / dpi, get_range_size(output_range_y) / dpi)
+    savefig('/home/ac/paperlzq/pic/' + output_file_name, bbox_inches='tight', pad_inches=-3 / 100, dpi=dpi)
+
+
+def gen_error_cube_and_teapot_with_color_map(file_name_cube, file_name_teapot, top_text, output_file_name):
+    gcf().clear()
+    cube = mpimg.imread('error/' + file_name_cube)
+    teapot = mpimg.imread('error/' + file_name_teapot)
+
+    original_size = teapot.shape[1::-1]
+
+    colormap = mpimg.imread('res/colormap.png').transpose((1, 0, 2))[::-1, ::, ::]
+
+    cube_size = list(original_size)
+    teapot_size = list(original_size)
+    color_map_size = colormap.shape[1::-1]
+
+    cube_position = (0, 0)
+    teapot_position = (cube_size[0] - 100, -150)
+    color_map_position = [teapot_position[0] - 55, 50]
+
+    text_offset = 35
+    text_down_position = [color_map_position[0] + text_offset, color_map_position[1]]
+    text_up_position = [color_map_position[0] + text_offset, color_map_position[1] + color_map_size[1] - 20]
+    text_font_size = 20
+
+    output_range_x = [0, teapot_size[0] * 2 - 100]
+    output_range_y = [45, teapot_size[1] - 200]
+
+    def get_range_size(x):
+        return x[1] - x[0]
+
+    # print(output_range_x)
+    # print(output_range_y)
+
+    def ps2e(p, s):
+        return (p[0], p[0] + s[0], p[1], p[1] + s[1])
+
+    imshow(cube, extent=ps2e(cube_position, [x * 0.8 for x in cube_size]), zorder=-1)
+    imshow(teapot, extent=ps2e(teapot_position, teapot_size), zorder=-1)
+    imshow(colormap, extent=ps2e(color_map_position, color_map_size), zorder=-1)
+
+    text(*text_down_position, '0', fontsize=text_font_size)
+    text(*text_up_position, top_text, fontsize=text_font_size)
+    gca().get_xaxis().set_visible(False)
+    gca().get_yaxis().set_visible(False)
+    xlim(output_range_x)
+    ylim(output_range_y)
+    dpi = 100
+    gcf().set_size_inches(get_range_size(output_range_x) / dpi, get_range_size(output_range_y) / dpi)
+    savefig('/home/ac/paperlzq/pic/' + output_file_name, bbox_inches='tight', pad_inches=-3 / 100, dpi=dpi)
+
+
+def gen_error_teapot(file_name):
+    pic = mpimg.imread('error/' + file_name)
+    colormap = mpimg.imread('res/colormap.png').transpose((1, 0, 2))[::-1, ::, ::]
+    picPosition = (0, -150)
+    picSize = list(pic.shape[:2])
+
+    # picSize[1] += 200
+
+    def ps2e(p, s):
+        return (p[0], p[0] + s[0], p[1], p[1] + s[1])
+
+    colorSize = (10, 200)
+    colorMapExtent = (0, colorSize[0],
+                      0 + 50, colorSize[1] + 50)
+
+    imshow(pic, extent=ps2e(picPosition, picSize), zorder=-1)
+    imshow(colormap, extent=colorMapExtent, zorder=-1)
+    gca().get_xaxis().set_visible(False)
+    gca().get_yaxis().set_visible(False)
+    xlim([0, picSize[0]])
+    ylim([50, picSize[1] - 200])
+    grid()
+    savefig('/home/ac/paperlzq/pic/teapot7_with_colormap.png', bbox_inches='tight', pad_inches=0, frameon=True)
+    # show()
+
+
+# gen_error_teapot('teapot/teapot7.png')
+# gen_error_cube('cube/cube7.png')
+gen_error_cube_and_teapot('cube/cube0.png', 'teapot/teapot0.png', 'error0')
+gen_error_cube_and_teapot('cube/cube1.png', 'teapot/teapot1.png', 'error1')
+gen_error_cube_and_teapot('cube/cube2.png', 'teapot/teapot2.png', 'error2')
+gen_error_cube_and_teapot('cube/cube3.png', 'teapot/teapot3.png', 'error3')
+
+gen_error_cube_and_teapot_with_color_map('cube/cube4.png', 'teapot/teapot4.png', '0.04', 'error4')
+gen_error_cube_and_teapot_with_color_map('cube/cube5.png', 'teapot/teapot5.png', 'π/30', 'error5')
+gen_error_cube_and_teapot_with_color_map('cube/cube6.png', 'teapot/teapot6.png', '0.04', 'error6')
+gen_error_cube_and_teapot_with_color_map('cube/cube7.png', 'teapot/teapot7.png', 'π/30', 'error7')
