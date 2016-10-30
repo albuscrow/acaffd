@@ -1,4 +1,5 @@
 from functools import reduce
+from shutil import copyfile
 
 from math import sqrt, acos, pi
 
@@ -471,6 +472,52 @@ class DeformAndDrawController:
             else:
                 glBindVertexArray(self._model_vao)
         number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
+
+        positions = self._vertex_vbo.get_value(ctypes.c_float, (self._vertex_vbo.capacity / 4 / 4, 4))
+        positions = [(round(x, 5) for x in y) for y in positions]
+        aux = {}
+        imap = {}
+        counter = 0
+        new_position = []
+
+        for i in range(len(positions)):
+            l = tuple(positions[i])
+            positions[i] = l
+            # print(l)
+            if l not in aux:
+                aux[l] = counter
+                new_position.append(l)
+                counter += 1
+            imap[i] = aux[l]
+
+        print('new position len:', len(new_position))
+
+        indices = self._index_vbo.get_value(ctypes.c_int, (self._index_vbo.capacity / 4 / 3, 3))
+
+        with open('cube_volume.obj', mode='w') as f:
+            for p in new_position:
+                f.write('v ' + ' '.join([str(x) for x in p[:3]]) + '\n')
+
+            for i in indices:
+                points = [None, None, None]
+                for ii in range(3):
+                    points[ii] = np.array(list(positions[i[ii]])[:3])
+
+                v01 = points[1] - points[0]
+                v02 = points[2] - points[0]
+                if np.dot(np.cross(v01, v02), points[0]) < 0:
+                    i[0], i[1] = i[1], i[0]
+                f.write('f ' + ' '.join([str(imap[x] + 1)+'//' for x in i]) + '\n')
+
+        copyfile('cube_volume.obj', '/home/ac/cube_volume.obj')
+
+
+
+        # for p in positions:
+        #     for pp in positions:
+        #         delta = abs(p - pp)
+        #         if all(delta < 0.0000001) and any(delta != 0):
+        #             print(delta)
 
         if conf.IS_FAST_MODE or not self._show_control_point:
             glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
