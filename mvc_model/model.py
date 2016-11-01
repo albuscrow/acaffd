@@ -435,7 +435,6 @@ class OBJ:
 
     @property
     def has_texture(self):
-        print('has texture', self._has_texture)
         return self._has_texture
 
     @property

@@ -589,4 +589,4 @@ if __name__ == '__main__':
     t = ACTriangle(0)
     t.positionv3 = np.array([0, 0, 0, 1, 1, 0, 1, 0, 0], dtype='f4').reshape((3, 3))
     tuv = t.intersect(np.mat([-1, -1, 1], dtype='f4'), np.mat([1, 1, 0], dtype='f4'))
-    print(tuv)
+    print('from ACTriangle main', tuv)

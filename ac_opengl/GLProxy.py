@@ -226,3 +226,6 @@ class GLProxy:
 
     def use_texture(self, b):
         self._deform_and_renderer_controller.use_texture(b)
+
+    def export_obj(self):
+        self._deform_and_renderer_controller.export_obj()

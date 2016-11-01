@@ -28,9 +28,6 @@ class PreviousComputeShader(ShaderWrap):
         self._controller = controller  # type : PreviousComputeController
 
     def pre_compile(self):
-        print(self._controller.pattern_parameters.size / 4)
-        print(self._controller.pattern_indexes.size / 4)
-        print(self._controller.pattern_offsets.size)
         self._source_code = self._source_code \
             .replace('const int isBezier = -1',
                      'const int isBezier = ' + str(1 if self._controller.model.from_bezier else -1)) \
@@ -102,7 +99,6 @@ class PreviousComputeControllerGPU:
         indexes_size = self._pattern_indexes.size * self._pattern_indexes.itemsize
         parameter_size = self._pattern_parameters.size * self._pattern_parameters.itemsize
         offset_size = self._pattern_offsets.size * self._pattern_offsets.itemsize
-        print((offset_size + indexes_size + parameter_size) / 1024 / 1024, "kb")
         split_info_buffer = glGenBuffers(1)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, split_info_buffer)
         glBufferData(GL_SHADER_STORAGE_BUFFER, offset_size + indexes_size + parameter_size,
@@ -267,10 +263,7 @@ class PreviousComputeControllerGPU:
         indexes_size = self._pattern_indexes.size * self._pattern_indexes.itemsize
         parameter_size = self._pattern_parameters.size * self._pattern_parameters.itemsize
         offset_size = self._pattern_offsets.size * self._pattern_offsets.itemsize
-        print(indexes_size / 1024 / 1024, "mb")
-        print(parameter_size / 1024 / 1024, "mb")
-        print('offset line', offset_size)
-        print((offset_size + indexes_size + parameter_size) / 1024 / 1024, "mb")
+        print('pattern size ', (offset_size + indexes_size + parameter_size) / 1024 / 1024, "mb")
 
     def get_offset_for_i(self) -> str:
         look_up_table_for_i = [0]

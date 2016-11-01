@@ -455,6 +455,10 @@ class Controller(QObject):
     def set_use_texture(self, b):
         self._gl_proxy.use_texture(b)
 
+    @pyqtSlot()
+    def export_obj(self):
+        self._gl_proxy.export_obj()
+
 
 def get_test_file_name():
     # todo

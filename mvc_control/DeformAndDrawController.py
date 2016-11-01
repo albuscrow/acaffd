@@ -132,6 +132,7 @@ class DeformAndDrawController:
         return self._final_tessellation_level
 
     def __init__(self, has_texture, previous_controller, model, aux_controller: AuxController, controller=None):
+        self.need_export_obj = False
         self._screen_shot = False
         self._screen_width = 0
         self._screen_height = 0
@@ -455,6 +456,10 @@ class DeformAndDrawController:
             self._renderer_program.update_uniform_about_real()
             self._need_update_show_real_flag = False
 
+        if self.need_export_obj:
+            self.gl_export_obj()
+            self.need_export_obj = False
+
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -471,55 +476,9 @@ class DeformAndDrawController:
                 glBindVertexArray(self._original_model_vao)
             else:
                 glBindVertexArray(self._model_vao)
-        number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
-
-        positions = self._vertex_vbo.get_value(ctypes.c_float, (self._vertex_vbo.capacity / 4 / 4, 4))
-        positions = [(round(x, 5) for x in y) for y in positions]
-        aux = {}
-        imap = {}
-        counter = 0
-        new_position = []
-
-        for i in range(len(positions)):
-            l = tuple(positions[i])
-            positions[i] = l
-            # print(l)
-            if l not in aux:
-                aux[l] = counter
-                new_position.append(l)
-                counter += 1
-            imap[i] = aux[l]
-
-        print('new position len:', len(new_position))
-
-        indices = self._index_vbo.get_value(ctypes.c_int, (self._index_vbo.capacity / 4 / 3, 3))
-
-        with open('cube_volume.obj', mode='w') as f:
-            for p in new_position:
-                f.write('v ' + ' '.join([str(x) for x in p[:3]]) + '\n')
-
-            for i in indices:
-                points = [None, None, None]
-                for ii in range(3):
-                    points[ii] = np.array(list(positions[i[ii]])[:3])
-
-                v01 = points[1] - points[0]
-                v02 = points[2] - points[0]
-                if np.dot(np.cross(v01, v02), points[0]) < 0:
-                    i[0], i[1] = i[1], i[0]
-                f.write('f ' + ' '.join([str(imap[x] + 1)+'//' for x in i]) + '\n')
-
-        copyfile('cube_volume.obj', '/home/ac/cube_volume.obj')
-
-
-
-        # for p in positions:
-        #     for pp in positions:
-        #         delta = abs(p - pp)
-        #         if all(delta < 0.0000001) and any(delta != 0):
-        #             print(delta)
 
         if conf.IS_FAST_MODE or not self._show_control_point:
+            number = int(self.splited_triangle_number * self.tessellated_triangle_number_pre_splited_triangle * 3)
             glDrawElements(GL_TRIANGLES, number, GL_UNSIGNED_INT, None)
         glActiveTexture(GL_TEXTURE0)
         glBindVertexArray(0)
@@ -572,6 +531,36 @@ class DeformAndDrawController:
         if self._vertex_vbo.capacity == 0:
             return
         self.comparison()
+
+    def gl_export_obj(self):
+        positions = self._vertex_vbo.get_value(ctypes.c_float, (int(self._vertex_vbo.capacity / 4 / 4), 4))
+        positions = [(round(x, 5) for x in y) for y in positions]
+        aux = {}
+        index_map = {}
+        counter = 0
+        new_position = []
+        for i in range(len(positions)):
+            l = tuple(positions[i])
+            positions[i] = l
+            if l not in aux:
+                aux[l] = counter
+                new_position.append(l)
+                counter += 1
+            index_map[i] = aux[l]
+        indices = self._index_vbo.get_value(ctypes.c_int, (int(self._index_vbo.capacity / 4 / 3), 3))
+        with open('volume.obj', mode='w') as f:
+            for p in new_position:
+                f.write('v ' + ' '.join([str(x) for x in p[:3]]) + '\n')
+
+            for i in indices:
+                points = [np.array(positions[x][:3]) for x in i]
+
+                v01 = points[1] - points[0]
+                v02 = points[2] - points[0]
+                if np.dot(np.cross(v01, v02), points[0]) < 0:
+                    i[0], i[1] = i[1], i[0]
+                f.write('f ' + ' '.join([str(index_map[x] + 1) + '//' for x in i]) + '\n')
+        copyfile('volume.obj', '/home/ac/volume.obj')
 
     def save_screen(self, w, h):
         self._screen_shot = True
@@ -822,3 +811,6 @@ class DeformAndDrawController:
     def get_tessed_triangles_number(self) -> int:
         res = self._tessed_triangle_counter_acbo.get_value(ctypes.c_uint32)[0]
         return res
+
+    def export_obj(self):
+        self.need_export_obj = True

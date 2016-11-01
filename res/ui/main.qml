@@ -362,6 +362,13 @@ ApplicationWindow {
                     }
 
                     Button {
+                        text: "导出OBJ"
+                        onClicked: {
+                            controller.export_obj()
+                        }
+                    }
+
+                    Button {
                         text: "save image"
                         onClicked: {
                             controller.save_image()
