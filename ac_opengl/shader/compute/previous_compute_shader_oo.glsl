@@ -47,15 +47,14 @@ struct SplitedTriangle {
     vec4 original_position[3];
     vec4 adjacency_pn_normal[6];
     uvec4 range;
-    //?!iftime
-    //?!else
+#ifndef TIME
     ivec4 adjacency_triangle_index3_original_triangle_index1;
     vec4 parameter_in_original2_texcoord2[3];
     vec4 original_normal[3];
     vec2 bezier_uv[3];
     uint bezier_patch_id;
     float triangle_quality;
-    //?!end
+#endif
 };
 
 
@@ -241,15 +240,14 @@ void main() {
             st.pn_normal[j] = vec4(getPNNormal(parameter_in_original[j]), 0);
             st.original_position[j] = vec4(getPositionOrg(parameter_in_original[j]), 1);
             edgeInfo[j] = getEdgeInfo(parameter_in_original[j]);
-            //?!iftime
-            //?!else
+#ifndef TIME
             st.parameter_in_original2_texcoord2[j].xy = parameter_in_original[j].xy;
             st.parameter_in_original2_texcoord2[j].zw = getTecCoordOrg(parameter_in_original[j]);
             st.original_normal[j] = vec4(getNormalOrg(parameter_in_original[j]), 0);
             if (isBezier > 0) {
                 st.bezier_uv[j] = getUV(parameter_in_original[j]);
             }
-            //?!end
+#endif
         }
 
         int adjacency_triangle_index_edge[3];
@@ -283,8 +281,7 @@ void main() {
             }
         }
 
-        //?!iftime
-        //?!else
+#ifndef TIME
         vec3 t[3];
         for (int i = 0; i < 3; ++i) {
             t[i] = (st.pn_position[i] - st.pn_position[int(mod((i + 1), 3))]).xyz;
@@ -302,7 +299,7 @@ void main() {
         if (isBezier > 0) {
             st.bezier_patch_id = uint(originalVertex[original_index[0]].w);
         }
-        //?!end
+#endif
         output_triangles[atomicCounterIncrement(triangle_counter)] = st;
     }
 }

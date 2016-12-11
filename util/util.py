@@ -47,28 +47,26 @@ def equal_zero_vec(v1):
 
 def filter_for_speed(src: str = None, file_name: str = None) -> str:
     if src:
-        status = conf.NORMAL
         remain = []
-        for l in src.splitlines():
-            if l.strip().startswith(conf.IF):
-                if l.strip().endswith(conf.TIME):
+        if conf.IS_FAST_MODE and not file_name.endswith('qml'):
+            src = src.replace('#version 450', '#version 450\n#define TIME\n')
+            remain = [src]
+        else:
+            status = conf.NORMAL
+            for l in src.splitlines():
+                if l.strip().startswith(conf.IF):
                     status = conf.TIME
-                else:
-                    status = conf.TESS
-                continue
-            if l.strip().startswith(conf.ELSE):
-                if status == conf.TIME:
+                    continue
+                if l.strip().startswith(conf.ELSE):
                     status = conf.ELSE_TIME
-                else:
-                    status = conf.ELSE_TESS
-                continue
-            if l.strip().startswith(conf.ENDIF):
-                status = conf.NORMAL
-                continue
-            if status == conf.NORMAL \
-                    or (status == conf.TIME and conf.IS_FAST_MODE) \
-                    or (status == conf.ELSE_TIME and not conf.IS_FAST_MODE):
-                remain.append(l)
+                    continue
+                if l.strip().startswith(conf.ENDIF):
+                    status = conf.NORMAL
+                    continue
+                if status == conf.NORMAL \
+                        or (status == conf.TIME and conf.IS_FAST_MODE) \
+                        or (status == conf.ELSE_TIME and not conf.IS_FAST_MODE):
+                    remain.append(l)
         output_file_name = file_name + '.tmp'
         with open(output_file_name, 'w') as file:
             file.write('\n'.join(remain))

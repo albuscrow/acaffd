@@ -46,7 +46,8 @@ class ProgramWrap:
 
     def link(self):
         if self._gl_program_name == -1:
-            self._gl_program_name = compileProgram(*[s.pre_compile().compile().shader for s in self._shaders])
+            shaders = [s.pre_compile().compile().shader for s in self._shaders]
+            self._gl_program_name = compileProgram(*shaders)
             self.init_uniform()
         return self
 

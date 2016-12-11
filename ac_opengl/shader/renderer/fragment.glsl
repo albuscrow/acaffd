@@ -1,25 +1,20 @@
 #version 450
 
-//?!iftime
-//?!else
+#ifndef TIME
 layout(location=3) uniform int show_splited_edge;
 layout(location=4) uniform int show_triangle_quality;
 layout(location=5) uniform int show_normal_diff;
 layout(location=6) uniform int show_position_diff;
 layout(location=9) uniform int show_original;
-//?!end
-
-layout(location=8) uniform int has_texture;
-
-layout(binding=1) uniform sampler2D acTextureSampler;
-
-//?!iftime
-//?!else
 in vec4 varying_parameter_in_original3_triangle_quality1;
 in vec4 varying_parameter_in_splited_triangle;
 in float varying_diff_normal;
 in vec3 varying_diff_position;
-//?!end
+#endif
+
+layout(location=8) uniform int has_texture;
+layout(binding=1) uniform sampler2D acTextureSampler;
+
 
 in vec3 varying_position;
 in vec3 varying_normal_ori;
@@ -60,8 +55,7 @@ void main() {
         color.w = 1;
     }
 
-    //?!iftime
-    //?!else
+#ifndef TIME
     if (show_original > 0) {
         return;
     }
@@ -109,5 +103,5 @@ void main() {
         color.w = 1;
         return;
     }
-    //?!end
+#endif
 }
