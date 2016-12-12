@@ -1,5 +1,6 @@
 from matplotlib.pyplot import *
 import matplotlib.image as mpimg
+from PIL import Image
 
 point_size = 1
 line_width = 1
@@ -377,6 +378,61 @@ def gen_error_cube_and_teapot(file_name_cube, file_name_teapot, output_file_name
     savefig('/home/ac/paperlzq/pic/' + output_file_name, bbox_inches='tight', pad_inches=-3 / 100, dpi=dpi)
 
 
+def gen_clip_figure_with_color_map():
+    gcf().clear()
+    left_image = mpimg.imread('clip_quality2.png')
+    right_image = mpimg.imread('clip_quality1.png')
+
+    original_size = right_image.shape[1::-1]
+
+    colormap = mpimg.imread('res/colormap.png').transpose((1, 0, 2))[::, ::, ::]
+
+    dst_size = [x for x in original_size]
+    color_map_size = colormap.shape[1::-1]
+
+    right_position = (0, 0)
+    left_position = (original_size[0] + 50, 0)
+    color_map_position = [left_position[0] - 50, 20]
+
+    text_offset = 35
+    text_down_position = [color_map_position[0] + text_offset, color_map_position[1]]
+    text_up_position = [color_map_position[0] + text_offset, color_map_position[1] + color_map_size[1] - 20]
+    text_font_size = 20
+
+    output_range_x = [0, original_size[0] * 2 + 50]
+    output_range_y = [0, original_size[1]]
+
+    def get_range_size(x):
+        return x[1] - x[0]
+
+    def ps2e(p, s):
+        return (p[0], p[0] + s[0], p[1], p[1] + s[1])
+
+    imshow(left_image, extent=ps2e(right_position, dst_size), zorder=-1)
+    imshow(right_image, extent=ps2e(left_position, dst_size), zorder=-1)
+    imshow(colormap, extent=ps2e(color_map_position, color_map_size), zorder=-1)
+
+    text(*text_down_position, '0', fontsize=text_font_size)
+    text(*text_up_position, '1', fontsize=text_font_size)
+    gca().get_xaxis().set_visible(False)
+    gca().get_yaxis().set_visible(False)
+    xlim(output_range_x)
+    ylim(output_range_y)
+    dpi = 100
+    gcf().set_size_inches(get_range_size(output_range_x) / dpi, get_range_size(output_range_y) / dpi)
+    png = '/home/ac/thesis/zju_thesis/figures/clip/clip_compare.png'
+    savefig(png, bbox_inches='tight', pad_inches=-3 / 100, dpi=dpi)
+    clip_image(png)
+    show()
+
+
+def clip_image(image_path):
+    ori = Image.open(image_path)
+    w, h = ori.size
+    ori.crop((0, 0, w / 2, h)).save('0.'.join(image_path.split('.')))
+    ori.crop((w / 2, 0, w, h)).save('1.'.join(image_path.split('.')))
+
+
 def gen_error_cube_and_teapot_with_color_map(file_name_cube, file_name_teapot, top_text, output_file_name):
     gcf().clear()
     cube = mpimg.imread('error/' + file_name_cube)
@@ -454,12 +510,14 @@ def gen_error_teapot(file_name):
 
 # gen_error_teapot('teapot/teapot7.png')
 # gen_error_cube('cube/cube7.png')
-gen_error_cube_and_teapot('cube/cube0.png', 'teapot/teapot0.png', 'error0')
-gen_error_cube_and_teapot('cube/cube1.png', 'teapot/teapot1.png', 'error1')
-gen_error_cube_and_teapot('cube/cube2.png', 'teapot/teapot2.png', 'error2')
-gen_error_cube_and_teapot('cube/cube3.png', 'teapot/teapot3.png', 'error3')
+# gen_error_cube_and_teapot('cube/cube0.png', 'teapot/teapot0.png', 'error0')
+# gen_error_cube_and_teapot('cube/cube1.png', 'teapot/teapot1.png', 'error1')
+# gen_error_cube_and_teapot('cube/cube2.png', 'teapot/teapot2.png', 'error2')
+# gen_error_cube_and_teapot('cube/cube3.png', 'teapot/teapot3.png', 'error3')
+#
+# gen_error_cube_and_teapot_with_color_map('cube/cube4.png', 'teapot/teapot4.png', '0.04', 'error4')
+# gen_error_cube_and_teapot_with_color_map('cube/cube5.png', 'teapot/teapot5.png', 'π/30', 'error5')
+# gen_error_cube_and_teapot_with_color_map('cube/cube6.png', 'teapot/teapot6.png', '0.04', 'error6')
+# gen_error_cube_and_teapot_with_color_map('cube/cube7.png', 'teapot/teapot7.png', 'π/30', 'error7')
 
-gen_error_cube_and_teapot_with_color_map('cube/cube4.png', 'teapot/teapot4.png', '0.04', 'error4')
-gen_error_cube_and_teapot_with_color_map('cube/cube5.png', 'teapot/teapot5.png', 'π/30', 'error5')
-gen_error_cube_and_teapot_with_color_map('cube/cube6.png', 'teapot/teapot6.png', '0.04', 'error6')
-gen_error_cube_and_teapot_with_color_map('cube/cube7.png', 'teapot/teapot7.png', 'π/30', 'error7')
+gen_clip_figure_with_color_map()
