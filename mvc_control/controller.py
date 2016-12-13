@@ -1,11 +1,9 @@
 from functools import reduce
 
 from mvc_model.model import OBJ
-from math import *
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from OpenGL.GL import *
 from pyrr.matrix44 import *
-from pyrr.euler import *
 
 from ac_opengl.GLProxy import GLProxy
 from mvc_model.plain_class import ACRect
@@ -20,8 +18,8 @@ __author__ = 'ac'
 
 
 class Controller(QObject):
-    updateScene = pyqtSignal()
-    show_figure = pyqtSignal()
+    update_scene = pyqtSignal(name='update_scene')
+    show_figure = pyqtSignal(name='show_figure')
 
     def __init__(self):
         super().__init__()
@@ -48,17 +46,17 @@ class Controller(QObject):
         self._model_view_matrix = create_from_translation(np.array(self._translate), dtype='float32')  # type: np.array
         self._rotate_matrix = create_identity(dtype='f4')
 
-        ## rotate matrix for cube
+        # rotate matrix for cube
         self._rotate_matrix = np.array(
             [[0.44967501, -0.06625679, -0.89087461, 0.],
              [-0.84477917, 0.29277544, -0.4481853, 0.],
              [0.29048993, 0.95400547, 0.07567401, 0.],
              [0., 0., 0., 1.]])
 
-
         self._inited = False  # type: bool
 
         self.factors = None
+        self.area_result = []
         self.diff_result = []
         self.cage_length = 0
         self.cym_position_error = 0
@@ -67,6 +65,9 @@ class Controller(QObject):
 
         self.gl_task = None
         self.show_figure.connect(self.show_diff_result)
+
+    def add_area(self, a):
+        self.area_result.append(a)
 
     def add_diff_result(self, r):
         self.diff_result.append(r)
@@ -77,13 +78,14 @@ class Controller(QObject):
     def show_diff_result(self):
         path = self.get_save_path()
         np.save(path + '/split_data', self.diff_result)
-        position = [x[0][0] for x in self.diff_result]
+        position_diff = [x[0][0] for x in self.diff_result]
 
-        print('cym position error: \n', self.cym_position_error)
-        print('split number: \n', self.splited_number)
-        print('position: \n', position)
+        # print('cym position error: \n', self.cym_position_error)
+        # print('split number: \n', self.splited_number)
+        # print('position: \n', position)
         # print('factors: \n', self.factors)
-        print('factors: \n', [x * self.cage_length for x in self.factors])
+        # print('factors: \n', [x * self.cage_length for x in self.factors])
+        # print('area: \n', self.area_result)
 
         # plot(self.factors, position)
         # plot(self.factors, [self.cym_position_error] * len(self.factors))
@@ -96,8 +98,18 @@ class Controller(QObject):
         number = self.splited_number[:len(self.factors)]
         r_number = [1 / x for x in number]
         # plot(r_number, position, 'bo', r_number, position, 'k')
-        plot(number, position, 'bo', number, position, 'k')
+        # plot(number, position, 'bo', number, position, 'k')
+
+        self.draw_figure(self.area_result, position_diff)
+
+    @staticmethod
+    def draw_figure(x, y):
+        xys = list(zip(x, y))
+        xys = sorted(xys, key=lambda ele: ele[0])
+        x, y = zip(*xys)
+        plot(x, y, 'bo', x, y, 'k')
         show()
+        pass
 
     @pyqtSlot()
     def clear_director_control_points(self):
@@ -111,7 +123,7 @@ class Controller(QObject):
             direct_delta = np.array([x / 10, y / 10, z / 10], dtype='f4')
             self._gl_proxy.move_direct_control_point_delta(direct_delta)
 
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot(float, float, float)
     def rotate_control_points(self, x, y, z):
@@ -132,12 +144,12 @@ class Controller(QObject):
                 else:
                     m = create_from_z_rotation(-0.1)
             self._gl_proxy.rotate_control_points(m)
-            self.updateScene.emit()
+            self.update_scene.emit()
 
     @pyqtSlot(int)
     def change_tessellation_level(self, level):
         self._gl_proxy.change_tessellation_level(level)
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot(float)
     def change_split_factor(self, level):
@@ -192,18 +204,17 @@ class Controller(QObject):
             return
         load = np.load(file_path)
         self._gl_proxy.set_control_points(load)
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot(int, int)
     def rotate(self, x, y):
         # update _mode_view_matrix
         self._rotate_matrix = multiply(self._rotate_matrix, util.util.create_rotate(2, y, x, 0))
-        ##print(self._rotate_matrix)
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = multiply(self._rotate_matrix,
                                            np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
 
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot(int, int)
     def move(self, x, y):
@@ -214,7 +225,7 @@ class Controller(QObject):
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = multiply(self._rotate_matrix,
                                            np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot(bool)
     def set_control_point_visibility(self, is_show: bool):
@@ -267,6 +278,7 @@ class Controller(QObject):
     def begin_test_split_factor(self):
         self.diff_result.clear()
         self.splited_number.clear()
+        self.area_result.clear()
         step = self._gl_proxy.aux_controller.get_bspline_body_size()
         self.cage_length = reduce(lambda p, x: p + x ** 2, step, 0) ** 0.5
         self.factors = np.arange(0.1, 3.5, 0.05, dtype='f4')
@@ -279,14 +291,14 @@ class Controller(QObject):
                 self.change_split_factor(self.factors[indices] * self.cage_length)
                 self.set_need_comparison()
                 indices += 1
-                self.updateScene.emit()
+                self.update_scene.emit()
             else:
                 self.change_split_factor(original_split_factor)
                 self.show_figure.emit()
                 self.gl_task = None
 
         self.gl_task = gl_task1
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     def set_need_comparison(self):
         self._gl_proxy.set_need_comparison()
@@ -317,13 +329,13 @@ class Controller(QObject):
                     self.cym_position_error = self.diff_result[1][0][0]
 
                 self.gl_task = gl_task2
-                self.updateScene.emit()
+                self.update_scene.emit()
 
             self.gl_task = gl_task1
-            self.updateScene.emit()
+            self.update_scene.emit()
 
         self.gl_task = gl_task0
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot(int, int, int, int)
     def left_move(self, x1: int, y1: int, x2: int, y2: int):
@@ -345,22 +357,22 @@ class Controller(QObject):
                 end_point_x = x2 / self.window_size.h * 2 - self.window_size.aspect
                 end_point = np.mat([end_point_x, end_point_y, end_point_z, 1], dtype='f4') * i
                 self._gl_proxy.set_select_point(start_point, end_point - start_point)
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot()
     def cancel_direct_control_point(self):
         self._gl_proxy.clear_direct_control_point()
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot(int, int, int)
     def change_control_point_number(self, u: int, v: int, w: int):
         self._gl_proxy.change_control_point_number(u, v, w)
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot(int)
     def change_control_point_order(self, order: int):
         self._gl_proxy.change_control_point_order(order)
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @pyqtSlot(int)
     def change_algorithm(self, algorithm):
@@ -391,7 +403,7 @@ class Controller(QObject):
         #      [-0.81148, 0.49387, 1.40984, 0.0],
         #      [0.27, 0.02, -8.0, 1.0]])
 
-        self.updateScene.emit()
+        self.update_scene.emit()
 
     @staticmethod
     def print_matrix(matrix):

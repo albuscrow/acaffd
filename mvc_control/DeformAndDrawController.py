@@ -530,7 +530,12 @@ class DeformAndDrawController:
         glDisable(GL_BLEND)
         if self._vertex_vbo.capacity == 0:
             return
+
+        if not self._need_comparison:
+            return
+        self._need_comparison = False
         self.comparison()
+        # self.compute_area(self._vertex_vbo, self._index_vbo)
 
     def gl_export_obj(self):
         positions = self._vertex_vbo.get_value(ctypes.c_float, (int(self._vertex_vbo.capacity / 4 / 4), 4))
@@ -767,13 +772,10 @@ class DeformAndDrawController:
         return average, max_e, standard_deviation
 
     def comparison(self):
-        if not self._need_comparison:
-            return
-        self._need_comparison = False
-
         dr1 = DeformAndDrawController.comparison_helper(self._vertex_vbo, self._real_position_vbo,
                                                         lambda i, j: sqrt(
-                                                            reduce(lambda p, x: p + x, [e * e for e in (i - j)[:3]],
+                                                            reduce(lambda p, x: p + x,
+                                                                   [e * e for e in (i - j)[:3]],
                                                                    0)))
 
         def fun(i, j):

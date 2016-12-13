@@ -9,7 +9,6 @@ ApplicationWindow {
 
     FileDialog {
         id: openFileDialog
-        folder: "/home/ac/code/python/affd/res/3d_model"
         title: "Please choose a obj file"
         nameFilters: [ "Model files (*.obj)", "All files (*)" ]
         onAccepted: {
@@ -19,7 +18,6 @@ ApplicationWindow {
 
     FileDialog {
         id: openControlPointFileDialog
-        folder: "/home/ac/code/python/affd/res/3d_model"
         title: "Please choose a npy file"
         nameFilters: [ "Model files (*.npy)", "All files (*)" ]
         onAccepted: {
@@ -33,9 +31,11 @@ ApplicationWindow {
             title: qsTr("File")
 
             MenuItem {
+                property url defPath : "file:///home/ac/code/python/affd/res/3d_model"
                 text: qsTr("Open file...")
                 onTriggered: {
                     openFileDialog.open()
+                    openFileDialog.folder = defPath
                 }
             }
 
@@ -47,9 +47,11 @@ ApplicationWindow {
             }
 
             MenuItem {
+                property url defPath : "file:///home/ac/code/python/affd/test_data"
                 text: qsTr("Load Ctrl Points...")
                 onTriggered: {
                     openControlPointFileDialog.open()
+                    openControlPointFileDialog.folder = defPath
                 }
             }
 

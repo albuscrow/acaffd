@@ -32,5 +32,5 @@ class FFDScene(QQuickItem):
             window.beforeSynchronizing.connect(self.sync, type=Qt.DirectConnection)
             window.afterRendering.connect(self.controller.paint, type=Qt.DirectConnection)
             window.setClearBeforeRendering(False)
-            self.controller.updateScene.connect(window.update)
+            self.controller.update_scene.connect(window.update)
             # self.renderer.resetOpenGLStatus.connect(window.resetOpenGLStatus)

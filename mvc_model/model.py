@@ -192,6 +192,7 @@ class OBJ:
         for r in model_range:
             mid.append((r[0] + r[1]) / 2)
             self._length.append(r[0] - r[1])
+
         # d 为 xyz三个维度中，模型跨度最大值
         d = max(*self._length) / 2
 

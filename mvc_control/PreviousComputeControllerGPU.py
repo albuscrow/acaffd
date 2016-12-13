@@ -5,6 +5,7 @@ from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from pyrr.matrix44 import *
+# from mvc_control.controller import Controller
 import config as conf
 
 # PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/pattern_data.txt'
@@ -15,7 +16,6 @@ if config.IS_FAST_MODE:
     PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/20.txt'
 else:
     PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/31.txt'
-
 
 
 def add_prefix(file_name: str):
@@ -46,7 +46,7 @@ class PreviousComputeShader(ShaderWrap):
 class PreviousComputeControllerGPU:
     def __init__(self, model: OBJ, controller):
         self._model = model  # type: OBJ
-        self._controller = controller
+        self._controller = controller  # type: Controller
 
         # init pattern data
         self._split_factor = 0.2  # type: float
@@ -78,6 +78,23 @@ class PreviousComputeControllerGPU:
         self._program = ProgramWrap().add_shader(
             PreviousComputeShader(GL_COMPUTE_SHADER, add_prefix('previous_compute_shader_oo.glsl'),
                                   self))  # type: ProgramWrap
+
+    @staticmethod
+    def compute_triangle_area(p1, p2, p3):
+        def len(v1, v2):
+            return sum([(x - y) ** 2 for x, y in zip(v1, v2)]) ** 0.5
+
+        ls = [len(p1, p2), len(p2, p3), len(p3, p1)]
+        s = sum(ls) / 2
+        temp = [s - x for x in ls]
+        return (temp[0] * temp[1] * temp[2] * s) ** 0.5
+
+    def get_average_area(self):
+        triangles = self._splited_triangle_ssbo.get_value(ctypes.c_float, shape=(self._splited_triangle_number, 100))
+        temp = 0
+        for t in triangles:
+            temp += PreviousComputeControllerGPU.compute_triangle_area(*[x[:3] for x in zip(*[iter(t[:12])] * 4)])
+        return temp / self.splited_triangle_number
 
     def change_model(self, model):
         self._model = model
@@ -153,7 +170,7 @@ class PreviousComputeControllerGPU:
         self._share_adjacency_pn_triangle_position_ssbo.gl_sync()
         self._splited_triangle_ssbo.gl_sync()
 
-    def gl_compute(self, op) -> int:
+    def gl_compute(self, op) -> (int, bool):
         if not self._need_recompute:
             return self._splited_triangle_number, False
         self.gl_sync()
@@ -202,11 +219,12 @@ class PreviousComputeControllerGPU:
         glUseProgram(0)
 
         self._splited_triangle_number = self.get_splited_triangles_number()
-        self._controller.add_splited_number(self._splited_triangle_number)
         glFinish()
 
         self._need_recompute = False
         print('gl_compute:', 'gpu splited triangle number: %d' % self._splited_triangle_number)
+        self._controller.add_splited_number(self.splited_triangle_number)
+        self._controller.add_area(self.get_average_area())
         return self._splited_triangle_number, True
 
     @property
