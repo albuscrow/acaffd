@@ -3,8 +3,6 @@ from shutil import copyfile
 
 from math import sqrt, acos, pi
 
-import time
-from OpenGL.GL.ARB.timer_query import glGetQueryObjectui64v as glgetq
 from PIL import Image
 
 from Constant import *
@@ -17,6 +15,7 @@ from OpenGL.GLU import *
 from pyrr.matrix44 import *
 import config as conf
 from util.util import power
+from util import GLUtil
 
 import matplotlib.image as mpimg
 import os.path
@@ -399,28 +398,8 @@ class DeformAndDrawController:
 
         self._deform_program.update_uniform_about_modify_range()
 
-        query_id = glGenQueries(1)
-        glBeginQuery(GL_TIME_ELAPSED, query_id)
-        glDispatchCompute(*self.group_size)
-        glEndQuery(GL_TIME_ELAPSED)
-        stop_timer_available = 0
-        while stop_timer_available == 0:
-            stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
-        run_time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT)
-        # print(time / 1000000)
+        GLUtil.gl_timing(lambda: glDispatchCompute(*self.group_size), "deformation", 3)
 
-        # glFinish()
-        # start_time = time.time()
-        # glDispatchCompute(*self.group_size)
-        # glFinish()
-        self._time_number += 1
-        if self._time_number > 0:
-            t = run_time / 1000000
-            if t > 10:
-                self._time_total += t
-                print("---deform shader run time: r%s ms, c %s ms---" % (self._time_total / self._time_number, t))
-            else:
-                self._time_number -= 1
         self._need_deform = False
         glUseProgram(0)
 

@@ -1,5 +1,6 @@
 from OpenGL.GL import *
 import numpy as np
+import config as conf
 
 
 def bind_ssbo(vbo, binding_point, data, size, dtype, usage):
@@ -46,3 +47,45 @@ def get_atomic_value(atomic_buffer):
     vbo_array = np.ctypeslib.as_array(vbo_pointer, (1,))
     glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER)
     return vbo_array[0]
+
+
+tag_repeat = {}
+
+class tp:
+    def __init__(self, tag, repeat):
+        self.tag = tag
+        self.repeat_times = repeat
+        self.total_time = 0
+        self.current = self.repeat_times
+
+    def reset(self):
+        self.total_time = 0
+        self.current = self.repeat_times
+
+    def add_time(self, time):
+        self.total_time += time
+        self.current -= 1
+        if self.current == 0:
+            print(self.tag, ": ", self.total_time / self.repeat_times, 'ms')
+            self.reset()
+
+
+def gl_timing(op, tag, repeat=1):
+    if tag not in tag_repeat:
+        tag_repeat[tag] = tp(tag, repeat)
+
+    t = tag_repeat[tag]
+
+    query_id = glGenQueries(1)
+    glFinish()
+    glBeginQuery(GL_TIME_ELAPSED, query_id)
+    op()
+    glFinish()
+    glEndQuery(GL_TIME_ELAPSED)
+    stop_timer_available = 0
+    while stop_timer_available == 0:
+        stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
+
+    run_time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT) / 1000000
+
+    t.add_time(run_time)

@@ -5,13 +5,9 @@ from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from pyrr.matrix44 import *
-# from mvc_control.controller import Controller
 import config as conf
+from util.GLUtil import gl_timing
 
-# PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/pattern_data.txt'
-
-# PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/20.txt'
-# PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/19.txt'
 if config.IS_FAST_MODE:
     PATTERN_FILE_PATH = 'pre_computer_data/split_pattern/20.txt'
 else:
@@ -180,41 +176,14 @@ class PreviousComputeControllerGPU:
             self._need_update_split_factor = False
         self._program_gen_pn_triangle.use()
 
-        query_id = glGenQueries(1)
-        glBeginQuery(GL_TIME_ELAPSED, query_id)
-        repeat = 1
-        for _ in range(repeat):
-            glDispatchCompute(*self.group_size)
-        glEndQuery(GL_TIME_ELAPSED)
-        stop_timer_available = 0
-        while stop_timer_available == 0:
-            stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
-        run_time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT) / 1000000 / repeat
-        print('gen PN triangle time', run_time, 'ms')
+        gl_timing(lambda: glDispatchCompute(*self.group_size), 'gen PN triangle time')
         glFinish()
-
-        # with open('debug2.txt', 'w') as f:
-        #     ii = 0
-        #     for i in self._share_adjacency_pn_triangle_position_ssbo.get_value(ctypes.c_float, (
-        #         self._model._original_triangle_number * 10, 4)):
-        #         f.write(str(i) + '\n')
-        #         if ii % 10 == 9:
-        #             f.writ('\n')
-        #         ii += 1
 
         self._program.use()
         self.gl_init_split_counter()
 
-        query_id = glGenQueries(1)
-        glBeginQuery(GL_TIME_ELAPSED, query_id)
-        for _ in range(repeat):
-            glDispatchCompute(*self.group_size)
-        glEndQuery(GL_TIME_ELAPSED)
-        stop_timer_available = 0
-        while stop_timer_available == 0:
-            stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
-        run_time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT) / 1000000 / repeat
-        print('pre compute time', run_time, 'ms')
+        gl_timing(lambda: glDispatchCompute(*self.group_size), 'pre compute time')
+
 
         glUseProgram(0)
 
@@ -222,7 +191,7 @@ class PreviousComputeControllerGPU:
         glFinish()
 
         self._need_recompute = False
-        print('gl_compute:', 'gpu splited triangle number: %d' % self._splited_triangle_number)
+        # print('gl_compute:', 'gpu splited triangle number: %d' % self._splited_triangle_number)
         self._controller.add_splited_number(self.splited_triangle_number)
         self._controller.add_area(self.get_average_area())
         return self._splited_triangle_number, True

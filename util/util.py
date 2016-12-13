@@ -1,7 +1,6 @@
 import numpy as np
 import config as conf
 import math
-import random
 
 
 def static_var(**kwargs):
@@ -37,11 +36,11 @@ def power(b, e):
 ZERO = 0.000001
 
 
-def equal_vec(v1, v2):
-    return all(abs(v1 - v2) < ZERO)
+def equal_vec(v1: np.ndarray, v2: np.ndarray):
+    return equal_zero_vec(v1 - v2)
 
 
-def equal_zero_vec(v1):
+def equal_zero_vec(v1: np.ndarray):
     return all(abs(v1) < ZERO)
 
 
