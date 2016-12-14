@@ -11,8 +11,9 @@ import numpy as np
 from os.path import isfile, exists
 from Constant import ALGORITHM_AC, ALGORITHM_CYM
 import os
-from matplotlib.pylab import plot, show
+import matplotlib.pyplot as plt
 import util.util
+import util.figure_util as figutil
 
 __author__ = 'ac'
 
@@ -100,16 +101,23 @@ class Controller(QObject):
         # plot(r_number, position, 'bo', r_number, position, 'k')
         # plot(number, position, 'bo', number, position, 'k')
 
-        self.draw_figure(self.area_result, position_diff)
+        self.draw_figure(self.area_result, position_diff, '子三角形平均面积', '顶点平均几何误差')
+        figutil.draw_zoom(plt.gcf(), [0, 0.5, 0, 0.05], [0, 0.2])
+
 
     @staticmethod
-    def draw_figure(x, y):
+    def draw_figure(x, y, x_label=None, y_label=None, save_file_name=None):
         xys = list(zip(x, y))
         xys = sorted(xys, key=lambda ele: ele[0])
         x, y = zip(*xys)
-        plot(x, y, 'bo', x, y, 'k')
-        show()
-        pass
+        plt.plot(x, y, 'bo', x, y, 'k')
+        if x_label is not None:
+            plt.gca().set_xlabel(x_label)
+        if y_label is not None:
+            plt.gca().set_ylabel(y_label)
+        plt.show()
+        if save_file_name is not None:
+            plt.savefig(save_file_name)
 
     @pyqtSlot()
     def clear_director_control_points(self):

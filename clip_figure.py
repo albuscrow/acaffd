@@ -414,8 +414,8 @@ def gen_clip_figure_with_color_map():
 
     text(*text_down_position, '0', fontsize=text_font_size)
     text(*text_up_position, '1', fontsize=text_font_size)
-    gca().get_xaxis().set_visible(False)
-    gca().get_yaxis().set_visible(False)
+    # gca().get_xaxis().set_visible(False)
+    # gca().get_yaxis().set_visible(False)
     xlim(output_range_x)
     ylim(output_range_y)
     dpi = 100
