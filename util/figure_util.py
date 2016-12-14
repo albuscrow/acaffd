@@ -67,10 +67,22 @@ def draw_zoom(fig: Figure, zoomed_area, show_left_low, show_x_length):
     axes.plot(*left_right_bottom_top_2_xs_ys(extent), '-k')
 
 
+def split_lr(file_path: str):
+    dot_position = file_path.rfind('.')
+    left_file_path = file_path[:dot_position] + '0' + file_path[dot_position:]
+    right_file_path = file_path[:dot_position] + '1' + file_path[dot_position:]
+    im = Image.open(file_path)  # type: Image.Image
+    width, height = im.size
+    im.crop((0, 0, int(width / 2), height)) \
+        .save(left_file_path)
+    im.crop((int(width / 2), 0, width, height)) \
+        .save(right_file_path)
+
+
 if __name__ == '__main__':
-    x = np.arange(0, 6.0, 0.1)
-    y = [xx ** 2 for xx in x]
-    plt.plot(x, y)
+    # x = np.arange(0, 6.0, 0.1)
+    # y = [xx ** 2 for xx in x]
+    # plt.plot(x, y)
     # print(plt.gca().get_data_ratio())
     # plt.gca().set_aspect(1 / plt.gca().get_data_ratio())
     # plt.gca().set_xlim([0, 1])
@@ -78,5 +90,8 @@ if __name__ == '__main__':
     # plt.ylim([0, 10])
     # plt.xlim([0, 10])
     # plt.show()
-    draw_zoom(plt.gcf(), (0, 1, 0, 0.5), (1, 5), 3)
-    plt.show()
+    # draw_zoom(plt.gcf(), (0, 1, 0, 0.5), (1, 5), 3)
+    # plt.show()
+
+    png = '/home/ac/thesis/zju_thesis/figures/clip/clip_compare.png'
+    splitLR(png)

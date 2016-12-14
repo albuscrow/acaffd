@@ -1,6 +1,7 @@
 from matplotlib.pyplot import *
 import matplotlib.image as mpimg
 from PIL import Image
+import util.figure_util as figutil
 
 point_size = 1
 line_width = 1
@@ -420,10 +421,12 @@ def gen_clip_figure_with_color_map():
     ylim(output_range_y)
     dpi = 100
     gcf().set_size_inches(get_range_size(output_range_x) / dpi, get_range_size(output_range_y) / dpi)
-    png = '/home/ac/thesis/zju_thesis/figures/clip/clip_compare.png'
+    png = '/home/ac/thesis/zju_thesis/figures/clip/clip_compare.jpg'
+    gca().axis('off')
     savefig(png, bbox_inches='tight', pad_inches=-3 / 100, dpi=dpi)
     clip_image(png)
     show()
+    figutil.split_lr(png)
 
 
 def clip_image(image_path):
@@ -431,7 +434,6 @@ def clip_image(image_path):
     w, h = ori.size
     ori.crop((0, 0, w / 2, h)).save('0.'.join(image_path.split('.')))
     ori.crop((w / 2, 0, w, h)).save('1.'.join(image_path.split('.')))
-
 
 def gen_error_cube_and_teapot_with_color_map(file_name_cube, file_name_teapot, top_text, output_file_name):
     gcf().clear()
