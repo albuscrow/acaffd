@@ -104,7 +104,6 @@ class Controller(QObject):
         self.draw_figure(self.area_result, position_diff, '子三角形平均面积', '顶点平均几何误差')
         figutil.draw_zoom(plt.gcf(), [0, 0.47, 0, 0.06], [0.1, 0.25], 1.1)
 
-
     @staticmethod
     def draw_figure(x, y, x_label=None, y_label=None, save_file_name=None):
         xys = list(zip(x, y))
