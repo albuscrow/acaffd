@@ -102,7 +102,7 @@ class Controller(QObject):
         # plot(number, position, 'bo', number, position, 'k')
 
         self.draw_figure(self.area_result, position_diff, '子三角形平均面积', '顶点平均几何误差')
-        figutil.draw_zoom(plt.gcf(), [0, 0.5, 0, 0.05], [0, 0.2])
+        figutil.draw_zoom(plt.gcf(), [0, 0.47, 0, 0.06], [0.1, 0.25], 1.1)
 
 
     @staticmethod
