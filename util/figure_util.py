@@ -2,6 +2,7 @@ from matplotlib.figure import Figure, Axes
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
+import matplotlib
 
 
 def get_img(fig: Figure, area=None):
@@ -79,6 +80,46 @@ def split_lr(file_path: str):
         .save(right_file_path)
 
 
+def draw_figure(draw_data, x_label=None, y_label=None, save_file_name=None, dpi=50, sort_x=False, show=True,
+                log_y=False, font_size=22, legend=(1, 1)):
+    matplotlib.rcParams.update({'font.size': font_size})
+
+    plt.clf()
+
+    line = []
+    label = []
+    for x, y, f, l in draw_data:
+        print(x)
+        print(y)
+        if len(x) != len(y):
+            print('x len: ', len(x), 'y len:', len(y))
+            raise Exception()
+        if sort_x:
+            xys = list(zip(x, y))
+            xys = sorted(xys, key=lambda ele: ele[0])
+            x, y = zip(*xys)
+        line.append(plt.plot(x, y, f)[0])
+        label.append(l)
+
+    print(line, label)
+    if label[0] is not None and label[0] != '':
+        plt.legend(tuple(line), tuple(label), loc='best', bbox_to_anchor=legend)
+
+    if x_label is not None:
+        plt.gca().set_xlabel(x_label)
+    if y_label is not None:
+        plt.gca().set_ylabel(y_label)
+
+    if log_y:
+        plt.gca().set_yscale('log')
+
+    if save_file_name is not None:
+        plt.savefig(save_file_name, dpi=dpi, bbox_inches='tight', pad_inches=0.1)
+
+    if show:
+        plt.show()
+
+
 if __name__ == '__main__':
     # x = np.arange(0, 6.0, 0.1)
     # y = [xx ** 2 for xx in x]
@@ -94,4 +135,4 @@ if __name__ == '__main__':
     # plt.show()
 
     png = '/home/ac/thesis/zju_thesis/figures/clip/clip_compare.png'
-    splitLR(png)
+    split_lr(png)

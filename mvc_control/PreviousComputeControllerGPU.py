@@ -182,8 +182,7 @@ class PreviousComputeControllerGPU:
         self._program.use()
         self.gl_init_split_counter()
 
-        gl_timing(lambda: glDispatchCompute(*self.group_size), 'pre compute time')
-
+        self._controller.add_time(gl_timing(lambda: glDispatchCompute(*self.group_size), 'pre compute time'))
 
         glUseProgram(0)
 

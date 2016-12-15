@@ -59,6 +59,7 @@ class Controller(QObject):
         self.factors = None
         self.area_result = []
         self.diff_result = []
+        self.time_result = []
         self.cage_length = 0
         self.cym_position_error = 0
         self.splited_number = []
@@ -66,6 +67,9 @@ class Controller(QObject):
 
         self.gl_task = None
         self.show_figure.connect(self.show_diff_result)
+
+    def add_time(self, t):
+        self.time_result.append(t)
 
     def add_area(self, a):
         self.area_result.append(a)
@@ -79,44 +83,29 @@ class Controller(QObject):
     def show_diff_result(self):
         path = self.get_save_path()
         np.save(path + '/split_data', self.diff_result)
-        position_diff = [x[0][0] for x in self.diff_result]
+        l = list(self.factors)
 
-        # print('cym position error: \n', self.cym_position_error)
-        # print('split number: \n', self.splited_number)
-        # print('position: \n', position)
-        # print('factors: \n', self.factors)
-        # print('factors: \n', [x * self.cage_length for x in self.factors])
-        # print('area: \n', self.area_result)
+        triangle_number = self.splited_number
+        r_number = [1 / x for x in triangle_number]
+        triangle_area = self.area_result
 
-        # plot(self.factors, position)
-        # plot(self.factors, [self.cym_position_error] * len(self.factors))
+        split_time, deformation_time = self.time_result[0::2], self.time_result[1::2]
+        total_time = [x + y for x, y in zip(split_time, deformation_time)]
 
-        # plot(self.factors, self.splited_number)
-        # plot(self.factors, [self.cpu_split_number] * len(self.factors))
-        # print(len(self.splited_number))
-        # print(len(position))
-        # print(len(self.factors))
-        number = self.splited_number[:len(self.factors)]
-        r_number = [1 / x for x in number]
-        # plot(r_number, position, 'bo', r_number, position, 'k')
-        # plot(number, position, 'bo', number, position, 'k')
+        # self.diff_result 里面的元素(位置(平均，最大，标准差),法向(平均，最大，标准差))
+        position_average_error = [x[0][0] for x in self.diff_result]
+        normal_average_error = [x[1][0] for x in self.diff_result]
 
-        self.draw_figure(self.area_result, position_diff, '子三角形平均面积', '顶点平均几何误差')
-        figutil.draw_zoom(plt.gcf(), [0, 0.47, 0, 0.06], [0.1, 0.25], 1.1)
+        # print(l)
+        # print(split_time)
+        # print(deformation_time)
 
-    @staticmethod
-    def draw_figure(x, y, x_label=None, y_label=None, save_file_name=None):
-        xys = list(zip(x, y))
-        xys = sorted(xys, key=lambda ele: ele[0])
-        x, y = zip(*xys)
-        plt.plot(x, y, 'bo', x, y, 'k')
-        if x_label is not None:
-            plt.gca().set_xlabel(x_label)
-        if y_label is not None:
-            plt.gca().set_ylabel(y_label)
-        plt.show()
-        if save_file_name is not None:
-            plt.savefig(save_file_name)
+        figutil.draw_figure([(l, split_time, '', '分割时间'), (l, deformation_time, '', '变形时间')], u'l取值', u'时间（ms）')
+
+        # figutil.draw_figure([(l, split_time, '', '分割时间'), (l, split_time, '', '分割时间')], u'l取值', u'时间')
+
+        # self.draw_figure(self.area_result, position_average_error, u'子三角形平均面积', u'顶点平均几何误差')
+        # figutil.draw_zoom(plt.gcf(), [0, 0.47, 0, 0.06], [0.1, 0.25], 1.1)
 
     @pyqtSlot()
     def clear_director_control_points(self):
@@ -286,16 +275,18 @@ class Controller(QObject):
         self.diff_result.clear()
         self.splited_number.clear()
         self.area_result.clear()
+        self.time_result.clear()
         step = self._gl_proxy.aux_controller.get_bspline_body_size()
         self.cage_length = reduce(lambda p, x: p + x ** 2, step, 0) ** 0.5
-        self.factors = np.arange(0.1, 3.5, 0.05, dtype='f4')
+        self.factors = np.arange(0.115, 2 * (3 ** 0.5), 0.02, dtype='f4')
         indices = 0
         original_split_factor = self._gl_proxy.previous_compute_controller.split_factor
 
         def gl_task1():
             nonlocal indices
+            print('from begin_test_split_factor indices:', indices)
             if indices < len(self.factors):
-                self.change_split_factor(self.factors[indices] * self.cage_length)
+                self.change_split_factor(self.factors[indices])
                 self.set_need_comparison()
                 indices += 1
                 self.update_scene.emit()

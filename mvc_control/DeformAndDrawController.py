@@ -398,7 +398,7 @@ class DeformAndDrawController:
 
         self._deform_program.update_uniform_about_modify_range()
 
-        GLUtil.gl_timing(lambda: glDispatchCompute(*self.group_size), "deformation", 3)
+        self._controller.add_time(GLUtil.gl_timing(lambda: glDispatchCompute(*self.group_size), "deformation", 3))
 
         self._need_deform = False
         glUseProgram(0)

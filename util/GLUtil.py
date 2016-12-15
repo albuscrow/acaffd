@@ -66,7 +66,7 @@ class tp:
         self.total_time += time
         self.current -= 1
         if self.current == 0:
-            print(self.tag, ": ", self.total_time / self.repeat_times, 'ms')
+            # print(self.tag, ": ", self.total_time / self.repeat_times, 'ms')
             self.reset()
 
 
@@ -87,5 +87,6 @@ def gl_timing(op, tag, repeat=1):
         stop_timer_available = glGetQueryObjectiv(query_id, GL_QUERY_RESULT_AVAILABLE)
 
     run_time = glGetQueryObjectiv(query_id, GL_QUERY_RESULT) / 1000000
-
     t.add_time(run_time)
+
+    return run_time

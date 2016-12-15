@@ -47,7 +47,7 @@ ApplicationWindow {
             }
 
             MenuItem {
-                property url defPath : "file:///home/ac/code/python/affd/test_data"
+                property url defPath : "file:///home/ac/code/python/affd/test_data/cube5"
                 text: qsTr("Load Ctrl Points...")
                 onTriggered: {
                     openControlPointFileDialog.open()
@@ -167,7 +167,7 @@ ApplicationWindow {
                     }
 
                     SpinBox {
-                        value: 3
+                        value: 10
                         onValueChanged: {
                             if (value <= 0) {
                                 value = 1
