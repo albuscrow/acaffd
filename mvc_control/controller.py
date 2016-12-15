@@ -100,7 +100,22 @@ class Controller(QObject):
         # print(split_time)
         # print(deformation_time)
 
-        figutil.draw_figure([(l, split_time, '', '分割时间'), (l, deformation_time, '', '变形时间')], u'l取值', u'时间（ms）')
+        # figutil.draw_figure([(triangle_number, split_time, '', '分割时间'),
+        #                      (triangle_number, deformation_time, '', '变形时间')],
+        #                     u'子三角形数量', u'时间（ms）', sort_x=True)
+
+        # number-time
+        # fp = '/home/ac/thesis/zju_thesis/figures/clip/l-time1.png'
+        # figutil.draw_figure([(triangle_number, split_time, '', '分割时间'), (triangle_number, deformation_time, '', '变形时间')],
+        #                     u'子三角形数量', u'时间（ms）',
+        #                     save_file_name=fp, show=False, sort_x=True,
+        #                     font_size=20, dpi=60, legend_loc='upper left')
+
+        # l-time
+        # fp = '/home/ac/thesis/zju_thesis/figures/clip/l-time0.png'
+        # figutil.draw_figure([(l, split_time, '', '分割时间'), (l, deformation_time, '', '变形时间')],
+        #                     u'l取值', u'时间（ms）',
+        #                     save_file_name=fp, show=False, font_size=20, dpi=60)
 
         # figutil.draw_figure([(l, split_time, '', '分割时间'), (l, split_time, '', '分割时间')], u'l取值', u'时间')
 

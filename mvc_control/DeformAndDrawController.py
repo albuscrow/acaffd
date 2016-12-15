@@ -157,7 +157,7 @@ class DeformAndDrawController:
             self.init_tessellation_pattern_data(
                 int(self._previous_controller.split_factor / self._final_tessellation_level))
         else:
-            self.init_tessellation_pattern_data(3)
+            self.init_tessellation_pattern_data(10)
 
         self._need_deform = True  # type: bool
         self._need_update_uniform_about_b_spline = False

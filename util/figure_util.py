@@ -81,7 +81,7 @@ def split_lr(file_path: str):
 
 
 def draw_figure(draw_data, x_label=None, y_label=None, save_file_name=None, dpi=50, sort_x=False, show=True,
-                log_y=False, font_size=22, legend=(1, 1)):
+                log_y=False, font_size=22, legend=(1, 1), legend_loc='upper right'):
     matplotlib.rcParams.update({'font.size': font_size})
 
     plt.clf()
@@ -103,7 +103,7 @@ def draw_figure(draw_data, x_label=None, y_label=None, save_file_name=None, dpi=
 
     print(line, label)
     if label[0] is not None and label[0] != '':
-        plt.legend(tuple(line), tuple(label), loc='best', bbox_to_anchor=legend)
+        plt.legend(tuple(line), tuple(label), bbox_to_anchor=legend, loc=legend_loc)
 
     if x_label is not None:
         plt.gca().set_xlabel(x_label)
