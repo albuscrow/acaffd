@@ -294,7 +294,7 @@ void main() {
         float perimeter = l[0] + l[1] + l[2];
         float double_area = sqrt(perimeter * (-l[0] + l[1] + l[2]) * (l[0] - l[1] + l[2]) * (l[0] + l[1] - l[2])) / 2;
         float radius = double_area / perimeter;
-        st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.464101;
+        st.triangle_quality = radius / max(l[0], max(l[1], l[2])) * 3.4641016151377544;
         st.adjacency_triangle_index3_original_triangle_index1[3] = int(triangleIndex);
         if (isBezier > 0) {
             st.bezier_patch_id = uint(originalVertex[original_index[0]].w);

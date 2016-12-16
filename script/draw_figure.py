@@ -28,7 +28,6 @@ def draw_l_time():
 
     fp = '/home/ac/thesis/zju_thesis/figures/clip/l-time0.png'
     figutil.draw_figure([(l, split_time, '', '分割时间'), (l, deformation, '', '变形时间')], u'l取值', u'时间（ms）', save_file_name=fp, show=False, font_size=20, dpi=60)
-    pass
 
 
 def draw_number_time():

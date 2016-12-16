@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../')
 from Constant import *
 from mvc_model.model import OBJ
 from mvc_model.GLObject import ACVBO
@@ -76,6 +78,15 @@ class PreviousComputeControllerGPU:
                                   self))  # type: ProgramWrap
 
     @staticmethod
+    def compute_triangle_quality(p1, p2, p3):
+        points = [np.array(p) for p in (p1, p2, p3)]
+        vecs = [points[0] - points[1], points[1] - points[2], points[2] - points[0]]
+        area = np.linalg.norm(np.cross(vecs[0], vecs[1]) / 2)
+        lens = [np.linalg.norm(v) for v in vecs]
+        perimeter = sum(lens)
+        return (2 * area / perimeter) / max(lens) * 2 * (3 ** 0.5)
+
+    @staticmethod
     def compute_triangle_area(p1, p2, p3):
         def len(v1, v2):
             return sum([(x - y) ** 2 for x, y in zip(v1, v2)]) ** 0.5
@@ -85,12 +96,16 @@ class PreviousComputeControllerGPU:
         temp = [s - x for x in ls]
         return (temp[0] * temp[1] * temp[2] * s) ** 0.5
 
-    def get_average_area(self):
+    def get_average_area_and_triangle_quality(self):
         triangles = self._splited_triangle_ssbo.get_value(ctypes.c_float, shape=(self._splited_triangle_number, 100))
         temp = 0
+        temp_quality = 0
         for t in triangles:
-            temp += PreviousComputeControllerGPU.compute_triangle_area(*[x[:3] for x in zip(*[iter(t[:12])] * 4)])
-        return temp / self.splited_triangle_number
+            three_points = [x[:3] for x in zip(*[iter(t[:12])] * 4)]
+            temp += PreviousComputeControllerGPU.compute_triangle_area(*three_points)
+            # temp_quality += PreviousComputeControllerGPU.compute_triangle_quality(*three_points)
+            temp_quality += t[-1]
+        return temp / self.splited_triangle_number, temp_quality / self.splited_triangle_number
 
     def change_model(self, model):
         self._model = model
@@ -192,7 +207,9 @@ class PreviousComputeControllerGPU:
         self._need_recompute = False
         # print('gl_compute:', 'gpu splited triangle number: %d' % self._splited_triangle_number)
         self._controller.add_splited_number(self.splited_triangle_number)
-        self._controller.add_area(self.get_average_area())
+        area, quality = self.get_average_area_and_triangle_quality()
+        self._controller.add_area(area)
+        self._controller.add_quality(quality)
         return self._splited_triangle_number, True
 
     @property
@@ -293,3 +310,7 @@ class PreviousComputeControllerGPU:
     @property
     def original_index_ssbo(self):
         return self._original_index_ssbo
+
+
+if __name__ == '__main__':
+    print(PreviousComputeControllerGPU.compute_triangle_quality([0, 0], [1, 0], [0.7, 0.5 * (3 ** 0.5)]))

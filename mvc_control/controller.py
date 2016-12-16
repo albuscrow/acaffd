@@ -58,6 +58,7 @@ class Controller(QObject):
 
         self.factors = None
         self.area_result = []
+        self.quality_result = []
         self.diff_result = []
         self.time_result = []
         self.cage_length = 0
@@ -67,6 +68,9 @@ class Controller(QObject):
 
         self.gl_task = None
         self.show_figure.connect(self.show_diff_result)
+
+    def add_quality(self, q):
+        self.quality_result.append(q)
 
     def add_time(self, t):
         self.time_result.append(t)
@@ -88,6 +92,7 @@ class Controller(QObject):
         triangle_number = self.splited_number
         r_number = [1 / x for x in triangle_number]
         triangle_area = self.area_result
+        triangle_quality = self.quality_result
 
         split_time, deformation_time = self.time_result[0::2], self.time_result[1::2]
         total_time = [x + y for x, y in zip(split_time, deformation_time)]
@@ -96,13 +101,35 @@ class Controller(QObject):
         position_average_error = [x[0][0] for x in self.diff_result]
         normal_average_error = [x[1][0] for x in self.diff_result]
 
-        # print(l)
-        # print(split_time)
-        # print(deformation_time)
+        #l error
+        # fp = '/home/ac/thesis/zju_thesis/figures/clip/l-error0.png'
+        # figutil.draw_figure([(l, position_average_error, '', None)],
+        #                     u'l取值', u'几何误差',
+        #                     save_file_name=fp, show=True, sort_x=False,
+        #                     font_size=20, dpi=60)
 
-        # figutil.draw_figure([(triangle_number, split_time, '', '分割时间'),
-        #                      (triangle_number, deformation_time, '', '变形时间')],
-        #                     u'子三角形数量', u'时间（ms）', sort_x=True)
+        #area error
+        fp = '/home/ac/thesis/zju_thesis/figures/clip/l-error1.png'
+        figutil.draw_figure([(triangle_area, position_average_error, '', None)],
+                            u'子三角形平均面积', u'几何误差',
+                            save_file_name=fp, show=True, sort_x=True,
+                            font_size=20, dpi=60)
+
+        # l-quality
+        # fp = '/home/ac/thesis/zju_thesis/figures/clip/l-quality0.png'
+        # figutil.draw_figure([(l, triangle_quality, '', None)],
+        #                     u'l取值', u'平均三角形质量',
+        #                     save_file_name=fp, show=True, sort_x=False,
+        #                     font_size=20, dpi=60)
+
+        # number-quality
+        # fp = '/home/ac/thesis/zju_thesis/figures/clip/l-quality1.png'
+        # figutil.draw_figure([(triangle_number, triangle_quality, '', None)],
+        #                     u'三角形数量', u'平均三角形质量',
+        #                     save_file_name=fp, show=True, sort_x=True,
+        #                     font_size=20, dpi=60)
+
+        # number-quality
 
         # number-time
         # fp = '/home/ac/thesis/zju_thesis/figures/clip/l-time1.png'
@@ -290,6 +317,7 @@ class Controller(QObject):
         self.diff_result.clear()
         self.splited_number.clear()
         self.area_result.clear()
+        self.quality_result.clear()
         self.time_result.clear()
         step = self._gl_proxy.aux_controller.get_bspline_body_size()
         self.cage_length = reduce(lambda p, x: p + x ** 2, step, 0) ** 0.5
