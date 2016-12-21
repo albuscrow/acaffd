@@ -31,7 +31,7 @@ ApplicationWindow {
             title: qsTr("File")
 
             MenuItem {
-                property url defPath : "file:///home/ac/code/python/affd/res/3d_model"
+                property url defPath : "file:///home/ac/code/python/affd/res/3d_model/ship"
                 text: qsTr("Open file...")
                 onTriggered: {
                     openFileDialog.open()
@@ -47,7 +47,8 @@ ApplicationWindow {
             }
 
             MenuItem {
-                property url defPath : "file:///home/ac/code/python/affd/test_data/cube5"
+                property url defPath : "file:///home/ac/code/python/affd/res/3d_model/ship/ship2_6_6_6_0.20_19"
+
                 text: qsTr("Load Ctrl Points...")
                 onTriggered: {
                     openControlPointFileDialog.open()
@@ -69,6 +70,7 @@ ApplicationWindow {
 
         Item {
             Layout.fillWidth: true;
+
             FFDScene {
                 antialiasing:true
                 anchors.fill: parent

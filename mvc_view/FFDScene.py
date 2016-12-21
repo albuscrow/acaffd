@@ -25,7 +25,7 @@ class FFDScene(QQuickItem):
     def sync(self):
         r = self.window().devicePixelRatio()
         p = self.parentItem()
-        self.controller.gl_on_view_port_change(p.x() * r, p.y() * r, p.width() * r, p.height() * r)
+        self.controller.gl_on_view_port_change(p.x() * r, p.y() * r, 1024, 1024)
 
     def handle_window_changed(self, window):
         if window:

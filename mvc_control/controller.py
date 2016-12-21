@@ -48,11 +48,17 @@ class Controller(QObject):
         self._rotate_matrix = create_identity(dtype='f4')
 
         # rotate matrix for cube
-        self._rotate_matrix = np.array(
-            [[0.44967501, -0.06625679, -0.89087461, 0.],
-             [-0.84477917, 0.29277544, -0.4481853, 0.],
-             [0.29048993, 0.95400547, 0.07567401, 0.],
-             [0., 0., 0., 1.]])
+        # self._rotate_matrix = np.array(
+        #     [[0.44967501, -0.06625679, -0.89087461, 0.],
+        #      [-0.84477917, 0.29277544, -0.4481853, 0.],
+        #      [0.29048993, 0.95400547, 0.07567401, 0.],
+        #      [0., 0., 0., 1.]])
+
+        # model_view_matrix for ship
+        self._model_view_matrix = np.array([[1.75159, 0.288119, -0.677501, 0.0],
+                                            [-0.278612, 1.87784, 0.0782773, 0.0],
+                                            [0.681467, 0.0271856, 1.7734, 0.0],
+                                            [0.19, 0.43, -8.0, 1.0]])
 
         self._inited = False  # type: bool
 
@@ -101,14 +107,14 @@ class Controller(QObject):
         position_average_error = [x[0][0] for x in self.diff_result]
         normal_average_error = [x[1][0] for x in self.diff_result]
 
-        #l error
+        # l error
         # fp = '/home/ac/thesis/zju_thesis/figures/clip/l-error0.png'
         # figutil.draw_figure([(l, position_average_error, '', None)],
         #                     u'l取值', u'几何误差',
         #                     save_file_name=fp, show=True, sort_x=False,
         #                     font_size=20, dpi=60)
 
-        #area error
+        # area error
         fp = '/home/ac/thesis/zju_thesis/figures/clip/l-error1.png'
         figutil.draw_figure([(triangle_area, position_average_error, '', None)],
                             u'子三角形平均面积', u'几何误差',
@@ -246,12 +252,14 @@ class Controller(QObject):
 
     @pyqtSlot(int, int)
     def rotate(self, x, y):
+        if x == y == 0:
+            return
         # update _mode_view_matrix
         self._rotate_matrix = multiply(self._rotate_matrix, util.util.create_rotate(2, y, x, 0))
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = multiply(self._rotate_matrix,
                                            np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
-
+        self.print_matrix(self._model_view_matrix)
         self.update_scene.emit()
 
     @pyqtSlot(int, int)
@@ -263,6 +271,8 @@ class Controller(QObject):
         scale_matrix = create_from_scale(self._scale, dtype='f4')
         self._model_view_matrix = multiply(self._rotate_matrix,
                                            np.dot(scale_matrix, create_from_translation(self._translate, dtype='f4')))
+
+        self.print_matrix(self._model_view_matrix)
         self.update_scene.emit()
 
     @pyqtSlot(bool)
