@@ -68,10 +68,19 @@ def draw_zoom(fig: Figure, zoomed_area, show_left_low, show_x_length):
     axes.plot(*left_right_bottom_top_2_xs_ys(extent), '-k')
 
 
-def split_lr(file_path: str):
+def split_lr(file_path: str, f1=None, f2=None):
     dot_position = file_path.rfind('.')
-    left_file_path = file_path[:dot_position] + '0' + file_path[dot_position:]
-    right_file_path = file_path[:dot_position] + '1' + file_path[dot_position:]
+
+    if f1 is None:
+        left_file_path = file_path[:dot_position] + '0' + file_path[dot_position:]
+    else:
+        left_file_path = f1
+
+    if f2 is None:
+        right_file_path = file_path[:dot_position] + '1' + file_path[dot_position:]
+    else:
+        right_file_path = f2
+
     im = Image.open(file_path)  # type: Image.Image
     width, height = im.size
     im.crop((0, 0, int(width / 2), height)) \
