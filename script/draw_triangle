@@ -1,0 +1,52 @@
+import matplotlib.pyplot as plt
+from operator import sub, add, mul
+
+if __name__ == '__main__':
+    plt.gca().axis('off')
+    plt.xlim((0, 1400))
+    plt.ylim((0, 650))
+
+    p1, p2, p3 = (50, 50), (1000, 600), (1350, 50)
+    fitting_points = [p1, p2, p3]
+
+
+    def get_split_point(p1, p2, segments_number, no):
+        return tuple((y - x) / segments_number * no + x for x, y in zip(p1, p2))
+
+
+    offset = [(5, 3), (2, 4), (5, -3)]
+    offset = [map(mul, oe, (2, 2)) for oe in offset]
+    constraint_point = [tuple(map(sub, p1, offset[0])), tuple(map(add, p2, offset[1])), tuple(map(add, p3, offset[2]))]
+
+    lines = [[p1, p2], [p2, p3], [p3, p2]]
+
+    for i in range(1, 5):
+        left_right_point = [get_split_point(p2, p1, 4, i), get_split_point(p2, p3, 4, i)]
+        lines.append(left_right_point)
+        for j in range(i + 1):
+            fitting_points.append(get_split_point(*left_right_point, i, j))
+
+    for i in range(1, 5):
+        left_right_point = [get_split_point(p1, p2, 4, i), get_split_point(p1, p3, 4, i)]
+        lines.append(left_right_point)
+
+    for i in range(1, 5):
+        left_right_point = [get_split_point(p3, p1, 4, i), get_split_point(p3, p2, 4, i)]
+        lines.append(left_right_point)
+
+    temp = [p2, p3, p1]
+    for s, e in zip(fitting_points, temp):
+        constraint_point.append(get_split_point(s, e, 3, 1))
+        constraint_point.append(get_split_point(s, e, 3, 2))
+
+
+    for l in lines:
+        plt.plot(*zip(*l), 'k', lw=4)
+
+    plt.plot(tuple(p[0] for p in fitting_points), tuple(p[1] for p in fitting_points), 'o', ms=15, color='#5293D1',
+             markeredgecolor='#5293D1')
+    plt.plot(tuple(p[0] for p in constraint_point), tuple(p[1] for p in constraint_point), 'o', ms=15, c='#EB742A',
+             markeredgecolor='#EB742A')
+    plt.savefig('/home/ac/thesis/zju_thesis/figures/sffd/saffd_sample_point.png', bbox_inches='tight', pad_inches=0)
+    plt.show()
+
