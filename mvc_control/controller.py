@@ -100,6 +100,15 @@ class Controller(QObject):
         triangle_area = self.area_result
         triangle_quality = self.quality_result
 
+        #获取l临界命值，使三角形质量较优
+        print(l)
+        print(triangle_number)
+        print(triangle_quality)
+        tmp = list(zip(l, triangle_number, triangle_quality))
+        tmp.sort(key=lambda t: t[1], reverse=True)
+        print(tmp)
+
+
         split_time, deformation_time = self.time_result[0::2], self.time_result[1::2]
         total_time = [x + y for x, y in zip(split_time, deformation_time)]
 
@@ -115,11 +124,11 @@ class Controller(QObject):
         #                     font_size=20, dpi=60)
 
         # area error
-        fp = '/home/ac/thesis/zju_thesis/figures/clip/l-error1.png'
-        figutil.draw_figure([(triangle_area, position_average_error, '', None)],
-                            u'子三角形平均面积', u'几何误差',
-                            save_file_name=fp, show=True, sort_x=True,
-                            font_size=20, dpi=60)
+        # fp = '/home/ac/thesis/zju_thesis/figures/clip/l-error1.png'
+        # figutil.draw_figure([(triangle_area, position_average_error, '', None)],
+        #                     u'子三角形平均面积', u'几何误差',
+        #                     save_file_name=fp, show=True, sort_x=True,
+        #                     font_size=20, dpi=60)
 
         # l-quality
         # fp = '/home/ac/thesis/zju_thesis/figures/clip/l-quality0.png'
