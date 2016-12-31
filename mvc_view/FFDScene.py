@@ -24,8 +24,9 @@ class FFDScene(QQuickItem):
     @pyqtSlot()
     def sync(self):
         r = self.window().devicePixelRatio()
-        p = self.parentItem()
-        self.controller.gl_on_view_port_change(p.x() * r, p.y() * r, 1024, 1024)
+        p = self.parentItem()  # type: QQuickItem
+        # self.controller.gl_on_view_port_change(p.x() * r, p.y() * r, 1024, 1024)
+        self.controller.gl_on_view_port_change(p.x() * r, p.y() * r, p.width() * r, p.height() * r)
 
     def handle_window_changed(self, window):
         if window:
