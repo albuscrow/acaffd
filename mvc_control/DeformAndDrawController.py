@@ -299,8 +299,8 @@ class DeformAndDrawController:
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
         # image = DeformAndDrawController.load_texture_data('res/3d_model/rabbit_real/rabbit256.png')
-        # image = DeformAndDrawController.load_texture_data('res/3d_model/ship/ship_texture.png')
-        image = DeformAndDrawController.load_texture_data('res/colormap.png')
+        image = DeformAndDrawController.load_texture_data('res/3d_model/ship/ship_texture.png')
+        # image = DeformAndDrawController.load_texture_data('res/colormap.png')
         # Give the image to OpenGL
         image_data = np.array(list(image.getdata()), dtype=np.uint8)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.size[0], image.size[1],

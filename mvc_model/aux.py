@@ -70,6 +70,27 @@ class BSplineBody:
         return np.hstack((control_points, hit))
 
     @property
+    def control_points_lattice_index(self):
+        data = []
+        for i in range(0, 125, 5):
+            for j in range(4):
+                data.append(i + j)
+                data.append(i + j + 1)
+
+        for i in range(0, 25):
+            for j in range(4):
+                data.append(i + j * 25)
+                data.append(i + (j + 1) * 25)
+
+        for i in range(0, 5):
+            for j in range(0, 5):
+                for k in range(4):
+                    data.append(i + j * 25 + k * 5)
+                    data.append(i + j * 25 + (k + 1) * 5)
+
+        return np.array(data, dtype=np.uint32)
+
+    @property
     def normal_control_points(self):
         return self._ctrlPoints
 

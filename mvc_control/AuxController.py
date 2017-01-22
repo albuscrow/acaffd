@@ -35,6 +35,7 @@ class AuxController:
 
         # init buffer
         self._control_point_position_vbo = ACVBO(GL_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
+        self._index_vbo = ACVBO(GL_ELEMENT_ARRAY_BUFFER, -1, None, GL_DYNAMIC_DRAW)  # type: ACVBO
         if conf.IS_FAST_MODE:
             self._control_point_for_sample_ubo = ACVBO(GL_SHADER_STORAGE_BUFFER, 15, None,
                                                        GL_DYNAMIC_DRAW)  # type: ACVBO
@@ -72,7 +73,12 @@ class AuxController:
         self._vao_control_point = glGenVertexArrays(1)
         glBindVertexArray(self._vao_control_point)
         self._control_point_position_vbo.as_array_buffer(0, 4, GL_FLOAT)
+        self._index_vbo.as_element_array_buffer()
         glBindVertexArray(0)
+
+        # init index vbo
+        self._index_vbo.async_update(self.b_spline_body.control_points_lattice_index)
+        self._index_vbo.gl_sync()
 
         # upload_to_gpu
         self.async_upload_to_gpu()
@@ -99,11 +105,13 @@ class AuxController:
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_PROGRAM_POINT_SIZE)
         self._renderer_program.use()
+        self.gl_sync_buffer_for_self()
         glBindVertexArray(self._vao_control_point)
         self.gl_pick_control_point(model_view_matrix, perspective_matrix)
         glFinish()
-        self.gl_sync_buffer_for_self()
         self.gl_draw_control_points(model_view_matrix, perspective_matrix)
+        glFinish()
+        self.gl_draw_control_lattice(model_view_matrix, perspective_matrix)
         glFinish()
         glBindVertexArray(0)
         glUseProgram(0)
@@ -113,6 +121,14 @@ class AuxController:
     def gl_draw_control_points(self, model_view_matrix, perspective_matrix):
         glUniformMatrix4fv(0, 1, GL_FALSE, multiply(model_view_matrix, perspective_matrix))
         glDrawArrays(GL_POINTS, 0, self.get_control_point_number())
+
+    def gl_draw_control_lattice(self, model_view_matrix, perspective_matrix):
+        if self._normal_control_mode:
+            self._control_point_position_vbo.async_update(self.get_control_point_data(black=True))
+            self._control_point_position_vbo.gl_sync()
+            glDrawElements(GL_LINES, 600, GL_UNSIGNED_INT, None)
+            self._control_point_position_vbo.async_update(self.get_control_point_data())
+            self._control_point_position_vbo.gl_sync()
 
     def gl_pick_control_point(self, model_view_matrix, perspective_matrix):
         if not self._pick_region:
@@ -158,9 +174,13 @@ class AuxController:
         self._control_point_for_sample_ubo.async_update(self._b_spline_body.get_control_point_for_sample())
         self._control_points_changed = True
 
-    def get_control_point_data(self):
+    def get_control_point_data(self, black=False):
         if self._normal_control_mode:
-            return self._b_spline_body.control_points
+            points = self._b_spline_body.control_points
+            if black:
+                for p in points:
+                    p[3] = 0.5
+            return points
         else:
             return np.array(self._direct_control_point, dtype='f4')
 

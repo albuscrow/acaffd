@@ -6,7 +6,7 @@ from mvc_model.GLObject import ACVBO
 from ac_opengl.shader.ShaderWrapper import ProgramWrap, ShaderWrap
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from pyrr.matrix44 import *
+import numpy as np
 import config as conf
 from util.GLUtil import gl_timing
 

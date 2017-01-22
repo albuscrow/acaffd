@@ -15,7 +15,7 @@ class ACVBO:
             self._capacity = -1  # type: int
         self._dirty = True  # type: bool
         self._usage_hint = usage_hint
-        if target == GL_ARRAY_BUFFER:
+        if target == GL_ARRAY_BUFFER or target == GL_ELEMENT_ARRAY_BUFFER:
             self._is_bind = True
         else:
             self._is_bind = False
@@ -48,6 +48,7 @@ class ACVBO:
     def gl_sync(self):
         if len(self) == 0:
             return
+
         if not self._is_bind:
             glBindBufferBase(self._target, self._binding_point, self.buffer_name)
             self._is_bind = True
@@ -79,6 +80,9 @@ class ACVBO:
 
     def as_element_array_buffer(self):
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.buffer_name)
+
+        if self._target == GL_ELEMENT_ARRAY_BUFFER:
+            print("bind ok")
 
     def __del__(self):
         if self._buffer_name != -1:
